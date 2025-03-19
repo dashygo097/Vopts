@@ -3,7 +3,7 @@ A lib impled in chisel/scala for generating (system)Verilog of some operators an
 
 ## Prerequisite
 
-- Only tested in my personal computer of macos
+- Only tested in my personal computer(macos)
 - Sbt version in this project: 1.9.7
 - See chisel/scala version in build.sbt
 - gtkwave(waveform visualization)
