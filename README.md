@@ -11,7 +11,7 @@ NOTE: THIS REPO IS ONLY FOR PERSONAL USAGE.
 - verilator(generating executable files for testbench)
 
 ## How to use
-Run
+To generate systemVerilog, Run
 ```
 sbt run 
 ```
