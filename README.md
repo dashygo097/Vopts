@@ -10,5 +10,5 @@ Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave
 ## Reference
 Some code references 
 
-[chisel-template](https://github.com/chipsalliance/chisel-template.git)
+[chisel-template](https://github.com/chipsalliance/chisel-template.git) <br>
 [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git)
