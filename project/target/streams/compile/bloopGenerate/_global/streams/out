@@ -1,4 +1,4 @@
-[0m[[0m[0mdebug[0m] [0m[0m[opts-build] Classpath dependencies List()[0m
-[0m[[0m[0mdebug[0m] [0m[0m[opts-build] Dependencies from configurations List()[0m
-[0m[[0m[0mdebug[0m] [0m[0mBloop wrote the configuration of project 'opts-build' to '/Users/dashygo/Dev/Hardware/projects/opts/project/.bloop/opts-build.json'[0m
-[0m[[0m[32msuccess[0m] [0m[0mGenerated .bloop/opts-build.json[0m
+[0m[[0m[0mdebug[0m] [0m[0m[vopts-build] Classpath dependencies List()[0m
+[0m[[0m[0mdebug[0m] [0m[0m[vopts-build] Dependencies from configurations List()[0m
+[0m[[0m[0mdebug[0m] [0m[0mBloop wrote the configuration of project 'vopts-build' to '/Users/dashygo/Dev/Hardware/projects/Vopts/project/.bloop/vopts-build.json'[0m
+[0m[[0m[32msuccess[0m] [0m[0mGenerated .bloop/vopts-build.json[0m
