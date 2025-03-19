@@ -1,6 +1,6 @@
 .bloop/
 .bsp/
 .metals/
-./project/
-./target/
-./build/obj_dir/
+project/
+target/
+build/obj_dir/
