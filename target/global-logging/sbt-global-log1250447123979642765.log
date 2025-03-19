@@ -1,0 +1,37 @@
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(run, Some(4a89f530-3c2c-4e26-904c-9218108a7b79), Some(CommandSource(console0)))[0m
+[0m[[0m[0mdebug[0m] [0m[0mEvaluating tasks: Compile / run[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning task... Cancel: Signal, check cycles: false, forcegc: true[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 1 Scala source to /Users/dashygo/Dev/Hardware/projects/opts/target/scala-2.13/classes ...[0m
+[0m[[0m[31merror[0m] [0m[0mcirct.stage.phases.Exceptions$FirtoolNonZeroExitCode: /Users/dashygo/Library/Caches/org.chipsalliance.llvm-firtool/1.62.1/bin/firtool returned a non-zero exit code. Note that this version of Chisel (6.7.0) was published against firtool version 1.62.1.[0m
+[0m[[0m[31merror[0m] [0m[0m------------------------------------------------------------------------------[0m
+[0m[[0m[31merror[0m] [0m[0mExitCode:[0m
+[0m[[0m[31merror[0m] [0m[0m1[0m
+[0m[[0m[31merror[0m] [0m[0mSTDOUT:[0m
+[0m[[0m[31merror[0m] [0m[0m[0m
+[0m[[0m[31merror[0m] [0m[0mSTDERR:[0m
+[0m[[0m[31merror[0m] [0m[0msrc/main/scala/fft/pipeline.scala:12:7: error: sink "io_out_real" not fully initialized in "FFTPipeLine"[0m
+[0m[[0m[31merror[0m] [0m[0mclass FFTPipeLine(n: Int, width: Int, bp: Int) extends Module {[0m
+[0m[[0m[31merror[0m] [0m[0m      ^[0m
+[0m[[0m[31merror[0m] [0m[0msrc/main/scala/fft/pipeline.scala:12:7: error: sink "io_out_imag" not fully initialized in "FFTPipeLine"[0m
+[0m[[0m[31merror[0m] [0m[0mclass FFTPipeLine(n: Int, width: Int, bp: Int) extends Module {[0m
+[0m[[0m[31merror[0m] [0m[0m      ^[0m
+[0m[[0m[31merror[0m] [0m[0m[0m
+[0m[[0m[31merror[0m] [0m[0m------------------------------------------------------------------------------[0m
+[0m[[0m[31merror[0m] [0m[0m(Compile / [31mrun[0m) circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: /Users/dashygo/Library/Caches/org.chipsalliance.llvm-firtool/1.62.1/bin/firtool returned a non-zero exit code. Note that this version of Chisel (6.7.0) was published against firtool version 1.62.1.[0m
+[0m[[0m[31merror[0m] [0m[0m------------------------------------------------------------------------------[0m
+[0m[[0m[31merror[0m] [0m[0mExitCode:[0m
+[0m[[0m[31merror[0m] [0m[0m1[0m
+[0m[[0m[31merror[0m] [0m[0mSTDOUT:[0m
+[0m[[0m[31merror[0m] [0m[0m[0m
+[0m[[0m[31merror[0m] [0m[0mSTDERR:[0m
+[0m[[0m[31merror[0m] [0m[0msrc/main/scala/fft/pipeline.scala:12:7: error: sink "io_out_real" not fully initialized in "FFTPipeLine"[0m
+[0m[[0m[31merror[0m] [0m[0mclass FFTPipeLine(n: Int, width: Int, bp: Int) extends Module {[0m
+[0m[[0m[31merror[0m] [0m[0m      ^[0m
+[0m[[0m[31merror[0m] [0m[0msrc/main/scala/fft/pipeline.scala:12:7: error: sink "io_out_imag" not fully initialized in "FFTPipeLine"[0m
+[0m[[0m[31merror[0m] [0m[0mclass FFTPipeLine(n: Int, width: Int, bp: Int) extends Module {[0m
+[0m[[0m[31merror[0m] [0m[0m      ^[0m
+[0m[[0m[31merror[0m] [0m[0m[0m
+[0m[[0m[31merror[0m] [0m[0m------------------------------------------------------------------------------[0m
+[0m[[0m[31merror[0m] [0m[0mTotal time: 5 s, completed 2025年3月13日 上午12:26:17[0m
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(shell, None, None)[0m
+[0m[[0m[0minfo[0m] [0m[0mshutting down sbt server[0m

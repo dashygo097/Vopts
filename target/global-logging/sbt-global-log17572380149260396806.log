@@ -1,0 +1,12 @@
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(run, Some(8a40644c-6548-4f8c-9bd4-6c5a8f2a97ae), Some(CommandSource(console0)))[0m
+[0m[[0m[0mdebug[0m] [0m[0mEvaluating tasks: Compile / run[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning task... Cancel: Signal, check cycles: false, forcegc: true[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 2 Scala sources to /Users/dashygo/Dev/Hardware/projects/opts/target/scala-2.13/classes ...[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/dashygo/Dev/Hardware/projects/opts/src/main/scala/fm/frontend.scala:10:8: Companions 'class FM' and 'object FM' must be defined in same file:[0m
+[0m[[0m[31merror[0m] [0m[0m  Found in /Users/dashygo/Dev/Hardware/projects/opts/src/main/scala/fm/fm.scala and /Users/dashygo/Dev/Hardware/projects/opts/src/main/scala/fm/frontend.scala[0m
+[0m[[0m[31merror[0m] [0m[0mobject FM extends App with Config {[0m
+[0m[[0m[31merror[0m] [0m[0m       ^[0m
+[0m[[0m[31merror[0m] [0m[0mone error found[0m
+[0m[[0m[31merror[0m] [0m[0m(Compile / [31mcompileIncremental[0m) Compilation failed[0m
+[0m[[0m[31merror[0m] [0m[0mTotal time: 1 s, completed 2025年3月18日 下午10:19:46[0m
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(shell, None, None)[0m
