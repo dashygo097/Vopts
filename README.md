@@ -15,7 +15,7 @@ To generate systemVerilog, Run
 ```
 sbt run 
 ```
-Or simply run 
+or simply run 
 ```
 sbt 
 ```
