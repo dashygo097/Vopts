@@ -1,4 +1,5 @@
 # Vopts
+
 A lib impled in chisel/scala for generating (system)Verilog of some operators and modules for my learning projects. (still under dev) <br>
 
 NOTE: THIS REPO IS ONLY FOR PERSONAL USAGE.
@@ -6,33 +7,44 @@ NOTE: THIS REPO IS ONLY FOR PERSONAL USAGE.
 ## Prerequisite
 
 For code generating:
+
 - sbt version in this project: 1.9.7
 - see chisel/scala version in build.sbt
 
 For autotest:
+
 - gtkwave(waveform visualization)
 - verilator(generating executable files for testbench)
 
 ## How to use
+
 To generate systemVerilog, Run
+
 ```
-sbt run 
+sbt run
 ```
-or simply run 
+
+or simply run
+
 ```
-sbt 
+sbt
 ```
+
 to start a sbt server.
 
 ## Run Test
-Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through ./test.sh and fzf. 
+
+Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through ./test.sh and fzf.
+
 ```
 ./test.sh
 ```
 
+Make sure that your tb file located in /build and to end with xxx_tb.v(or xxx_tb.v) and dumpfile to be named as xxx.vcd
+
 ## References
-Some code references 
+
+Some code references
 
 [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br>
 [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git)
-

@@ -42,21 +42,3 @@ object DeFM extends App {
 
   println(code)
 }
-
-object LimiterMain extends App {
-  val code = ChiselStage.emitSystemVerilog(
-    gen = new Limiter(0.5),
-    firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
-  )
-
-  val buildDir = new File("build")
-  if (!buildDir.exists()) buildDir.mkdir()
-  
-  val file = new File(s"build/limiter.sv")
-  val bw = new BufferedWriter(new FileWriter(file))
-  bw.write("`timescale 1ns / 1ps\n") // by default, 1ns/1ps
-  bw.write(code)
-  bw.close()
-
-  println(code)
-}

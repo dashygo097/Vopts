@@ -5,11 +5,11 @@ SCRIPT_DIR=$(dirname "$0")
 
 run_test() {
 	cd "$SCRIPT_DIR/build" || exit
-	printf "\e[1;31m[NOTE] Choose the module file.\n\e[0m"
-	module_file=$(find . -type f \( -name "*.sv" -o -name "*.v" \) ! \( -name "*_tb.sv" -o -name "*_tb.v" \) | fzf)
 	printf "\e[1;31m[NOTE] Choose the testbench.\n\e[0m"
 	tb_file=$(find . -type f -name "*_tb.sv" -o -name "*_tb.v" | fzf)
-	verilator --cc --exe --build --binary --trace "$module_file" "$tb_file"
+	module_file=$(basename "$tb_file" | sed 's/_tb\.sv//')
+	echo module_file: "$module_file"
+	verilator --cc --exe --build --binary --trace "$tb_file" -o "V$(basename "$module_file" .sv)"
 	cd "./obj_dir" || exit
 	"./V$(basename "$module_file" .sv)"
 	# run if .vcd file exists

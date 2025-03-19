@@ -16,3 +16,11 @@ class Derivator extends Module {
   prev := io.in
   io.out := io.in - prev
 }
+
+object Derivator {
+  def apply(in: Float): Float = {
+    val module = Module(new Derivator)
+    module.io.in := in
+    module.io.out
+  }
+}
