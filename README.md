@@ -5,8 +5,11 @@ NOTE: THIS REPO IS ONLY FOR PERSONAL USAGE.
 
 ## Prerequisite
 
+For code generating:
 - Sbt version in this project: 1.9.7
 - See chisel/scala version in build.sbt
+
+For autotest:
 - gtkwave(waveform visualization)
 - verilator(generating executable files for testbench)
 
