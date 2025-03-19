@@ -1,5 +1,5 @@
 # Vopts
-A lib impled in chisel/scala for generating (system)Verilog of some operators and modules for personal usage. (still under dev) <br>
+A lib impled in chisel/scala for generating (system)Verilog of some operators and modules for my learning projects. (still under dev) <br>
 
 NOTE: THIS PROJECT IS ONLY FOR MY PERSONAL USAGE.
 
