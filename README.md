@@ -8,7 +8,7 @@ NOTE: THIS REPO IS ONLY FOR PERSONAL USAGE.
 
 For code generating:
 
-- sbt version in this project: 1.9.7
+- sbt version in this project: 1.9.7 (see project/build.properties)
 - see chisel/scala version in build.sbt
 
 For autotest:
@@ -40,7 +40,7 @@ Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave
 ./test.sh
 ```
 
-Make sure that your tb file located in /build and to end with xxx_tb.v(or xxx_tb.v) and dumpfile to be named as xxx.vcd
+Make sure that your tb file located in build/ and to end with xxx_tb.v(or xxx_tb.sv) and dumpfiles are named as xxx.vcd
 
 ## References
 
