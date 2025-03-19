@@ -18,7 +18,7 @@ Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave
 ./test.sh
 ```
 
-## Reference
+## References
 Some code references 
 
 [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br>
