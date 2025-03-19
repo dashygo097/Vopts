@@ -40,7 +40,7 @@ Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave
 ./test.sh
 ```
 
-Make sure that your tb file located in build/ and to end with xxx_tb.v(or xxx_tb.sv) and dumpfiles are named as xxx.vcd
+Make sure that the tb file located in build/ and to end with xxx_tb.v(or xxx_tb.sv) and dumpfiles are named as xxx.vcd
 
 ## References
 
