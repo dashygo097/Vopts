@@ -3,4 +3,4 @@
 .metals/
 project/
 target/
-build/obj_dir/
+build/
