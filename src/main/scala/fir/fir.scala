@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util._
 
 
-class FIRCoreIO extends Bundle {
+class FIRIO extends Bundle {
   val in = Input(new Float)
   val out = Output(new Float)
 }
@@ -23,7 +23,7 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
   val result = command.!!.trim
   val taps = result.split(",").map(_.toDouble).toIndexedSeq
 
-  val io = IO(new FIRCoreIO)
+  val io = IO(new FIRIO)
   val regs = RegInit(VecInit(Seq.fill(taps.length)( Float(0.0))))
   val coeffs = VecInit(taps.map( c => Float(c) ))
 
