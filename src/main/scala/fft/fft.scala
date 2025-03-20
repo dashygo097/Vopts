@@ -6,7 +6,7 @@ import scala.math._
 import chisel3._
 import chisel3.util._
 
-class MDCCoreIO extends Bundle with Config {
+class MDCIO extends Bundle with Config {
   val in = Input(new Complex)
   val in_valid = Input(Bool())
   val out1 = Output(new Complex)
@@ -40,7 +40,7 @@ object Commutator {
 
 class MDCCore extends Module with Config {
 
-  val io = IO(new MDCCoreIO)
+  val io = IO(new MDCIO)
 
   val num_stages = log2Ceil(n)
   val cnt = RegInit(0.U((1 + num_stages).W))
