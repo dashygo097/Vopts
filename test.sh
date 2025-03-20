@@ -8,7 +8,6 @@ run_test() {
 	printf "\e[1;31m[NOTE] Choose the testbench.\n\e[0m"
 	tb_file=$(find . -type f -name "*_tb.sv" -o -name "*_tb.v" | fzf)
 	module_file=$(basename "$tb_file" | sed 's/_tb\.sv//')
-	echo module_file: "$module_file"
 	verilator --cc --exe --build --binary --trace "$tb_file" -o "V$(basename "$module_file" .sv)"
 	cd "./obj_dir" || exit
 	"./V$(basename "$module_file" .sv)"
