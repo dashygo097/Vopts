@@ -6,7 +6,7 @@ val chiselVersion = "6.7.0"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "Hardware-Opts-Bsp",
+    name := "VOpts",
     libraryDependencies ++= Seq(
       "org.chipsalliance" %% "chisel" % chiselVersion,
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
