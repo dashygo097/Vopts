@@ -28,10 +28,12 @@ class FMCore extends Module with Config {
 
 class DeFMCore extends Module with Config {
   val io = IO(new DeFMIO)
+  val bps = Module(new fir.FIRCore("bp", Seq(carrierFreq - deltaFreq * 2, carrierFreq + deltaFreq * 2), 64))
   val din = Wire(new Float)
   val din_abs = Wire(new Float)
-  val lps = Module(new fir.FIRCore("lp", Seq(carrierFreq / 10), 64))
-  din := Derivator(io.in)
+  val lps = Module(new fir.FIRCore("lp", Seq(carrierFreq / 20), 64))
+  bps.io.in := io.in
+  din := Derivator(bps.io.out)
   din_abs := Abs(din)
   lps.io.in := din_abs
   io.out := lps.io.out

@@ -7,16 +7,17 @@ import chisel3.util._
 
 import _root_.circt.stage.ChiselStage
 
-object AGC extends App {
+
+object UpSampler extends App {
   val code = ChiselStage.emitSystemVerilog(
-    gen = new AGCCore,
+    gen = new UpSamplerCore,
     firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
   )
 
   val buildDir = new File("build")
   if (!buildDir.exists()) buildDir.mkdir()
   
-  val file = new File(s"build/fm.sv")
+  val file = new File(s"build/upsampler.sv")
   val bw = new BufferedWriter(new FileWriter(file))
   bw.write("`timescale 1ns / 1ps\n") // by default, 1ns/1ps
   bw.write(code)
@@ -27,14 +28,14 @@ object AGC extends App {
 
 object DownSampler extends App {
   val code = ChiselStage.emitSystemVerilog(
-    gen = new DownSamplerCore,
+    gen = new DownSamplerCore(16),
     firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
   )
 
   val buildDir = new File("build")
   if (!buildDir.exists()) buildDir.mkdir()
   
-  val file = new File(s"build/fm.sv")
+  val file = new File(s"build/downsampler.sv")
   val bw = new BufferedWriter(new FileWriter(file))
   bw.write("`timescale 1ns / 1ps\n") // by default, 1ns/1ps
   bw.write(code)

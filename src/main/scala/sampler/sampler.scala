@@ -1,6 +1,8 @@
 package sampler 
 import global.Float
 
+import math.pow
+
 import chisel3._
 import chisel3.util._
 
@@ -16,8 +18,11 @@ class DownSamplerIO extends Bundle with Config {
 
 class UpSamplerCore extends Module with Config {
   val io = IO(new UpSamplerIO)
+  io.out := (io.in << bp).asTypeOf(new Float)
 }
 
-class DownSamplerCore extends Module with Config {
+class DownSamplerCore(retainBit: Int) extends Module with Config {
+  // A Slicer 
   val io = IO(new DownSamplerIO)
+  io.out := ((io.in.value << retainBit) >> bp).asTypeOf(SInt(outDataWidth.W))
 }
