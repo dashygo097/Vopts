@@ -1,4 +1,5 @@
-package dds
+import dds.CWCore
+import fft.MDCCore
 
 import java.io.{BufferedWriter, File, FileWriter}
 
@@ -25,16 +26,16 @@ object CW extends App {
   println(code)
 }
 
-object Trig extends App {
+object FFT extends App {
   val code = ChiselStage.emitSystemVerilog(
-    gen = new TrigCore(1000),
+    gen = new MDCCore(512),
     firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
   )
 
   val buildDir = new File("build")
   if (!buildDir.exists()) buildDir.mkdir()
   
-  val file = new File(s"build/dds_trig.sv")
+  val file = new File(s"build/dds_cw.sv")
   val bw = new BufferedWriter(new FileWriter(file))
   bw.write("`timescale 1ns / 1ps\n") // by default, 1ns/1ps
   bw.write(code)
