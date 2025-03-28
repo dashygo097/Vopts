@@ -18,13 +18,13 @@ For autotest:
 
 ## How to use
 
-To generate systemVerilog, Run
+To generate systemVerilog, write demos under app/, and run
 
 ```
-sbt run
+sbt app/run
 ```
 
-or simply run
+Or simply run
 
 ```
 sbt
@@ -43,6 +43,7 @@ Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave
 Make sure that the tb file located in build/ and to end with xxx_tb.v(or xxx_tb.sv) and dumpfiles are named as xxx.vcd
 
 ## References
+
 Some code references
 
 [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br>
