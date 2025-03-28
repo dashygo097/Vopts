@@ -32,6 +32,8 @@ sbt
 
 to start a sbt server.
 
+AlSO, the global params can be changed in src/global/config.scala
+
 ## Run Test
 
 Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through ./test.sh and fzf.
