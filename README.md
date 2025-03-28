@@ -18,7 +18,7 @@ For autotest:
 
 ## How to use
 
-To generate systemVerilog, write demos under app/, and run
+To generate systemVerilog, write demos under app/... , and run
 
 ```
 sbt app/run
