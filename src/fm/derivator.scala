@@ -9,7 +9,7 @@ class DerivatorIO extends Bundle {
   val out = Output(new Float)
 }
 
-class Derivator extends Module {
+class DerivatorCore extends Module {
   val io = IO(new DerivatorIO)
   val prev = Reg(new Float)
 
@@ -17,9 +17,9 @@ class Derivator extends Module {
   io.out := io.in - prev
 }
 
-object Derivator {
+object DerivatorCore {
   def apply(in: Float): Float = {
-    val module = Module(new Derivator)
+    val module = Module(new DerivatorCore)
     module.io.in := in
     module.io.out
   }
