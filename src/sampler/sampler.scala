@@ -16,13 +16,25 @@ class DownSamplerIO(outDataWidth: Int) extends Bundle with Config {
   val out = Output(SInt(outDataWidth.W))
 }
 
+class ScaledDownSamplerIO(outDataWidth: Int, ctrlWidth: Int) extends Bundle with Config {
+  val ctrl = Input(UInt(ctrlWidth.W))
+  val in = Input(new Float)
+  val out = Output(SInt(outDataWidth.W))
+}
+
 class UpSamplerCore(inDataWidth: Int) extends Module with Config {
   val io = IO(new UpSamplerIO(inDataWidth))
-  io.out := (io.in << bp).asTypeOf(new Float)
+  io.out := (io.in << (bp - inDataWidth)).asTypeOf(new Float)
 }
 
 class DownSamplerCore(outDataWidth:Int, retainBit: Int) extends Module with Config {
   // A Slicer 
   val io = IO(new DownSamplerIO(outDataWidth))
   io.out := ((io.in.value << retainBit) >> bp).asTypeOf(SInt(outDataWidth.W))
+}
+
+class ScaledDownSamplerCore(outDataWidth: Int, ctrlWidth: Int) extends Module with Config {
+  // A Slicer 
+  val io = IO(new ScaledDownSamplerIO(outDataWidth, ctrlWidth))
+  io.out := ((io.in.value << io.ctrl) >> bp).asTypeOf(SInt(outDataWidth.W))
 }

@@ -10,9 +10,12 @@ class ComplexOpIO extends Bundle with Config {
   val out = Output(new Complex)
 }
 
-class Complex extends Bundle with Config {
-  val real = SInt(dataWidth.W)
-  val imag = SInt(dataWidth.W)
+class Complex(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config {
+  val _dataWidth = if (s_dataWidth == 0) dataWidth else s_dataWidth
+  val _bp = if (s_bp == -1) bp else s_bp
+
+  val real = SInt(_dataWidth.W)
+  val imag = SInt(_dataWidth.W)
 
   def +(that: Complex): Complex = {
     val c = Wire(new Complex)
@@ -34,13 +37,13 @@ class Complex extends Bundle with Config {
     val k1 = that.real * (this.real + this.imag)
     val k2 = this.real * (that.imag - that.real)
     val k3 = this.imag * (that.real + that.imag)
-    c.real := (k1 - k3) >> bp
-    c.imag := (k1 + k2) >> bp
+    c.real := (k1 - k3) >> _bp
+    c.imag := (k1 + k2) >> _bp
     c
   }
 
   def fromDouble(real: Double, imag: Double): Complex = {
-    val scale = pow(2, bp)
+    val scale = pow(2, _bp)
     val c = Wire(new Complex)
     c.real := (real * scale).toInt.S
     c.imag := (imag * scale).toInt.S
