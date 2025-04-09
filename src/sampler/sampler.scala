@@ -1,5 +1,5 @@
 package sampler 
-import global.{Float, Config}
+import global.{Float, Config, FloatConverterCore}
 
 import math.pow
 
@@ -7,34 +7,38 @@ import chisel3._
 import chisel3.util._
 
 class UpSamplerIO(inDataWidth: Int) extends Bundle {
-  val in = Input(SInt(inDataWidth.W)) 
+  val in = Input(new Float(inDataWidth, inDataWidth - 1))
   val out = Output(new Float) 
 }
 
 class DownSamplerIO(outDataWidth: Int) extends Bundle with Config {
   val in = Input(new Float)
-  val out = Output(SInt(outDataWidth.W))
+  val out = Output(new Float(outDataWidth, outDataWidth - 1))
 }
 
 class ScaledDownSamplerIO(outDataWidth: Int, ctrlWidth: Int) extends Bundle with Config {
   val ctrl = Input(UInt(ctrlWidth.W))
   val in = Input(new Float)
-  val out = Output(SInt(outDataWidth.W))
+  val out = Output(new Float(outDataWidth, outDataWidth - 1))
 }
 
 class UpSamplerCore(inDataWidth: Int) extends Module with Config {
   val io = IO(new UpSamplerIO(inDataWidth))
-  io.out := (io.in << (bp - inDataWidth)).asTypeOf(new Float)
+  val converter = Module(new FloatConverterCore(inDataWidth, inDataWidth - 1, dataWidth, bp))
+  converter.io.in := io.in
+  io.out := converter.io.out
 }
 
-class DownSamplerCore(outDataWidth:Int, retainBit: Int) extends Module with Config {
-  // A Slicer 
+class DownSamplerCore(outDataWidth:Int) extends Module with Config {
   val io = IO(new DownSamplerIO(outDataWidth))
-  io.out := ((io.in.value << retainBit) >> bp).asTypeOf(SInt(outDataWidth.W))
+  val converter = Module(new FloatConverterCore(dataWidth, dataWidth - 1, outDataWidth, outDataWidth - 1))
+  converter.io.in := io.in
+  io.out := converter.io.out
 }
 
 class ScaledDownSamplerCore(outDataWidth: Int, ctrlWidth: Int) extends Module with Config {
-  // A Slicer 
   val io = IO(new ScaledDownSamplerIO(outDataWidth, ctrlWidth))
-  io.out := ((io.in.value << io.ctrl) >> bp).asTypeOf(SInt(outDataWidth.W))
+  val converter = Module(new FloatConverterCore(dataWidth, bp, outDataWidth, outDataWidth - 1))
+  converter.io.in := io.in * io.ctrl.asTypeOf(new Float(dataWidth, bp))
+  io.out := converter.io.out
 }
