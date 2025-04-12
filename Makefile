@@ -10,7 +10,7 @@ build: compile
 	@mkdir -p $(BUILD_DIR)
 
 run: build
-	@@sbt app/run
+	@sbt app/run
 
 clean:
 	@sbt clean bloopInstall
