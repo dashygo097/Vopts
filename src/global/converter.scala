@@ -3,7 +3,6 @@ package global
 import scala.math.pow
 
 import chisel3._
-import chisel3.util._
 
 class FloatConverterCoreIO(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int) extends Bundle {
   val in = Input(new Float(in_dw, in_bp))

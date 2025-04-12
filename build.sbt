@@ -16,6 +16,8 @@ lazy val global = (project in file("src/global"))
       "-language:reflectiveCalls",
       "-deprecation",
       "-feature",
+      "-unchecked",              // Enable additional warnings where generated code depends on assumptions
+      "-Xlint", 
       "-Xcheckinit",
       "-Ymacro-annotations",
     ),
@@ -58,8 +60,22 @@ lazy val sampler = (project in file("src/sampler"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
+lazy val pwm = (project in file("src/pwm"))
+  .dependsOn(global)
+  .settings(
+    name := "pwm",
+    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
+  )
+
+lazy val uart = (project in file("src/uart"))
+  .dependsOn(global)
+  .settings(
+    name := "uart",
+    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
+  )
+
 lazy val app = (project in file("app"))
-  .dependsOn(global, dds, fft, fir, sampler, fm)
+  .dependsOn(global, dds, fft, fir, sampler, fm, pwm, uart)
   .settings(
     name := "app",
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
