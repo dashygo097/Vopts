@@ -31,14 +31,6 @@ or
 sbt app/run
 ```
 
-Or simply run
-
-```
-sbt
-```
-
-to start a sbt server.
-
 AlSO, the global params can be changed in src/global/config.scala
 
 ## Run Test
