@@ -67,9 +67,9 @@ trait FloatOps {
     fl
   }
 
-  def +(that: Int): Float = {
+  def +(that: UInt): Float = {
     val fl = Wire(new Float)
-    fl.value := this.value + (that << _bp).S
+    fl.value := this.value + (that << _bp).asSInt
     fl
   }
 
@@ -85,9 +85,9 @@ trait FloatOps {
     fl
   }
 
-  def -(that: Int): Float = {
+  def -(that: UInt): Float = {
     val fl = Wire(new Float)
-    fl.value := this.value - (that << _bp).S
+    fl.value := this.value - (that << _bp).asSInt
     fl
   }
 
@@ -103,9 +103,21 @@ trait FloatOps {
     fl
   }
 
-  def *(that: Int): Float = {
+  def *(that: UInt): Float = {
     val fl = Wire(new Float)
-    fl.value := (this.value * (that << _bp).S) >> _bp
+    fl.value := (this.value * (that << _bp).asSInt) >> _bp
+    fl
+  }
+
+  def shiftleft(that: UInt): Float = {
+    val fl = Wire(new Float)
+    fl.value := this.value << that
+    fl
+  }
+
+  def shiftright(that: UInt): Float = {
+    val fl = Wire(new Float)
+    fl.value := this.value >> that
     fl
   }
 
@@ -117,8 +129,8 @@ trait FloatOps {
     this.value > (that * pow(2, _bp)).toInt.S
   }
 
-  def >(that: Int): Bool = {
-    this.value > (that << _bp).S
+  def >(that: UInt): Bool = {
+    this.value > (that << _bp).asSInt
   }
 
   def <(that: Float): Bool = {
@@ -129,8 +141,8 @@ trait FloatOps {
     this.value < (that * pow(2, _bp)).toInt.S
   }
 
-  def <(that: Int): Bool = {
-   this.value < (that << _bp).S
+  def <(that: UInt): Bool = {
+   this.value < (that << _bp).asSInt
   }
 
   def >=(that: Float): Bool = {
@@ -141,8 +153,8 @@ trait FloatOps {
     this.value >= (that * pow(2, _bp)).toInt.S
   }
 
-  def >=(that: Int): Bool = {
-    this.value >= (that << _bp).S
+  def >=(that: UInt): Bool = {
+    this.value >= (that << _bp).asSInt
   }
 
   def <=(that: Float): Bool = {
@@ -153,8 +165,8 @@ trait FloatOps {
     this.value <= (that * pow(2, _bp)).toInt.S
   }
 
-  def <=(that: Int): Bool = {
-    this.value <= (that << _bp).S
+  def <=(that: UInt): Bool = {
+    this.value <= (that << _bp).asSInt
   }
 
   def ===(that: Float): Bool = {
