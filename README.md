@@ -10,6 +10,7 @@ For code generating:
 
 - sbt version in this project: 1.9.7 (see project/build.properties)
 - see chisel/scala version in build.sbt
+- For FIR, scipy is used.
 
 For autotest:
 
