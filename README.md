@@ -31,8 +31,6 @@ or
 sbt app/run
 ```
 
-to generate apps.
-
 Or simply run
 
 ```
