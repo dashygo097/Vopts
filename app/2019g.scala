@@ -4,12 +4,8 @@ import global._
 import fm.{FMCore, DeFMCore}
 import sampler.{UpSamplerCore, ScaledDownSamplerCore}
 
-import java.io.{BufferedWriter, File, FileWriter}
-
 import chisel3._
 import chisel3.util._
-
-import _root_.circt.stage.ChiselStage
 
 class TxCoreIO extends Bundle {
   val ctrl = Input(UInt(4.W))
