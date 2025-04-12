@@ -39,6 +39,6 @@ class DownSamplerCore(outDataWidth:Int) extends Module with Config {
 class ScaledDownSamplerCore(outDataWidth: Int, ctrlWidth: Int) extends Module with Config {
   val io = IO(new ScaledDownSamplerIO(outDataWidth, ctrlWidth))
   val converter = Module(new FloatConverterCore(dataWidth, bp, outDataWidth, outDataWidth - 1))
-  converter.io.in := io.in * io.ctrl.asTypeOf(new Float(dataWidth, bp))
-  io.out := converter.io.out
+  converter.io.in := io.in
+  io.out := converter.io.out * io.ctrl
 }

@@ -28,5 +28,5 @@ class TxCore extends Module {
 }
 
 object TX extends App {
-  VerilogEmitter.parse(new TxCore, "2019g_tx.v")
+  VerilogEmitter.parse(new TxCore, "2019g_tx.sv")
 }
