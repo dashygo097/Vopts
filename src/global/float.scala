@@ -3,7 +3,6 @@ package global
 import scala.math.pow
 
 import chisel3._
-import chisel3.util._
 
 class Float(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with FloatOps {
   val _dataWidth = if (s_dataWidth == 0) dataWidth else s_dataWidth

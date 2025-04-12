@@ -1,3 +1,5 @@
+package app
+
 import global._
 import fm.{FMCore, DeFMCore}
 import sampler.{UpSamplerCore, ScaledDownSamplerCore}
@@ -30,19 +32,5 @@ class TxCore extends Module {
 }
 
 object TX extends App {
-  val code = ChiselStage.emitSystemVerilog(
-    gen = new TxCore,
-    firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
-  )
-
-  val buildDir = new File("build")
-  if (!buildDir.exists()) buildDir.mkdir()
-  
-  val file = new File(s"build/2019g_tx.sv")
-  val bw = new BufferedWriter(new FileWriter(file))
-  bw.write("`timescale 1ns / 1ps\n") // by default, 1ns/1ps
-  bw.write(code)
-  bw.close()
-
-  println(code)
+  VerilogEmitter.parse(new TxCore, "2019g_tx.v")
 }
