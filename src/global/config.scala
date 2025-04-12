@@ -1,8 +1,5 @@
 package global
 
-import chisel3._
-import chisel3.util._
-
 trait Config {
   // Overall config
   val clkFreq: Int = 100000000
