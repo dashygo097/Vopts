@@ -23,7 +23,7 @@ class TxCore extends Module {
   upsampler.io.in := io.in
   fm.io.in := upsampler.io.out
   downsampler.io.ctrl := io.ctrl
-  downsampler.io.in := fm.io.out
+  downsampler.io.in := fm.io.out * 0.25
   io.out := downsampler.io.out
 }
 

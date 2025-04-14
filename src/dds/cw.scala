@@ -14,7 +14,7 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
   val io = IO(new CWIO)
   val phase = RegInit(0.U(phaseWidth.W))
   val lut_addr = Wire(UInt(log2Ceil(lutWidth).W))
-  val poff = (freq >> phaseWidth / sampleFreq).U
+  val poff = (freq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
 
   val sine_rom = VecInit(
     (0 until lutWidth).map { i => 

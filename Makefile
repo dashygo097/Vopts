@@ -4,7 +4,7 @@ BUILD_DIR = $(BASEDIR)/build
 
 .PHONY: run build clean test bloop-install
 
-build:
+build: bloop-install
 	@sbt compile
 	@mkdir -p $(BUILD_DIR)
 
