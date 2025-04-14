@@ -59,7 +59,7 @@ lazy val fm = (project in file("src/fm"))
   )
 
 lazy val sampler = (project in file("src/sampler"))
-  .dependsOn(global, dds)
+  .dependsOn(global)
   .settings(
     name := "sampler",
     Compile / unmanagedSourceDirectories += baseDirectory.value,

@@ -10,7 +10,7 @@ class ADDACoreIO extends Bundle{
   val out = Output(new Float(14, 13))
 }
 
-class ADDACore extends Module{
+class ADDACore extends Module {
   val io = IO(new ADDACoreIO)
 
   val upSampler = Module(new UpSamplerCore(12))
