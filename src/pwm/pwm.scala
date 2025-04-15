@@ -1,26 +1,56 @@
 package pwm
 import global.Config
 
+import math.pow
+
 import chisel3._
 import chisel3.util._
 
 class PWMCoreIO extends Bundle {
-  val dutyCycle = Input(UInt(6.W)) 
-  val pwmOut = Output(Bool())
+  val out = Output(Bool())
 }
 
-class PWMCore(freq: Int) extends Module with Config {
-  val io = IO(new PWMCoreIO)
-  val freqDivider = clkFreq / freq
-  val counter = RegInit(0.U(6.W))
-  val pwmReg = RegInit(false.B)
+class ModPWMCoreIO extends Bundle {
+  val dutyCycle = Input(UInt(7.W))
+  val out = Output(Bool())
+}
 
-  when(counter === (freqDivider - 1).U) {
-    counter := 0.U
-    pwmReg := !pwmReg
+class PWMCore(freq: Int, dutyCycle: Double) extends Module with Config {
+  val io = IO(new PWMCoreIO)
+
+  val freqDivider = (clkFreq / freq).toInt
+  val duty = (freqDivider * dutyCycle).toInt.U
+  val counter = RegInit(0.U(log2Ceil(freqDivider).W))
+  val pwmOut = RegInit(false.B)
+
+  counter := Mux(counter === (freqDivider - 1).U, 0.U, counter + 1.U)
+  when(counter < duty) {
+    pwmOut := true.B
   } .otherwise {
-    counter := counter + 1.U
+    pwmOut := false.B
   }
 
-  io.pwmOut := Mux(counter < io.dutyCycle, true.B, false.B)
+  io.out := pwmOut
+}
+
+class ModPWMCore(freq: Int) extends Module with Config {
+  val io = IO(new ModPWMCoreIO)
+  val freqDivider = (clkFreq / freq).toInt
+
+  val counter = RegInit(0.U(log2Ceil(freqDivider).W))
+  val duty = RegInit(0.U(log2Ceil(freqDivider).W + 7.W))
+  val pwmOut = RegInit(false.B)
+
+  duty := (freqDivider.asUInt * io.dutyCycle) / 100.U
+  print(duty)
+  print(freqDivider)
+
+  counter := Mux(counter === (freqDivider - 1).U, 0.U, counter + 1.U)
+  when(counter < duty) {
+    pwmOut := true.B
+  } .otherwise {
+    pwmOut := false.B
+  }
+
+  io.out := pwmOut
 }

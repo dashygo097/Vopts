@@ -5,7 +5,6 @@ import fm.{FMCore, DeFMCore}
 import sampler.{UpSamplerCore, ScaledDownSamplerCore}
 
 import chisel3._
-import chisel3.util._
 
 class TxCoreIO extends Bundle {
   val ctrl = Input(UInt(4.W))
