@@ -1,5 +1,5 @@
-BASEDIR = $(shell pwd)
-BUILD_DIR = $(BASEDIR)/build
+BASE_DIR = $(shell pwd)
+BUILD_DIR = $(BASE_DIR)/build
 
 
 .PHONY: run build clean test bloop-install
@@ -16,8 +16,8 @@ clean:
 	@sbt clean bloopInstall
 	@sbt clean
 
-test:
-	@./test.sh
+autotest:
+	@./autotest.sh
 
 bloop-install:
 	@sbt clean bloopInstall

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-CURRENT_DIR=$(pwd)
-SCRIPT_DIR=$(dirname "$0")
+BASE_DIR=$(pwd)
+BUILD_DIR=$(BASE_DIR)/build
 
 run_test() {
-	cd "$SCRIPT_DIR/build" || exit
+	cd "$BUILD_DIR" || exit
 	printf "\e[1;31m[NOTE] Choose the testbench.\n\e[0m"
 	tb_file=$(find . -type f -name "*_tb.sv" -o -name "*_tb.v" | fzf)
 	module_file=$(basename "$tb_file" | sed 's/_tb\.sv//')
@@ -16,7 +16,7 @@ run_test() {
 		gtkwave "$(basename "$module_file" .sv).vcd"
 	fi
 
-	cd "$CURRENT_DIR" || exit
+	cd "$BASE_DIR" || exit
 }
 
 run_test
