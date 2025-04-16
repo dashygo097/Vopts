@@ -33,18 +33,18 @@ sbt app/run
 
 ALSO, the global params can be changed in src/global/config.scala
 
-## Run Test
+## Run AutoTest
 
 Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through ./test.sh and fzf.
 
 ```
-make test
+make autotest
 ```
 
 or
 
 ```
-./test.sh
+./autotest.sh
 ```
 
 Make sure that the tb file located in build/ and to end with xxx_tb.v(or xxx_tb.sv) and dumpfiles are named as xxx.vcd
