@@ -2,7 +2,7 @@ BASE_DIR = $(shell pwd)
 BUILD_DIR = $(BASE_DIR)/build
 
 
-.PHONY: pre run build clean test bloop-install
+.PHONY: pre run build clean autotest bloop-install
 
 pre:
 	@mkdir -p $(BUILD_DIR)
