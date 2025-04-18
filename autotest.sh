@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=$(pwd)
-BUILD_DIR=$(BASE_DIR)/build
+BUILD_DIR="$BASE_DIR/build"
 
 run_test() {
 	cd "$BUILD_DIR" || exit

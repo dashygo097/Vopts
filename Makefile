@@ -2,11 +2,13 @@ BASE_DIR = $(shell pwd)
 BUILD_DIR = $(BASE_DIR)/build
 
 
-.PHONY: run build clean test bloop-install
+.PHONY: pre run build clean test bloop-install
 
-build: bloop-install
-	@sbt compile
+pre:
 	@mkdir -p $(BUILD_DIR)
+
+build: pre bloop-install
+	@sbt compile
 
 run:
 	@sbt app/run
@@ -16,7 +18,7 @@ clean:
 	@sbt clean bloopInstall
 	@sbt clean
 
-autotest:
+autotest: pre
 	@./autotest.sh
 
 bloop-install:

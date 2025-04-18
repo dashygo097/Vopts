@@ -3,7 +3,7 @@ package mem
 import chisel3._
 import chisel3.util._
 
-class SimpleRWCoreIO extends Bundle {
+class RWCoreIO extends Bundle {
   val we = Input(Bool())
   val re = Input(Bool())
 }
@@ -13,7 +13,7 @@ class SRAMCoreIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val dataIn = Input(UInt(dataWidth.W))
   val dataOut = Output(UInt(dataWidth.W))
 
-  val en = new SimpleRWCoreIO
+  val en = new RWCoreIO
 }
 
 class SRAMCore(addrWidth: Int, dataWidth: Int) extends Module {
