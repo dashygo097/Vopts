@@ -6,6 +6,7 @@ BUILD_DIR = $(BASE_DIR)/build
 
 pre:
 	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)/obj_dir
 
 build: pre bloop-install
 	@sbt compile
