@@ -14,7 +14,7 @@ run:
 	@sbt app/run
 
 clean:
-	@rm -r $(BUILD_DIR)/obj_dir
+	@rm -rf $(BUILD_DIR)/obj_dir
 	@sbt clean bloopInstall
 	@sbt clean
 
