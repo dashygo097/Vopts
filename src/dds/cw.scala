@@ -13,7 +13,7 @@ class CWIO extends Bundle {
 class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
   val io = IO(new CWIO)
   val phase = RegInit(0.U(phaseWidth.W))
-  val lut_addr = Wire(UInt(log2Ceil(lutWidth).W))
+  val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
   val poff = (freq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
 
   val sine_rom = VecInit(
@@ -25,7 +25,7 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
   )
 
   phase := phase + poff
-  lut_addr := phase(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth))
-  io.out := sine_rom(lut_addr)
+  lutAddr := phase(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth))
+  io.out := sine_rom(lutAddr)
 
 }

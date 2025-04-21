@@ -20,8 +20,11 @@ class FMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val io = IO(new FMIO)
   val trig = Module(new dds.TrigCore(carrierFreq))
 
+  val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
+  val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+
   trig.io.mag := (new Float).fromDouble(1.0)
-  trig.io.phase_delta := ((deltaFreq.U * io.in.value) / pow(2, bp).toInt.S)(phaseWidth - 1, 0)
+  trig.io.phaseDelta := deviation
 
   io.out := trig.io.out
 }
