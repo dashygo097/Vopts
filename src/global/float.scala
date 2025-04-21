@@ -53,6 +53,7 @@ class FloatMul extends Module with Config {
 }
 
 trait FloatOps {
+  // NOTE: Note that +-* etc. for Float and Float only support same (dataWidth, bp)-typed Float.
   self: Float =>
  
   def +(that: Float): Float = {

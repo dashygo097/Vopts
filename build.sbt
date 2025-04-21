@@ -98,9 +98,17 @@ lazy val fmc = (project in file("src/fmc"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
+lazy val spi = (project in file("src/spi"))
+  .dependsOn(global, mem)
+  .settings(
+    name := "spi",
+    Compile / unmanagedSourceDirectories += baseDirectory.value,
+    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),                 
+  )
+
 
 lazy val app = (project in file("app"))
-  .dependsOn(global, dds, fft, fir, sampler, fm, pwm, uart, fmc, mem)
+  .dependsOn(global, dds, fft, fir, sampler, fm, pwm, uart, fmc, mem, spi)
   .settings(
     name := "app",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
