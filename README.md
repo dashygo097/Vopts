@@ -31,7 +31,7 @@ or
 sbt app/run
 ```
 
-ALSO, the global params can be changed in src/global/config.scala
+ALSO, the global params can be changed in src/utils/config.scala
 
 ## Run AutoTest
 
