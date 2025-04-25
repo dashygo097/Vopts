@@ -20,9 +20,9 @@ class TxCore extends Module {
   val downsampler = Module(new ScaledDownSamplerCore(14, 4))
 
   upsampler.io.in := io.in
-  fm.io.in := upsampler.io.out
+  fm.io.in := DataWrapper(upsampler.io.out)
   downsampler.io.ctrl := io.ctrl
-  downsampler.io.in := fm.io.out * 0.25
+  downsampler.io.in := DataWrapper(fm.io.out * 0.25)
   io.out := downsampler.io.out
 }
 
