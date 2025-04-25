@@ -1,5 +1,5 @@
 package pwm
-import global.Config
+import utils.Config
 
 import math.pow
 

@@ -1,5 +1,5 @@
 package uart
-import global.Config
+import utils.Config
 
 import chisel3._
 import chisel3.util._

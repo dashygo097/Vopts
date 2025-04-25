@@ -8,7 +8,7 @@ NOTE: THIS REPO IS ONLY FOR PERSONAL USAGE.
 
 For code generating:
 
-- sbt version in this project: 1.9.7 (see project/build.properties)
+- sbt version in this project: 1.10.11 (see project/build.properties)
 - see chisel/scala version in build.sbt
 - For FIR, scipy is used.
 
@@ -31,7 +31,7 @@ or
 sbt app/run
 ```
 
-ALSO, the global params can be changed in src/utils/config.scala
+ALSO, the global params can be changed in src/global/config.scala
 
 ## Run AutoTest
 

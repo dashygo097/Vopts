@@ -1,6 +1,6 @@
 package app
 import sampler.{UpSamplerCore, ScaledDownSamplerCore}
-import global.Float
+import utils.Float
 
 import chisel3._
 

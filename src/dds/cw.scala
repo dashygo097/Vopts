@@ -1,5 +1,5 @@
 package dds
-import global.{Float, Config}
+import utils.{Float, Config}
 
 import scala.math._
 

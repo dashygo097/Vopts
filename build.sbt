@@ -4,9 +4,9 @@ ThisBuild / organization     := "dashygo097"
 
 val chiselVersion = "6.7.0"
 
-lazy val global = (project in file("src/global"))
+lazy val utils = (project in file("src/utils"))
   .settings(
-    name := "global",
+    name := "utils",
     libraryDependencies ++= Seq(
       "org.chipsalliance" %% "chisel" % chiselVersion,
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
@@ -27,7 +27,7 @@ lazy val global = (project in file("src/global"))
 
 
 lazy val dds = (project in file("src/dds"))
-  .dependsOn(global)
+  .dependsOn(utils)
   .settings(
     name := "dds",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -35,7 +35,7 @@ lazy val dds = (project in file("src/dds"))
   )
 
 lazy val fft = (project in file("src/fft"))
-  .dependsOn(global)
+  .dependsOn(utils)
   .settings(
     name := "fft",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -43,7 +43,7 @@ lazy val fft = (project in file("src/fft"))
   )
 
 lazy val fir = (project in file("src/fir"))
-  .dependsOn(dds, global)
+  .dependsOn(dds, utils)
   .settings(
     name := "fir",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -51,7 +51,7 @@ lazy val fir = (project in file("src/fir"))
   )
 
 lazy val fm = (project in file("src/fm"))
-  .dependsOn(global, dds, fir)
+  .dependsOn(utils, dds, fir)
   .settings(
     name := "fm",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -59,7 +59,7 @@ lazy val fm = (project in file("src/fm"))
   )
 
 lazy val sampler = (project in file("src/sampler"))
-  .dependsOn(global)
+  .dependsOn(utils)
   .settings(
     name := "sampler",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -67,7 +67,7 @@ lazy val sampler = (project in file("src/sampler"))
   )
 
 lazy val pwm = (project in file("src/pwm"))
-  .dependsOn(global)
+  .dependsOn(utils)
   .settings(
     name := "pwm",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -75,7 +75,7 @@ lazy val pwm = (project in file("src/pwm"))
   )
 
 lazy val uart = (project in file("src/uart"))
-  .dependsOn(global)
+  .dependsOn(utils)
   .settings(
     name := "uart",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -83,7 +83,7 @@ lazy val uart = (project in file("src/uart"))
   )
 
 lazy val mem = (project in file("src/mem"))
-  .dependsOn(global)
+  .dependsOn(utils)
   .settings(
     name := "mem",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -91,7 +91,7 @@ lazy val mem = (project in file("src/mem"))
   )
 
 lazy val fmc = (project in file("src/fmc"))
-  .dependsOn(global, mem)
+  .dependsOn(utils, mem)
   .settings(
     name := "fmc",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -99,7 +99,7 @@ lazy val fmc = (project in file("src/fmc"))
   )
 
 lazy val spi = (project in file("src/spi"))
-  .dependsOn(global, mem)
+  .dependsOn(utils, mem)
   .settings(
     name := "spi",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -108,7 +108,7 @@ lazy val spi = (project in file("src/spi"))
 
 
 lazy val app = (project in file("app"))
-  .dependsOn(global, dds, fft, fir, sampler, fm, pwm, uart, fmc, mem, spi)
+  .dependsOn(utils, dds, fft, fir, sampler, fm, pwm, uart, fmc, mem, spi)
   .settings(
     name := "app",
     Compile / unmanagedSourceDirectories += baseDirectory.value,

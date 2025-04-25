@@ -1,4 +1,4 @@
-package global
+package utils
 
 trait Config {
   // Overall config

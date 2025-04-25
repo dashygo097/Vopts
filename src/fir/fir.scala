@@ -1,5 +1,5 @@
 package fir
-import global.{Float, Config}
+import utils.{Float, Config}
 
 import scala.sys.process._
 
