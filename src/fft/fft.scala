@@ -1,5 +1,5 @@
 package fft
-import global.{Complex, Config}
+import utils.{Complex, Config}
 
 import scala.math._
 

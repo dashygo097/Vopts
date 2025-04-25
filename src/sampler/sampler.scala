@@ -1,5 +1,5 @@
 package sampler 
-import global.{Float, Config, FloatConverterCore}
+import utils.{Float, Config, FloatConverterCore}
 
 import math.pow
 

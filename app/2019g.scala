@@ -1,6 +1,6 @@
 package app
 
-import global._
+import utils._
 import fm.{FMCore, DeFMCore}
 import sampler.{UpSamplerCore, ScaledDownSamplerCore}
 
@@ -16,7 +16,7 @@ class TxCore extends Module {
   val io = IO(new TxCoreIO)
 
   val upsampler = Module(new UpSamplerCore(12))
-  val fm = Module(new FMCore(1000000, 500000))
+  val fm = Module(new FMCore(1000000, 10000))
   val downsampler = Module(new ScaledDownSamplerCore(14, 4))
 
   upsampler.io.in := io.in
@@ -26,6 +26,6 @@ class TxCore extends Module {
   io.out := downsampler.io.out
 }
 
-object TX extends App {
+object TX_2019G extends App {
   VerilogEmitter.parse(new TxCore, "2019g_tx.sv")
 }

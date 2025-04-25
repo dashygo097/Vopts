@@ -2,7 +2,7 @@ package app
 
 import dds.CWCore
 import sampler.ScaledDownSamplerCore
-import global.Float
+import utils.Float
 
 import chisel3._
 
