@@ -34,7 +34,7 @@ class ModFMCore(carrierFreq: Int, deltaFreq: Int, modScale: Int) extends Module 
   val io = IO(new ModFMIO)
   val trig = Module(new dds.TrigCore(carrierFreq))
 
-  val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * modScale).toInt
+  val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> bp)
   val deviationModed = ((modScale.U * io.mod.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
 
