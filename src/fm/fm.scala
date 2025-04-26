@@ -35,11 +35,11 @@ class ModFMCore(carrierFreq: Int, deltaFreq: Int, modScale: Int) extends Module 
   val trig = Module(new dds.TrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
-  val deviation = ((io.in.value * deviationFactor.S) >> bp)
-  val deviationModed = ((modScale.U * io.mod.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+  val deviation = ((io.in.value * deviationFactor.S) >> bp).asUInt + 
+    ((io.mod.value * deviationFactor.S) >> bp).asUInt
 
   trig.io.mag := (new Float).fromDouble(1.0)
-  trig.io.phaseDelta := DataWrapper(deviationModed) // Convert combitional signal to sequential signal
+  trig.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal
 
   io.out := trig.io.out
 }
