@@ -1,4 +1,4 @@
-package dds
+package dds.sine
 import utils.{Float, Config}
 
 import scala.math._

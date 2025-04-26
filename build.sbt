@@ -34,26 +34,26 @@ lazy val dds = (project in file("src/dds"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val fft = (project in file("src/fft"))
+lazy val dsp = (project in file("src/dsp"))
   .dependsOn(utils)
   .settings(
-    name := "fft",
+    name := "dsp",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val fir = (project in file("src/fir"))
+lazy val filter = (project in file("src/filter"))
   .dependsOn(dds, utils)
   .settings(
-    name := "fir",
+    name := "filter",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val fm = (project in file("src/fm"))
-  .dependsOn(utils, dds, fir)
+lazy val mod = (project in file("src/mod"))
+  .dependsOn(utils, dds, filter, dsp)
   .settings(
-    name := "fm",
+    name := "mod",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
@@ -66,18 +66,10 @@ lazy val sampler = (project in file("src/sampler"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val pwm = (project in file("src/pwm"))
-  .dependsOn(utils)
+lazy val com = (project in file("src/com"))
+  .dependsOn(utils, mem)
   .settings(
-    name := "pwm",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
-  )
-
-lazy val uart = (project in file("src/uart"))
-  .dependsOn(utils)
-  .settings(
-    name := "uart",
+    name := "com",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
@@ -90,29 +82,16 @@ lazy val mem = (project in file("src/mem"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val fmc = (project in file("src/fmc"))
-  .dependsOn(utils, mem)
-  .settings(
-    name := "fmc",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
-  )
-
-lazy val spi = (project in file("src/spi"))
-  .dependsOn(utils, mem)
-  .settings(
-    name := "spi",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),                 
-  )
-
 
 lazy val app = (project in file("app"))
-  .dependsOn(utils, dds, fft, fir, sampler, fm, pwm, uart, fmc, mem, spi)
+  .dependsOn(utils, dds, dsp, sampler, filter, mem, com, mod)
   .settings(
     name := "app",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
+
+
+
 
 

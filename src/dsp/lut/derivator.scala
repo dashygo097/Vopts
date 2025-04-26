@@ -1,4 +1,4 @@
-package fm
+package dsp.lut
 import utils.Float
 
 import chisel3._
@@ -17,7 +17,7 @@ class DerivatorCore extends Module {
   io.out := io.in - prev
 }
 
-object DerivatorCore {
+object Derivator {
   def apply(in: Float): Float = {
     val module = Module(new DerivatorCore)
     module.io.in := in

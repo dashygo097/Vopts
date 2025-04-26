@@ -9,6 +9,7 @@ pre:
 	@mkdir -p $(BUILD_DIR)/obj_dir
 
 build: pre bloop-install
+	@sbt reload
 	@sbt compile
 
 run:

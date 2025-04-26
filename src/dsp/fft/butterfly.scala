@@ -1,4 +1,4 @@
-package fft
+package dsp.fft
 import utils.{Complex, Config}
 
 import chisel3._

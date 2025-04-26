@@ -1,17 +1,17 @@
-package uart
+package com.uart
 import utils.Config
 
 import chisel3._
 import chisel3.util._
 
-class UartTXCoreIO extends Bundle {
+class UartTXIO extends Bundle {
   val txd = Output(Bool())
   val channel = Flipped(Decoupled(UInt(8.W))) 
   val tick = Output(Bool())
   val busy = Output(Bool())
 }
 
-class UartRXCoreIO extends Bundle {
+class UartRXIO extends Bundle {
   val rxd = Input(Bool())
   val channel = Decoupled(UInt(8.W))
   val tick = Output(Bool())
@@ -19,7 +19,7 @@ class UartRXCoreIO extends Bundle {
 }
 
 class UartTXCore(baudRate: Int) extends Module with Config {
-  val io = IO(new UartTXCoreIO)
+  val io = IO(new UartTXIO)
   val baudTickDivider = clkFreq / baudRate
   
   val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
@@ -74,7 +74,7 @@ class UartTXCore(baudRate: Int) extends Module with Config {
 }
 
 class UartRXCore(baudRate: Int) extends Module with Config {
-  val io = IO(new UartRXCoreIO)
+  val io = IO(new UartRXIO)
   val baudTickDivider = clkFreq / baudRate
   
   val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
@@ -129,8 +129,8 @@ class UartRXCore(baudRate: Int) extends Module with Config {
 
 class UartCore(baudRate: Int) extends Module with Config {
   val io = IO(new Bundle {
-    val tx = new UartTXCoreIO
-    val rx = new UartRXCoreIO
+    val tx = new UartTXIO
+    val rx = new UartRXIO
   })
   
   val tx = Module(new UartTXCore(baudRate))

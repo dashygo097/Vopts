@@ -3,21 +3,21 @@ package mem
 import chisel3._
 import chisel3.util._
 
-class RWCoreIO extends Bundle {
+class RWIO extends Bundle {
   val we = Input(Bool())
   val re = Input(Bool())
 }
 
-class SRAMCoreIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+class SRAMIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val addr = Input(UInt(addrWidth.W))
   val dataIn = Input(UInt(dataWidth.W))
   val dataOut = Output(UInt(dataWidth.W))
 
-  val en = new RWCoreIO
+  val en = new RWIO
 }
 
 class SRAMCore(addrWidth: Int, dataWidth: Int) extends Module {
-  val io = IO(new SRAMCoreIO(addrWidth, dataWidth))
+  val io = IO(new SRAMIO(addrWidth, dataWidth))
 
   val mem = SyncReadMem(1 << addrWidth, UInt(dataWidth.W))
 

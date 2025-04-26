@@ -1,6 +1,6 @@
 package app
 
-import dds.CWCore
+import dds.sine.CWCore
 import sampler.ScaledDownSamplerCore
 import utils.Float
 
@@ -14,7 +14,7 @@ class DACoreIO extends Bundle {
 class DACore extends Module {
   val io = IO(new DACoreIO)
   val dds = Module(new CWCore(0.5, 50000, 0))
-  val sampler = Module(new ScaledDownSamplerCore(14, 4))
+  val sampler = Module(new ScaledDownSamplerCore(14, 13, 4))
   sampler.io.ctrl := io.ctrl
   sampler.io.in := dds.io.out
   io.out := sampler.io.out

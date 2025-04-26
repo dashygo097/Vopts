@@ -1,4 +1,4 @@
-package uart
+package com.uart
 
 import utils.Config
 
@@ -6,14 +6,14 @@ import chisel3._
 import chisel3.util._
 
 // The serialized Uart interface
-class SerialUartTXCoreIO extends Bundle {
+class SerialUartTXIO extends Bundle {
   val txd = Output(Bool())
   val channel = Flipped(Decoupled(Bool()))
   val tick = Output(Bool())
   val busy = Output(Bool())
 }
 
-class SerialUartRXCoreIO extends Bundle {
+class SerialUartRXIO extends Bundle {
   val rxd = Input(Bool())
   val channel = Decoupled(Bool()) 
   val tick = Output(Bool())
@@ -21,7 +21,7 @@ class SerialUartRXCoreIO extends Bundle {
 }
 
 class SerialUartTXCore(baudRate: Int) extends Module with Config {
-  val io = IO(new SerialUartTXCoreIO)
+  val io = IO(new SerialUartTXIO)
   val baudTickDivider = clkFreq / baudRate
 
   val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
@@ -88,7 +88,7 @@ class SerialUartTXCore(baudRate: Int) extends Module with Config {
 }
 
 class SerialUartRXCore(baudRate: Int) extends Module with Config {
-  val io = IO(new SerialUartRXCoreIO)
+  val io = IO(new SerialUartRXIO)
   val baudTickDivider = clkFreq / baudRate
 
   val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
@@ -157,8 +157,8 @@ class SerialUartRXCore(baudRate: Int) extends Module with Config {
 
 class SerialUartCore(baudRate: Int) extends Module with Config {
   val io = IO(new Bundle {
-    val tx = new SerialUartTXCoreIO
-    val rx = new SerialUartRXCoreIO
+    val tx = new SerialUartTXIO
+    val rx = new SerialUartRXIO
   })
 
   val tx = Module(new SerialUartTXCore(baudRate))
