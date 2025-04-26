@@ -30,17 +30,18 @@ class FMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   io.out := trig.io.out
 }
 
-class ModFMCore(carrierFreq: Int, deltaFreq: Int, modScale: Int) extends Module with Config {
+class ModFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val io = IO(new ModFMIO)
-  val trig = Module(new dds.TrigCore(carrierFreq))
+  val sine = Module(new dds.SineCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
-  val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt + 
-    ((io.mod.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+  val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+
+  sine.io.mag := (new Float).fromDouble(1.0)
+  sine.io.freqRatio := io.mod
+  sine.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal 
+
+  io.out := sine.io.out
 
 
-  trig.io.mag := (new Float).fromDouble(1.0)
-  trig.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal
-
-  io.out := trig.io.out
 }
