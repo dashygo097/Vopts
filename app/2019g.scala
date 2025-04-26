@@ -35,9 +35,10 @@ class TxCore extends Module {
 
 class TxCore_Advanced extends Module {
   val io = IO(new TxCoreIO_Advanced)
+
   val upsampler = Module(new UpSamplerCore(12))
   val upsampler_mod = Module(new UpSamplerCore(12))
-  val fm = Module(new ModFMCore(100000000, 10000, 30))
+  val fm = Module(new ModFMCore(1000000, 10000))
   val downsampler = Module(new ScaledDownSamplerCore(14, 4))
 
   upsampler.io.in := io.in
