@@ -1,4 +1,4 @@
-package fm
+package dsp.lut
 import utils.Float
 
 import chisel3._
@@ -16,7 +16,7 @@ class AbsCore extends Module {
   io.out := Mux(io.in > zero, io.in, zero - io.in)
 }
 
-object AbsCore {
+object Abs {
   def apply(in: Float): Float = {
     val abs = Module(new AbsCore)
     abs.io.in := in

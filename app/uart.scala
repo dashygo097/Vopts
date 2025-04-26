@@ -1,6 +1,6 @@
 package app
 
-import uart.{UartCore, SerialUartCore}
+import com.uart.{UartCore, SerialUartCore}
 
 object UART extends App {
   VerilogEmitter.parse(new UartCore(115200), "uart.sv")

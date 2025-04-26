@@ -1,4 +1,4 @@
-package fm
+package dsp.lut
 import utils.Float
 
 import chisel3._

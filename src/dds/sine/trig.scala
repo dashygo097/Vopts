@@ -1,4 +1,4 @@
-package dds
+package dds.sine
 import utils.{Float, Config}
 
 import scala.math._
@@ -6,20 +6,18 @@ import scala.math._
 import chisel3._
 import chisel3.util._
 
-class SineIO extends Bundle with Config {
+class TrigIO extends Bundle with Config {
   val mag = Input(new Float)
-  val freqRatio = Input(new Float)
   val phaseDelta = Input(UInt(phaseWidth.W))
   val out = Output(new Float)
 }
 
-class SineCore(baseFreq: Int) extends Module with Config {
-  val io = IO(new SineIO)
+class TrigCore(freq: Int) extends Module with Config {
+  val io = IO(new TrigIO)
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
 
-  val poff = (baseFreq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
-  val poffDelta = ((io.freqRatio.value * baseFreq.S) << phaseWidth >> bp) / sampleFreq.S
+  val poff = (freq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
 
   val sine_rom = VecInit(
     (0 until lutWidth).map { i => 
@@ -29,10 +27,8 @@ class SineCore(baseFreq: Int) extends Module with Config {
     }
   )
 
-  phase := phase + io.phaseDelta + poff + poffDelta.asUInt
+  phase := phase + io.phaseDelta + poff
 
   lutAddr := phase(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth))
   io.out := sine_rom(lutAddr) * io.mag
 }
-
-

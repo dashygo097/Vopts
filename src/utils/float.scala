@@ -10,6 +10,14 @@ class Float(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config wit
 
   val value = SInt(_dataWidth.W)
 
+  def get_datawidth(): Int  = {
+    _dataWidth
+  }
+
+  def get_bp(): Int = {
+    _bp
+  }
+
   def fromDouble(value: Double): Float = {
     val scale = pow(2, _bp).toInt
     val fl = Wire(new Float)

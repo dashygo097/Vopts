@@ -1,6 +1,6 @@
 package app
 
-import pwm.{PWMCore, ModPWMCore}
+import dds.pwm.{PWMCore, ModPWMCore}
 
 object PWM extends App {
   VerilogEmitter.parse(new PWMCore(1000000, 0.2), "pwm.sv")

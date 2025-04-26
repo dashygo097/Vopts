@@ -1,8 +1,8 @@
-package fmc
+package com.fmc
 
 import chisel3._
 
-class FMCInterfaceCoreIO extends Bundle {
+class FMCInterfaceIO extends Bundle {
   val clk = Input(Bool())
   val we = Input(Bool())
   val ne = Input(Bool())

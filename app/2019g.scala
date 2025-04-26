@@ -1,8 +1,8 @@
 package app
 
 import utils._
-import fm.{FMCore, ModFMCore}
-import sampler.{UpSamplerCore, ScaledDownSamplerCore}
+import mod.fm.{FMCore, ModFMCore}
+import sampler.{UpSamplerCore, ScaledDownSamplerCore, UpSample}
 
 import chisel3._
 
@@ -22,12 +22,10 @@ class TxCoreIO_Advanced extends Bundle {
 class TxCore extends Module {
   val io = IO(new TxCoreIO)
 
-  val upsampler = Module(new UpSamplerCore(12))
   val fm = Module(new FMCore(10000000, 10000))
-  val downsampler = Module(new ScaledDownSamplerCore(14, 4))
+  val downsampler = Module(new ScaledDownSamplerCore(14, 13, 4))
 
-  upsampler.io.in := io.in
-  fm.io.in := DataWrapper(upsampler.io.out)
+  fm.io.in := DataWrapper(UpSample(io.in))
   downsampler.io.ctrl := io.ctrl
   downsampler.io.in := DataWrapper(fm.io.out * 0.25)
   io.out := downsampler.io.out
@@ -36,14 +34,12 @@ class TxCore extends Module {
 class TxCore_Advanced extends Module {
   val io = IO(new TxCoreIO_Advanced)
 
-  val upsampler = Module(new UpSamplerCore(12))
-  val upsampler_mod = Module(new UpSamplerCore(12))
-  val fm = Module(new ModFMCore(1000000, 10000))
-  val downsampler = Module(new ScaledDownSamplerCore(14, 4))
+  val upsampler_mod = Module(new UpSamplerCore(12, 11))
+  val fm = Module(new ModFMCore(10000000, 10000))
+  val downsampler = Module(new ScaledDownSamplerCore(14, 13, 4))
 
-  upsampler.io.in := io.in
   upsampler_mod.io.in := io.mod
-  fm.io.in := DataWrapper(upsampler.io.out)
+  fm.io.in := DataWrapper(UpSample(io.in))
   fm.io.mod := DataWrapper(upsampler_mod.io.out)
   downsampler.io.ctrl := io.ctrl
   downsampler.io.in := DataWrapper(fm.io.out * 0.25)
