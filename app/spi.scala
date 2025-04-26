@@ -1,7 +1,7 @@
 package app
 
-import spi.SPIMasterReceiver
+import spi.SPIMasterCore
 
-object SPIMasterReceiver extends App {
-  VerilogEmitter.parse(new SPIMasterReceiver(12, 5), "spi.sv")
+object SPIMaster extends App {
+  VerilogEmitter.parse(new SPIMasterCore(12, 100), "spi.sv")
 }
