@@ -1,4 +1,4 @@
-package dds.sine
+package dds.trig
 import utils.{Float, Config}
 
 import scala.math._
@@ -6,14 +6,14 @@ import scala.math._
 import chisel3._
 import chisel3.util._
 
-class TrigIO extends Bundle with Config {
+class BaseTrigIO extends Bundle with Config {
   val mag = Input(new Float)
   val phaseDelta = Input(UInt(phaseWidth.W))
   val out = Output(new Float)
 }
 
-class TrigCore(freq: Int) extends Module with Config {
-  val io = IO(new TrigIO)
+class BaseTrigCore(freq: Int) extends Module with Config {
+  val io = IO(new BaseTrigIO)
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
 

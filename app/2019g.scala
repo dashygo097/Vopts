@@ -2,7 +2,6 @@ package app
 
 import utils._
 import mod.fm.{FMCore, ModFMCore}
-import sampler.{UpSamplerCore, ScaledDownSamplerCore, UpSample}
 
 import chisel3._
 

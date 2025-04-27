@@ -1,4 +1,4 @@
-package filter.fir
+package dsp.filter
 import utils.{Float, Config}
 
 import scala.sys.process._
@@ -13,7 +13,7 @@ class FIRIO extends Bundle {
 }
 
 class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Module with Config{
-  val pyPath = "src/filter/fir/fir.py"
+  val pyPath = "src/dsp/filter/fir.py"
   val command = filterType match {
     case "bp" => Seq("python3",  pyPath, "bandpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString, cutoff(1).toString)
     case "lp"  => Seq("python3", pyPath ,"lowpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString)

@@ -1,6 +1,6 @@
 package mod.fm
 import utils.{Float, Config}
-import filter.fir.FIRCore
+import dsp.filter.FIRCore
 import dsp.lut.{Derivator, Abs}
 
 import scala.math._

@@ -1,7 +1,7 @@
 package mod.fm
 
 import utils.{Float, Config, DataWrapper}
-import dds.sine.SineCore
+import dds.trig.TrigCore
 
 import scala.math.pow
 
@@ -15,7 +15,7 @@ class ModFMIO extends Bundle {
 
 class ModFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val io = IO(new ModFMIO)
-  val sine = Module(new SineCore(carrierFreq))
+  val sine = Module(new TrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt

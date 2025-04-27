@@ -9,7 +9,7 @@ class LimiterIO extends Bundle {
   val out = Output(new Float)
 }
 
-class Limiter(threshold: Double) extends Module {
+class LimiterCore(threshold: Double) extends Module {
   val io = IO(new LimiterIO)
   val thresholdFloat = Float(threshold)
   val zero = Float(0.0)

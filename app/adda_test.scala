@@ -1,6 +1,5 @@
 package app
-import sampler.{UpSample, ScaledDownSamplerCore}
-import utils.Float
+import utils._
 
 import chisel3._
 
