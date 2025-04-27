@@ -10,4 +10,11 @@ trait Config {
   val sampleFreq: Int = clkFreq
   val lutWidth: Int = 256
   val phaseWidth: Int = 24
+
+  // FFT Default Params
+  val defaultFFTSize: Int = 256
+
+  // Mod Default Params
+  val defaultCarrierFreq: Int = 1000000 // 1MHz
+  val defaultFMDeltaFreq: Int = 500000 // 500kHz
 }
