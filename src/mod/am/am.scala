@@ -1,7 +1,7 @@
 package mod.am
 
 import utils.{Float, Config}
-import dds.sine.TrigCore
+import dds.trig.BaseTrigCore
 
 import chisel3._
 import chisel3.util._
@@ -13,7 +13,7 @@ class AMIO extends Bundle {
 
 class AMCore(carrierFreq: Int) extends Module with Config {
   val io = IO(new AMIO)
-  val trig = Module(new TrigCore(carrierFreq))
+  val trig = Module(new BaseTrigCore(carrierFreq))
 
   trig.io.mag := io.in
   trig.io.phaseDelta := 0.U

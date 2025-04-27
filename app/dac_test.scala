@@ -1,8 +1,7 @@
 package app
 
-import dds.sine.CWCore
-import sampler.ScaledDownSamplerCore
-import utils.Float
+import dds.trig.CWCore
+import utils._
 
 import chisel3._
 

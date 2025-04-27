@@ -1,10 +1,7 @@
-package sampler 
+package utils
 import utils.{Float, Config, FloatConverterCore}
 
-import math.pow
-
 import chisel3._
-import chisel3.util._
 
 class DownSamplerIO(outDataWidth: Int, outBp: Int) extends Bundle with Config {
   val in = Input(new Float)
