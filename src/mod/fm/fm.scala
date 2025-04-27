@@ -1,5 +1,6 @@
 package mod.fm
 import utils.{Float, Config, DataWrapper}
+import dds.sine.{TrigCore, SineCore}
 
 import scala.math._
 
@@ -11,15 +12,9 @@ class FMIO extends Bundle {
   val out = Output(new Float)
 }
 
-class ModFMIO extends Bundle {
-  val mod = Input(new Float)
-  val in = Input(new Float)
-  val out = Output(new Float)
-}
-
 class FMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val io = IO(new FMIO)
-  val trig = Module(new dds.sine.TrigCore(carrierFreq))
+  val trig = Module(new TrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
@@ -30,17 +25,26 @@ class FMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   io.out := trig.io.out
 }
 
-class ModFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
-  val io = IO(new ModFMIO)
-  val sine = Module(new dds.sine.SineCore(carrierFreq))
+object FM extends Config {
+  var _carrierFreq: Int = defaultCarrierFreq
+  var _deltaFreq: Int = defaultFMDeltaFreq
 
-  val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
-  val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+  def apply(in: Float): Float = {
+    val fm = Module(new FMCore(_carrierFreq, _deltaFreq))
+    fm.io.in := in
+    fm.io.out
+  }
 
-  sine.io.mag := (new Float).fromDouble(1.0)
-  sine.io.freqRatio := io.mod
-  sine.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal 
+  def withCarrierFreq(carrierFreq: Int): Unit = {
+    _carrierFreq = carrierFreq
+  }
 
-  io.out := sine.io.out
+  def withDeltaFreq(deltaFreq: Int): Unit = {
+    _deltaFreq = deltaFreq
+  }
+
+  def withConfig(carrierFreq: Int, deltaFreq: Int): Unit = {
+    this.withCarrierFreq(carrierFreq)
+    this.withDeltaFreq(deltaFreq)
+  }
 }
-

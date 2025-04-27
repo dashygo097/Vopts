@@ -5,12 +5,12 @@ import scala.math.pow
 import chisel3._
 
 class Float(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with FloatOps {
-  val _dataWidth = if (s_dataWidth == 0) dataWidth else s_dataWidth
-  val _bp = if (s_bp == -1) bp else s_bp
+  var _dataWidth: Int = if (s_dataWidth == 0) dataWidth else s_dataWidth
+  var _bp: Int = if (s_bp == -1) bp else s_bp
 
-  val value = SInt(_dataWidth.W)
+  val value: SInt = SInt(_dataWidth.W)
 
-  def get_datawidth(): Int  = {
+  def get_datawidth(): Int = {
     _dataWidth
   }
 

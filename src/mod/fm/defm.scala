@@ -25,3 +25,29 @@ class DeFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   lps.io.in := din_abs
   io.out := lps.io.out
 }
+
+object DeFM extends Config {
+  var _carrierFreq = defaultCarrierFreq
+  var _deltaFreq = defaultFMDeltaFreq
+
+  def apply(in: Float): Float = {
+    val defm = Module(new DeFMCore(_carrierFreq, _deltaFreq))
+    defm.io.in := in
+    defm.io.out
+  }
+
+  def withCarrierFreq(carrierFreq: Int): Unit = {
+    _carrierFreq = carrierFreq
+  }
+
+  def withDeltaFreq(deltaFreq: Int): Unit = {
+    _deltaFreq = deltaFreq
+  }
+
+  def withConfig(carrierFreq: Int, deltaFreq: Int): Unit = {
+    this.withCarrierFreq(carrierFreq)
+    this.withDeltaFreq(deltaFreq)
+  }
+}
+
+

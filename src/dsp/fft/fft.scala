@@ -66,3 +66,24 @@ class MDCCore(fftSize: Int) extends Module with Config {
   io.out2 := RegNext(out1 - out_buffers(num_stages - 1)(1))
   io.out_valid := RegNext(cnt === (fftSize - 1).U)
 }
+
+object MDC extends Config {
+  var _fftSize: Int = defaultFFTSize
+
+  def apply(in: Complex): (Complex, Complex) = {
+    val mdc = Module(new MDCCore(_fftSize))
+    mdc.io.in := in
+    mdc.io.in_valid := true.B
+    (mdc.io.out1, mdc.io.out2)
+  }
+
+  def withFFTSize(fftSize: Int): Unit = {
+    _fftSize = fftSize
+  }
+
+  def withConfig(fftSize: Int): Unit = {
+    this.withFFTSize(fftSize)
+  }
+}
+
+
