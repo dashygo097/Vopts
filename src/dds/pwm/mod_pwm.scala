@@ -1,5 +1,5 @@
 package dds.pwm
-import utils.Config
+import utils._
 
 import math.pow
 

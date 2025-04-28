@@ -1,27 +1,28 @@
 BASE_DIR = $(shell pwd)
 BUILD_DIR = $(BASE_DIR)/build
+TESTBENCH_DIR = $(BASE_DIR)/testbench
 
 
-.PHONY: pre run build clean autotest bloop-install
+.PHONY: pre run build clean test bloop-install debug
 
 pre:
 	@mkdir -p $(BUILD_DIR)
-	@mkdir -p $(BUILD_DIR)/obj_dir
+	@mkdir -p $(TESTBENCH_DIR)
 
 build: pre bloop-install
 	@sbt reload
 	@sbt compile
 
-run:
+run: pre
 	@sbt app/run
 
 clean:
-	@rm -rf $(BUILD_DIR)/obj_dir
+	@rm -rf $(TESTBENCH_DIR)/obj_dir
 	@sbt clean bloopInstall
 	@sbt clean
 
-autotest: pre
-	@./autotest.sh
+test: pre
+	@./test.sh
 
 bloop-install:
-	@sbt clean bloopInstall
+	@sbt bloopInstall

@@ -1,5 +1,7 @@
 package dds.trig
-import utils.{Float, Config}
+import utils._
+
+import data.fp.FP
 
 import scala.math._
 
@@ -7,9 +9,9 @@ import chisel3._
 import chisel3.util._
 
 class BaseTrigIO extends Bundle with Config {
-  val mag = Input(new Float)
+  val mag = Input(new FP)
   val phaseDelta = Input(UInt(phaseWidth.W))
-  val out = Output(new Float)
+  val out = Output(new FP)
 }
 
 class BaseTrigCore(freq: Int) extends Module with Config {
@@ -23,7 +25,7 @@ class BaseTrigCore(freq: Int) extends Module with Config {
     (0 until lutWidth).map { i => 
       val angle = 2 * Pi * i / lutWidth
       val value = sin(angle)
-      Float(value)
+      FP(value)
     }
   )
 

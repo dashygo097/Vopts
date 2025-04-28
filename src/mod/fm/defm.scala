@@ -1,5 +1,7 @@
 package mod.fm
-import utils.{Float, Config}
+import utils._
+
+import data.fp.FP
 import dsp.filter.FIRCore
 import dsp.lut.{Derivator, Abs}
 
@@ -9,15 +11,15 @@ import chisel3._
 import chisel3.util._
 
 class DeFMIO extends Bundle {
-  val in = Input(new Float)
-  val out = Output(new Float)
+  val in = Input(new FP)
+  val out = Output(new FP)
 }
 
 class DeFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val io = IO(new DeFMIO)
   val bps = Module(new FIRCore("bp", Seq(carrierFreq - deltaFreq * 2, carrierFreq + deltaFreq * 2), 64))
-  val din = Wire(new Float)
-  val din_abs = Wire(new Float)
+  val din = Wire(new FP)
+  val din_abs = Wire(new FP)
   val lps = Module(new FIRCore("lp", Seq(carrierFreq / 20), 64))
   bps.io.in := io.in
   din := Derivator(bps.io.out)
@@ -30,7 +32,7 @@ object DeFM extends Config {
   var _carrierFreq = defaultCarrierFreq
   var _deltaFreq = defaultFMDeltaFreq
 
-  def apply(in: Float): Float = {
+  def apply(in: FP): FP = {
     val defm = Module(new DeFMCore(_carrierFreq, _deltaFreq))
     defm.io.in := in
     defm.io.out

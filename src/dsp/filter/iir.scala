@@ -1,6 +1,7 @@
 package dsp.filter
+import utils._
 
-import utils.{Float, Config}
+import data.fp.FP
 
 import scala.sys.process._
 
@@ -8,8 +9,8 @@ import chisel3._
 import chisel3.util._
 
 class IIRIO extends Bundle {
-  val in = Input(new Float)
-  val out = Output(new Float)
+  val in = Input(new FP)
+  val out = Output(new FP)
 }
 
 class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Module with Config {
@@ -29,11 +30,11 @@ class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Modul
 
   val io = IO(new IIRIO)
 
-  val b = VecInit(bCoeffs.map(Float(_)))
-  val a = VecInit(aCoeffs.map(Float(_)))
+  val b = VecInit(bCoeffs.map(FP(_)))
+  val a = VecInit(aCoeffs.map(FP(_)))
 
-  val xRegs = RegInit(VecInit(Seq.fill(b.length)(Float(0.0))))
-  val yRegs = RegInit(VecInit(Seq.fill(a.length)(Float(0.0))))
+  val xRegs = RegInit(VecInit(Seq.fill(b.length)(FP(0.0))))
+  val yRegs = RegInit(VecInit(Seq.fill(a.length)(FP(0.0))))
 
   xRegs := io.in +: xRegs.init
   yRegs := io.out +: yRegs.init

@@ -1,5 +1,7 @@
 package dsp.fft
-import utils.{Complex, Config}
+import utils._
+
+import data.fp.FPComplex
 
 import scala.math._
 
@@ -7,10 +9,10 @@ import chisel3._
 import chisel3.util._
 
 class MDCIO extends Bundle with Config {
-  val in = Input(new Complex)
+  val in = Input(new FPComplex)
   val in_valid = Input(Bool())
-  val out1 = Output(new Complex)
-  val out2 = Output(new Complex)
+  val out1 = Output(new FPComplex)
+  val out2 = Output(new FPComplex)
   val out_valid = Output(Bool())
 }
 
@@ -27,19 +29,19 @@ class MDCCore(fftSize: Int) extends Module with Config {
       val angle = 2 * Pi * i / fftSize
       val real = cos(angle)
       val imag = sin(angle)
-      Complex(real, imag)
+      FPComplex(real, imag)
     }
     rom
   }
 
-  def twiddle(stage: Int, i: UInt): Complex = {
+  def twiddle(stage: Int, i: UInt): FPComplex = {
     val tw = VecInit(twiddle_rom(stage).map(x => x))
     tw(i)
   }
 
   val out_buffers = VecInit(Seq.fill(num_stages)
     (VecInit(Seq.fill(2)
-      (Complex(0.0, 0.0))
+      (FPComplex(0.0, 0.0))
       )
     )
   )
@@ -70,7 +72,7 @@ class MDCCore(fftSize: Int) extends Module with Config {
 object MDC extends Config {
   var _fftSize: Int = defaultFFTSize
 
-  def apply(in: Complex): (Complex, Complex) = {
+  def apply(in: FPComplex): (FPComplex, FPComplex) = {
     val mdc = Module(new MDCCore(_fftSize))
     mdc.io.in := in
     mdc.io.in_valid := true.B

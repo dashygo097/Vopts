@@ -1,14 +1,15 @@
 package dsp.fft
-import utils.Complex
+
+import data.fp.FPComplex
 
 import chisel3._
 
 class CommutatorIO extends Bundle {
-  val in1 = Input(new Complex)
-  val in2 = Input(new Complex)
+  val in1 = Input(new FPComplex)
+  val in2 = Input(new FPComplex)
   val sel = Input(Bool())
-  val out1 = Output(new Complex)
-  val out2 = Output(new Complex)
+  val out1 = Output(new FPComplex)
+  val out2 = Output(new FPComplex)
 }
 
 class Commutator extends Module {
@@ -18,7 +19,7 @@ class Commutator extends Module {
 }
 
 object Commutator {
-  def apply(in1: Complex, in2: Complex, sel: Bool): (Complex, Complex) = {
+  def apply(in1: FPComplex, in2: FPComplex, sel: Bool): (FPComplex, FPComplex) = {
     val commutator = Module(new Commutator)
     commutator.io.in1 := in1
     commutator.io.in2 := in2

@@ -1,10 +1,11 @@
 package mod.am
+import utils._
 
-import utils.{Float, Config}
+import data.fp.FP
 
 import chisel3._
 
 class DeAMIO extends Bundle {
-  val in = Input(new Float)
-  val out = Output(new Float)
+  val in = Input(new FP)
+  val out = Output(new FP)
 }
