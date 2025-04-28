@@ -1,7 +1,7 @@
 package mod.am
 import utils._
 
-import data.fp.FP
+import datatype.fp.FP
 import dds.trig.BaseTrigCore
 
 import chisel3._

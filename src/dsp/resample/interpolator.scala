@@ -1,6 +1,6 @@
 package dsp.resample
 
-import data.fp.FP
+import datatype.fp.FP
 
 import chisel3._
 

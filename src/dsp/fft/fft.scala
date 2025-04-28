@@ -1,7 +1,7 @@
 package dsp.fft
 import utils._
 
-import data.fp.FPComplex
+import datatype.fp.FPComplex
 
 import scala.math._
 
