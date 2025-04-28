@@ -1,7 +1,7 @@
 package mod.fm
 import utils._
 
-import data.fp.FP
+import datatype.fp.FP
 import dsp.filter.FIRCore
 import dsp.lut.{Derivator, Abs}
 

@@ -1,7 +1,7 @@
 package dds.noise
 import utils._
 
-import data.fp.FP
+import datatype.fp.FP
 
 import chisel3._
 import chisel3.util.random._

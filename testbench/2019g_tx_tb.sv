@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`include "../build/2019g_tx.sv"
 
 module Tx_tb;
   reg clock;

@@ -1,7 +1,7 @@
 package dsp.filter
 import utils._
 
-import data.fp.FP
+import datatype.fp.FP
 
 import scala.sys.process._
 

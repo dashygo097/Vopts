@@ -1,4 +1,4 @@
-package data.fp 
+package datatype.fp 
 import utils._
 
 import chisel3._

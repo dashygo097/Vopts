@@ -1,6 +1,6 @@
 package dsp.fft
 
-import data.fp.FPComplex
+import datatype.fp.FPComplex
 
 import chisel3._
 
