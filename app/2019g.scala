@@ -1,21 +1,22 @@
 package app
 
 import utils._
+import data.fp._
 import mod.fm.{FMCore, ModFMCore}
 
 import chisel3._
 
 class TxCoreIO extends Bundle {
   val ctrl = Input(UInt(4.W))
-  val in = Input(new Float(12, 11))
-  val out = Output(new Float(14, 13))
+  val in = Input(new FP(12, 11))
+  val out = Output(new FP(14, 13))
 }
 
 class TxCoreIO_Advanced extends Bundle {
   val ctrl = Input(UInt(4.W))
-  val mod = Input(new Float(12, 11))
-  val in = Input(new Float(12, 11))
-  val out = Output(new Float(14, 13))
+  val mod = Input(new FP(12, 11))
+  val in = Input(new FP(12, 11))
+  val out = Output(new FP(14, 13))
 }
 
 class TxCore extends Module {

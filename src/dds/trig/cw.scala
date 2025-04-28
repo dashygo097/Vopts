@@ -1,5 +1,7 @@
 package dds.trig
-import utils.{Float, Config}
+import utils._
+
+import data.fp.FP
 
 import scala.math._
 
@@ -7,7 +9,7 @@ import chisel3._
 import chisel3.util._
 
 class CWIO extends Bundle {
-  val out = Output(new Float)
+  val out = Output(new FP)
 }
 
 class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
@@ -20,7 +22,7 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
     (0 until lutWidth).map { i => 
       val angle = 2 * Pi * i / lutWidth + pha * Pi / 180
       val value = sin(angle) * mag
-      Float(value)
+      FP(value)
     }
   )
 

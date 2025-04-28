@@ -1,17 +1,18 @@
 package dsp.lut
-import utils.Float
+
+import data.fp.FP
 
 import chisel3._
 import chisel3.util._
 
 class LimiterIO extends Bundle {
-  val in = Input(new Float)
-  val out = Output(new Float)
+  val in = Input(new FP)
+  val out = Output(new FP)
 }
 
 class LimiterCore(threshold: Double) extends Module {
   val io = IO(new LimiterIO)
-  val thresholdFloat = Float(threshold)
-  val zero = Float(0.0)
-  io.out := Mux(io.in > thresholdFloat, thresholdFloat, Mux(io.in < zero - thresholdFloat, zero - thresholdFloat, io.in))
+  val thresholdValue = FP(threshold)
+  val zero = FP(0.0)
+  io.out := Mux(io.in > thresholdValue, thresholdValue, Mux(io.in < zero - thresholdValue, zero - thresholdValue, io.in))
 } 

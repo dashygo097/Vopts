@@ -1,11 +1,11 @@
 #!/bin/bash
 
 BASE_DIR=$(pwd)
-BUILD_DIR="$BASE_DIR/build"
+TESTBENCH_DIR="$BASE_DIR/testbench"
 
 run_test() {
-	cd "$BUILD_DIR" || exit
-	printf "\e[1;31m[NOTE] Choose the testbench.\n\e[0m"
+	cd "$TESTBENCH_DIR" || exit
+	printf "\e[1;31m[INFO] Choose the testbench.\n\e[0m"
 
 	tb_file=$(find . -type f -name "*_tb.sv" -o -name "*_tb.v" | fzf)
 	module_file=$(basename "$tb_file" | sed 's/_tb\.sv//')
@@ -19,6 +19,10 @@ run_test() {
 	# run if .vcd file exists
 	if [ -f "$(basename "$module_file" "$ext").vcd" ]; then
 		gtkwave "$(basename "$module_file" "$ext").vcd"
+	else 
+		printf "\e[1;31m[INFO] No corresponding .vcd file found.\n\e[0m"
+		vcd_file=$(find . -type f -name "*.vcd" | fzf)
+		gtkwave "$vcd_file"
 	fi
 
 	cd "$BASE_DIR" || exit

@@ -1,15 +1,17 @@
 package dsp.fft
-import utils.{Complex, Config}
+import utils._
+
+import data.fp.FPComplex
 
 import chisel3._
 import chisel3.util._
 
 class ButterflyIO extends Bundle {
-  val in1 = Input(new Complex)
-  val in2 = Input(new Complex)
-  val wn = Input(new Complex)
-  val out1 = Output(new Complex)
-  val out2 = Output(new Complex)
+  val in1 = Input(new FPComplex)
+  val in2 = Input(new FPComplex)
+  val wn = Input(new FPComplex)
+  val out1 = Output(new FPComplex)
+  val out2 = Output(new FPComplex)
 }
 
 class Butterfly extends Module {
@@ -19,7 +21,7 @@ class Butterfly extends Module {
 }
 
 object Butterfly {
-  def apply(in1: Complex, in2: Complex, wn: Complex): (Complex, Complex) = {
+  def apply(in1: FPComplex, in2: FPComplex, wn: FPComplex): (FPComplex, FPComplex) = {
     val m = Module(new Butterfly)
     m.io.in1 := in1
     m.io.in2 := in2

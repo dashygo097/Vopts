@@ -1,5 +1,7 @@
 package dsp.filter
-import utils.{Float, Config}
+import utils._
+
+import data.fp.FP
 
 import scala.sys.process._
 
@@ -8,8 +10,8 @@ import chisel3.util._
 
 
 class FIRIO extends Bundle {
-  val in = Input(new Float)
-  val out = Output(new Float)
+  val in = Input(new FP)
+  val out = Output(new FP)
 }
 
 class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Module with Config{
@@ -24,8 +26,8 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
   val taps = result.split(",").map(_.toDouble).toIndexedSeq
 
   val io = IO(new FIRIO)
-  val regs = RegInit(VecInit(Seq.fill(taps.length)( Float(0.0))))
-  val coeffs = VecInit(taps.map( c => Float(c) ))
+  val regs = RegInit(VecInit(Seq.fill(taps.length)( FP(0.0))))
+  val coeffs = VecInit(taps.map( c => FP(c) ))
 
   regs := io.in +: regs.init
 

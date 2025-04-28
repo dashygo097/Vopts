@@ -1,10 +1,11 @@
-package utils 
+package data.fp 
+import utils._
 
 import scala.math.pow
 
 import chisel3._
 
-class Float(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with FloatOps {
+class FP(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with FPOps {
   var _dataWidth: Int = if (s_dataWidth == 0) dataWidth else s_dataWidth
   var _bp: Int = if (s_bp == -1) bp else s_bp
 
@@ -18,119 +19,119 @@ class Float(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config wit
     _bp
   }
 
-  def fromDouble(value: Double): Float = {
+  def fromDouble(value: Double): FP = {
     val scale = pow(2, _bp).toInt
-    val fl = Wire(new Float)
+    val fl = Wire(new FP)
     fl.value := (value * scale).toInt.S
     fl
   }
 }
 
-object Float extends Config {
-  def apply(value: Double): Float = {
-    (new Float).fromDouble(value)
+object FP extends Config {
+  def apply(value: Double): FP = {
+    (new FP).fromDouble(value)
   }
 }
 
-class FloatAdd extends Module with Config {
+class FPAdd extends Module with Config {
   val io = IO(new Bundle {
-    val a = Input(new Float)
-    val b = Input(new Float)
-    val c = Output(new Float)
+    val a = Input(new FP)
+    val b = Input(new FP)
+    val c = Output(new FP)
   })
   io.c := io.a + io.b
 }
 
-class FloatSub extends Module with Config {
+class FPSub extends Module with Config {
   val io = IO(new Bundle {
-    val a = Input(new Float)
-    val b = Input(new Float)
-    val c = Output(new Float)
+    val a = Input(new FP)
+    val b = Input(new FP)
+    val c = Output(new FP)
   })
   io.c := io.a - io.b
 }
 
-class FloatMul extends Module with Config {
+class FPMul extends Module with Config {
   val io = IO(new Bundle {
 
-    val a = Input(new Float)
- val b = Input(new Float)
-    val c = Output(new Float)
+    val a = Input(new FP)
+ val b = Input(new FP)
+    val c = Output(new FP)
   })
   io.c := io.a * io.b
 }
 
-trait FloatOps {
-  // NOTE: Note that +-* etc. for Float and Float only support same (dataWidth, bp)-typed Float.
-  self: Float =>
+trait FPOps {
+  // NOTE: Note that +-* etc. for FP and FP only support same (dataWidth, bp)-typed Float.
+  self: FP =>
  
-  def +(that: Float): Float = {
-    val fl = Wire(new Float)
+  def +(that: FP): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value + that.value
     fl
   }
 
-  def +(that: Double): Float = {
-    val fl = Wire(new Float)
+  def +(that: Double): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value + (that * pow(2, _bp)).toInt.S
     fl
   }
 
-  def +(that: UInt): Float = {
-    val fl = Wire(new Float)
+  def +(that: UInt): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value + (that << _bp).asSInt
     fl
   }
 
-  def -(that: Float): Float = {
-    val fl = Wire(new Float)
+  def -(that: FP): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value - that.value
     fl
   }
 
-  def -(that: Double): Float = {
-    val fl = Wire(new Float)
+  def -(that: Double): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value - (that * pow(2, _bp)).toInt.S
     fl
   }
 
-  def -(that: UInt): Float = {
-    val fl = Wire(new Float)
+  def -(that: UInt): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value - (that << _bp).asSInt
     fl
   }
 
-  def *(that: Float): Float = {
-    val fl = Wire(new Float)
+  def *(that: FP): FP = {
+    val fl = Wire(new FP)
     fl.value := (this.value * that.value) >> _bp
     fl
   }
 
-  def *(that: Double): Float = {
-    val fl = Wire(new Float)
+  def *(that: Double): FP = {
+    val fl = Wire(new FP)
     fl.value := (this.value * (that * pow(2, _bp)).toInt.S) >> _bp
     fl
   }
 
-  def *(that: UInt): Float = {
-    val fl = Wire(new Float)
+  def *(that: UInt): FP = {
+    val fl = Wire(new FP)
     fl.value := (this.value * (that << _bp).asSInt) >> _bp
     fl
   }
 
-  def shiftleft(that: UInt): Float = {
-    val fl = Wire(new Float)
+  def shiftleft(that: UInt): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value << that
     fl
   }
 
-  def shiftright(that: UInt): Float = {
-    val fl = Wire(new Float)
+  def shiftright(that: UInt): FP = {
+    val fl = Wire(new FP)
     fl.value := this.value >> that
     fl
   }
 
-  def >(that: Float): Bool = {
+  def >(that: FP): Bool = {
     this.value > that.value
   }
 
@@ -142,7 +143,7 @@ trait FloatOps {
     this.value > (that << _bp).asSInt
   }
 
-  def <(that: Float): Bool = {
+  def <(that: FP): Bool = {
     this.value < that.value
   }
 
@@ -154,7 +155,7 @@ trait FloatOps {
    this.value < (that << _bp).asSInt
   }
 
-  def >=(that: Float): Bool = {
+  def >=(that: FP): Bool = {
     this.value >= that.value
   }
 
@@ -166,7 +167,7 @@ trait FloatOps {
     this.value >= (that << _bp).asSInt
   }
 
-  def <=(that: Float): Bool = {
+  def <=(that: FP): Bool = {
     this.value <= that.value
   }
 
@@ -178,7 +179,7 @@ trait FloatOps {
     this.value <= (that << _bp).asSInt
   }
 
-  def ===(that: Float): Bool = {
+  def ===(that: FP): Bool = {
     this.value === that.value
   }
 }

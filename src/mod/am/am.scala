@@ -1,14 +1,15 @@
 package mod.am
+import utils._
 
-import utils.{Float, Config}
+import data.fp.FP
 import dds.trig.BaseTrigCore
 
 import chisel3._
 import chisel3.util._
 
 class AMIO extends Bundle {
-  val in = Input(new Float)
-  val out =  Output(new Float)
+  val in = Input(new FP)
+  val out =  Output(new FP)
 }
 
 class AMCore(carrierFreq: Int) extends Module with Config {
@@ -24,7 +25,7 @@ class AMCore(carrierFreq: Int) extends Module with Config {
 object AM extends Config {
   var _carrierFreq: Int = defaultCarrierFreq
 
-  def apply(in: Float): Float = {
+  def apply(in: FP): FP = {
     val amCore = Module(new AMCore(_carrierFreq))
     amCore.io.in := in
     amCore.io.out

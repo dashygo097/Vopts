@@ -1,6 +1,7 @@
 package mod.fm
+import utils._
 
-import utils.{Float, Config, DataWrapper}
+import data.fp.FP
 import dds.trig.TrigCore
 
 import scala.math.pow
@@ -8,9 +9,9 @@ import scala.math.pow
 import chisel3._
 
 class ModFMIO extends Bundle {
-  val mod = Input(new Float)
-  val in = Input(new Float)
-  val out = Output(new Float)
+  val mod = Input(new FP)
+  val in = Input(new FP)
+  val out = Output(new FP)
 }
 
 class ModFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
@@ -20,7 +21,7 @@ class ModFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
 
-  sine.io.mag := (new Float).fromDouble(1.0)
+  sine.io.mag := (new FP).fromDouble(1.0)
   sine.io.freqRatio := io.mod
   sine.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal 
 
@@ -31,7 +32,7 @@ object ModFMCore extends Config {
   var _carrierFreq = defaultCarrierFreq
   var _deltaFreq = defaultFMDeltaFreq
 
-  def apply(in: Float, ctrl: UInt): Float = {
+  def apply(in: FP, ctrl: UInt): FP = {
     val modfm = Module(new ModFMCore(_carrierFreq, _deltaFreq))
     modfm.io.in := in
     modfm.io.mod := ctrl
