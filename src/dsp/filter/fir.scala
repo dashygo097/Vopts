@@ -15,9 +15,9 @@ class FIRIO extends Bundle {
 class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Module with Config{
   val pyPath = "src/dsp/filter/fir.py"
   val command = filterType match {
-    case "bp" => Seq("python3",  pyPath, "bandpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString, cutoff(1).toString)
-    case "lp"  => Seq("python3", pyPath ,"lowpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString)
-    case "hp" => Seq("python3", pyPath, "highpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString)
+    case "bp" | "bandpass" => Seq("python3",  pyPath, "bandpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString, cutoff(1).toString)
+    case "lp" | "lowpass" => Seq("python3", pyPath ,"lowpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString)
+    case "hp" | "highpass"=> Seq("python3", pyPath, "highpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString)
     case _ => throw new IllegalArgumentException("Invalid filter type")
   }
   val result = command.!!.trim
