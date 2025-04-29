@@ -23,8 +23,7 @@ class SerialUartTXCore(baudRate: Int) extends Module with Config {
   val io = IO(new SerialUartTXIO)
   val baudTickDivider = clkFreq / baudRate
 
-  val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
-  val state = RegInit(sIdle)
+  val state = RegInit(UartState.IDLE)
 
   val data = Reg(UInt(8.W))
   val bitCounter = RegInit(0.U(3.W))
@@ -36,51 +35,51 @@ class SerialUartTXCore(baudRate: Int) extends Module with Config {
   tickCounter := Mux(tickCounter === (baudTickDivider - 1).U, 0.U, tickCounter + 1.U)
   io.tick := tickCounter === (baudTickDivider - 1).U
 
-  io.busy := state =/= sIdle || shiftCounter =/= 0.U
+  io.busy := state =/= UartState.IDLE || shiftCounter =/= 0.U
   io.txd := true.B
   io.channel.ready := (shiftCounter === 0.U)
 
   switch(state) {
-    is(sIdle) {
+    is(UartState.IDLE) {
       when(shiftCounter === 0.U && io.channel.valid) {
         shiftBuffer := Cat(io.channel.bits, shiftBuffer(7,1))
         shiftCounter := shiftCounter + 1.U
       } .elsewhen(shiftCounter === 8.U) {
         data := shiftBuffer
         shiftCounter := 0.U
-        state := sStart
+        state := UartState.START
       }
     }
 
-    is(sStart) {
+    is(UartState.START) {
       io.txd := false.B
       when(io.tick) {
-        state := sData
+        state := UartState.DATA
         bitCounter := 0.U
       }
     }
 
-    is(sData) {
+    is(UartState.DATA) {
       io.txd := data(0)
       when(io.tick) {
         data := data >> 1
         when(bitCounter === 7.U) {
-          state := sStop
+          state := UartState.STOP
         } .otherwise {
           bitCounter := bitCounter + 1.U
         }
       }
     }
 
-    is(sStop) {
+    is(UartState.STOP) {
       io.txd := true.B
       when(io.tick) {
-        state := sIdle
+        state := UartState.IDLE
       }
     }
   }
 
-  when(io.channel.valid && shiftCounter < 8.U && state === sIdle) {
+  when(io.channel.valid && shiftCounter < 8.U && state === UartState.IDLE) {
     shiftBuffer := Cat(io.channel.bits, shiftBuffer(7,1))
     shiftCounter := shiftCounter + 1.U
   }
@@ -90,8 +89,7 @@ class SerialUartRXCore(baudRate: Int) extends Module with Config {
   val io = IO(new SerialUartRXIO)
   val baudTickDivider = clkFreq / baudRate
 
-  val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
-  val state = RegInit(sIdle)
+  val state = RegInit(UartState.IDLE)
 
   val data = Reg(UInt(8.W))
   val bitCounter = RegInit(0.U(3.W))
@@ -110,34 +108,34 @@ class SerialUartRXCore(baudRate: Int) extends Module with Config {
   val rxd = RegNext(RegNext(io.rxd))
 
   switch(state) {
-    is(sIdle) {
+    is(UartState.IDLE) {
       when(!rxd) {
-        state := sStart
+        state := UartState.START
       }
     }
 
-    is(sStart) {
+    is(UartState.START) {
       when(io.tick) {
-        state := sData
+        state := UartState.DATA
         bitCounter := 0.U
       }
     }
 
-    is(sData) {
+    is(UartState.DATA) {
       when(io.tick) {
         data := Cat(rxd, data(7,1))
         when(bitCounter === 7.U) {
-          state := sStop
+          state := UartState.STOP
         } .otherwise {
           bitCounter := bitCounter + 1.U
         }
       }
     }
 
-    is(sStop) {
+    is(UartState.STOP) {
       when(io.tick) {
         io.error := !rxd
-        state := sIdle
+        state := UartState.IDLE
         shiftBuffer := data
         shiftCounter := 8.U
       }

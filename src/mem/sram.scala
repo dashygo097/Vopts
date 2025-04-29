@@ -1,7 +1,6 @@
 package mem
 
 import chisel3._
-import chisel3.util._
 
 class RWIO extends Bundle {
   val we = Input(Bool())

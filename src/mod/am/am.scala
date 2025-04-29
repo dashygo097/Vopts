@@ -5,7 +5,6 @@ import datatype.fp.FP
 import dds.trig.BaseTrigCore
 
 import chisel3._
-import chisel3.util._
 
 class AMIO extends Bundle {
   val in = Input(new FP)

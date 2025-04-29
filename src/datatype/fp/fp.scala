@@ -11,7 +11,7 @@ class FP(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with F
 
   val value: SInt = SInt(_dataWidth.W)
 
-  def get_datawidth(): Int = {
+  def get_dw(): Int = {
     _dataWidth
   }
 

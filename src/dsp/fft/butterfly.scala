@@ -1,10 +1,8 @@
 package dsp.fft
-import utils._
 
 import datatype.fp.FPComplex
 
 import chisel3._
-import chisel3.util._
 
 class ButterflyIO extends Bundle {
   val in1 = Input(new FPComplex)

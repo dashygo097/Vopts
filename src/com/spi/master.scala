@@ -1,7 +1,6 @@
 package com.spi
 
 import chisel3._
-import chisel3.util._
 
 
 class SPIMasterInterfaceIO extends Bundle {

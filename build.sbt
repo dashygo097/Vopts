@@ -4,6 +4,16 @@ ThisBuild / organization     := "dashygo097"
 
 val chiselVersion = "6.7.0"
 
+ThisBuild / scalacOptions ++= Seq(
+  "-language:reflectiveCalls",
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Xlint",
+  "-Xcheckinit",
+  "-Ymacro-annotations"
+)
+
 lazy val utils = (project in file("src/utils"))
   .settings(
     name := "utils",
@@ -11,15 +21,8 @@ lazy val utils = (project in file("src/utils"))
       "org.chipsalliance" %% "chisel" % chiselVersion,
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "edu.berkeley.cs" %% "chiseltest" % "6.0.0" % Test,
-    ),
-    scalacOptions ++= Seq(
-      "-language:reflectiveCalls",
-      "-deprecation",
-      "-feature",
-      "-unchecked",              // Enable additional warnings where generated code depends on assumptions
-      "-Xlint", 
-      "-Xcheckinit",
-      "-Ymacro-annotations",
+      "org.scalanlp" %% "breeze" % "2.1.0",
+      "org.scalanlp" %% "breeze-viz" % "2.1.0"
     ),
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),

@@ -11,3 +11,6 @@ class InterpolatorIO extends Bundle {
   val out_valid = Output(Bool())
 }
 
+class Interpolator extends Module {
+  val io = IO(new InterpolatorIO)
+}

@@ -22,8 +22,8 @@ class UartTXCore(baudRate: Int) extends Module with Config {
   val io = IO(new UartTXIO)
   val baudTickDivider = clkFreq / baudRate
   
-  val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
-  val state = RegInit(sIdle)
+  val state = RegInit(UartState.IDLE)
+
   
   val data = Reg(UInt(8.W))
   val bitCounter = RegInit(0.U(3.W))
@@ -31,31 +31,31 @@ class UartTXCore(baudRate: Int) extends Module with Config {
 
   tickCounter := Mux(tickCounter === (baudTickDivider - 1).U, 0.U, tickCounter + 1.U)
   io.tick := Mux(tickCounter === (baudTickDivider - 1).U, true.B, false.B)
-  io.busy := state =/= sIdle
+  io.busy := state =/= UartState.IDLE
   io.txd := true.B  
-  io.channel.ready := state === sIdle
+  io.channel.ready := state === UartState.IDLE
   
   switch (state) {
-    is (sIdle) {
+    is (UartState.IDLE) {
       when (io.channel.valid) {
-        state := sStart
+        state := UartState.START
         data := io.channel.bits
       }
     }
     
-    is (sStart) {
+    is (UartState.START) {
       io.txd := false.B
       when (io.tick) {
-        state := sData
+        state := UartState.DATA
         bitCounter := 0.U
       }
     }
     
-    is (sData) {
+    is (UartState.DATA) {
       io.txd := data(0)  
       when (io.tick) {
         when (bitCounter === 7.U) {
-          state := sStop
+          state := UartState.STOP
         } .otherwise {
           bitCounter := bitCounter + 1.U
           data := data >> 1
@@ -63,10 +63,10 @@ class UartTXCore(baudRate: Int) extends Module with Config {
       }
     }
     
-    is (sStop) {
+    is (UartState.STOP) {
       io.txd := true.B  
       when (io.tick) {
-        state := sIdle
+        state := UartState.IDLE
       }
     }
   }
@@ -77,8 +77,7 @@ class UartRXCore(baudRate: Int) extends Module with Config {
   val io = IO(new UartRXIO)
   val baudTickDivider = clkFreq / baudRate
   
-  val sIdle :: sStart :: sData :: sStop :: Nil = Enum(4)
-  val state = RegInit(sIdle)
+  val state = RegInit(UartState.IDLE)
   
   val data = Reg(UInt(8.W))
   val bitCounter = RegInit(0.U(3.W))
@@ -93,35 +92,35 @@ class UartRXCore(baudRate: Int) extends Module with Config {
   val rxd = RegNext(RegNext(io.rxd))
   
   switch (state) {
-    is (sIdle) {
+    is (UartState.IDLE) {
       when (!rxd) {  
-        state := sStart
+        state := UartState.START
       }
     }
     
-    is (sStart) {
+    is (UartState.START) {
       when (io.tick) {
-        state := sData
+        state := UartState.DATA
         bitCounter := 0.U
       }
     }
     
-    is (sData) {
+    is (UartState.DATA) {
       when (io.tick) {
         data := Cat(rxd, data(7, 1))  
         when (bitCounter === 7.U) {
-          state := sStop
+          state := UartState.STOP
         } .otherwise {
           bitCounter := bitCounter + 1.U
         }
       }
     }
     
-    is (sStop) {
+    is (UartState.STOP) {
       when (io.tick) {
         io.channel.valid := true.B
         io.error := !rxd  
-        state := sIdle
+        state := UartState.IDLE
       }
     }
   }

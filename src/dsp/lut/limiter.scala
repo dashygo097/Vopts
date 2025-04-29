@@ -3,7 +3,6 @@ package dsp.lut
 import datatype.fp.FP
 
 import chisel3._
-import chisel3.util._
 
 class LimiterIO extends Bundle {
   val in = Input(new FP)

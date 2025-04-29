@@ -1,8 +1,6 @@
 package dds.pwm
 import utils._
 
-import math.pow
-
 import chisel3._
 import chisel3.util._
 

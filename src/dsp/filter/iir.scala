@@ -6,7 +6,6 @@ import datatype.fp.FP
 import scala.sys.process._
 
 import chisel3._
-import chisel3.util._
 
 class IIRIO extends Bundle {
   val in = Input(new FP)
@@ -33,8 +32,8 @@ class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Modul
   val b = VecInit(bCoeffs.map(FP(_)))
   val a = VecInit(aCoeffs.map(FP(_)))
 
-  val xRegs = RegInit(VecInit(Seq.fill(b.length)(FP(0.0))))
-  val yRegs = RegInit(VecInit(Seq.fill(a.length)(FP(0.0))))
+  val xRegs = RegInit(VecInit(Seq.fill(b.length)( FP(0.0) )))
+  val yRegs = RegInit(VecInit(Seq.fill(a.length)( FP(0.0) )))
 
   xRegs := io.in +: xRegs.init
   yRegs := io.out +: yRegs.init
