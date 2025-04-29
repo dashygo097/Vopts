@@ -4,7 +4,6 @@ import utils._
 import datatype.fp.FP
 
 import chisel3._
-import chisel3.util.random._
 
 class WhiteNoiseIO extends Bundle {
   val out = Output(new FP)

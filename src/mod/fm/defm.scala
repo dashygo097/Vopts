@@ -5,10 +5,7 @@ import datatype.fp.FP
 import dsp.filter.FIRCore
 import dsp.lut.{Derivator, Abs}
 
-import scala.math._
-
 import chisel3._
-import chisel3.util._
 
 class DeFMIO extends Bundle {
   val in = Input(new FP)
@@ -20,7 +17,7 @@ class DeFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val bps = Module(new FIRCore("bp", Seq(carrierFreq - deltaFreq * 2, carrierFreq + deltaFreq * 2), 64))
   val din = Wire(new FP)
   val din_abs = Wire(new FP)
-  val lps = Module(new FIRCore("lp", Seq(carrierFreq / 20), 64))
+  val lps = Module(new FIRCore("lp", Seq(carrierFreq.toDouble / 20), 64))
   bps.io.in := io.in
   din := Derivator(bps.io.out)
   din_abs := Abs(din)

@@ -1,14 +1,14 @@
 `timescale 1ns / 1ps
-`include "../build/fir.sv"
+`include "../build/iir.sv"
 
-module FIR_tb;
+module IIR_tb;
   reg clock;
   reg reset;
   reg [31:0] io_in_value;
   wire [31:0] io_out_value;
 
   // Instantiate the SineWave module
-  FIR uut (
+  IIR uut (
       .clock(clock),
       .reset(reset),
       .io_in_value(io_in_value),

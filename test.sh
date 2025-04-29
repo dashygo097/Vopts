@@ -21,6 +21,7 @@ run_test() {
 		gtkwave "$(basename "$module_file" "$ext").vcd"
 	else 
 		printf "\e[1;31m[INFO] No corresponding .vcd file found.\n\e[0m"
+		printf "\e[1;31m[INFO] Select a .vcd file.\n\e[0m"
 		vcd_file=$(find . -type f -name "*.vcd" | fzf)
 		gtkwave "$vcd_file"
 	fi

@@ -30,7 +30,7 @@ class ScaledUpSamplerCore(inDataWidth: Int, inBp: Int, ctrlWidth: Int) extends M
 
 object UpSample {
   def apply(in: FP): FP = {
-    val sampler = Module(new UpSamplerCore(in.get_datawidth(), in.get_bp()))
+    val sampler = Module(new UpSamplerCore(in.get_dw(), in.get_bp()))
     sampler.io.in := in
     sampler.io.out
   }
@@ -38,7 +38,7 @@ object UpSample {
 
 object ScaledUpSample {
   def apply(in: FP, ctrl: UInt): FP = {
-    val sampler = Module(new ScaledUpSamplerCore(in.get_datawidth(), in.get_bp(), ctrl.getWidth))
+    val sampler = Module(new ScaledUpSamplerCore(in.get_dw(), in.get_bp(), ctrl.getWidth))
     sampler.io.in := in
     sampler.io.ctrl := ctrl
     sampler.io.out

@@ -3,14 +3,13 @@ BUILD_DIR = $(BASE_DIR)/build
 TESTBENCH_DIR = $(BASE_DIR)/testbench
 
 
-.PHONY: pre run build clean test bloop-install debug
+.PHONY: pre run build clean test update debug
 
 pre:
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(TESTBENCH_DIR)
 
-build: pre bloop-install
-	@sbt reload
+build: pre update
 	@sbt compile
 
 run: pre
@@ -24,5 +23,7 @@ clean:
 test: pre
 	@./test.sh
 
-bloop-install:
+update:
 	@sbt bloopInstall
+	@sbt update
+	@sbt reload

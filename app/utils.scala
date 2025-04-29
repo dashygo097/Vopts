@@ -20,6 +20,10 @@ object VerilogEmitter {
     bw.write(code)
     bw.close()
 
-    println(s"Verilog emitted to $file")
+    val codePreview = code.split("\n").take(20).mkString("\n")
+    println(s"[INFO] Verilog emitted to $file")
+    println("[INFO] Verilog code preview:")
+    println(codePreview)
+    println("...")
   }
 }

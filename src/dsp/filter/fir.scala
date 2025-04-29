@@ -6,7 +6,6 @@ import datatype.fp.FP
 import scala.sys.process._
 
 import chisel3._
-import chisel3.util._
 
 
 class FIRIO extends Bundle {
@@ -22,11 +21,12 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
     case "hp" | "highpass"=> Seq("python3", pyPath, "highpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString)
     case _ => throw new IllegalArgumentException("Invalid filter type")
   }
+
   val result = command.!!.trim
   val taps = result.split(",").map(_.toDouble).toIndexedSeq
 
   val io = IO(new FIRIO)
-  val regs = RegInit(VecInit(Seq.fill(taps.length)( FP(0.0))))
+  val regs = RegInit(VecInit(Seq.fill(taps.length)( FP(0.0) )))
   val coeffs = VecInit(taps.map( c => FP(c) ))
 
   regs := io.in +: regs.init

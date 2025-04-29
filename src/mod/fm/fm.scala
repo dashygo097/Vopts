@@ -2,12 +2,11 @@ package mod.fm
 import utils._
 
 import datatype.fp.FP
-import dds.trig.{BaseTrigCore, TrigCore}
+import dds.trig.BaseTrigCore
 
 import scala.math._
 
 import chisel3._
-import chisel3.util._
 
 class FMIO extends Bundle {
   val in = Input(new FP)
