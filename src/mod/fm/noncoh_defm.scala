@@ -19,9 +19,9 @@ class DeFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   val din_abs = Wire(new FP)
   val lps = Module(new FIRCore("lp", Seq(carrierFreq.toDouble / 20), 64))
   bps.io.in := io.in
-  din := Derivator(bps.io.out)
+  din := DataWrapper(Derivator(bps.io.out))
   din_abs := Abs(din)
-  lps.io.in := din_abs
+  lps.io.in := DataWrapper(din_abs)
   io.out := lps.io.out
 }
 
