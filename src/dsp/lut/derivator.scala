@@ -1,16 +1,11 @@
 package dsp.lut
 
-import datatype.fp.FP
+import datatype.fp._
 
 import chisel3._
 
-class DerivatorIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
-
 class DerivatorCore extends Module {
-  val io = IO(new DerivatorIO)
+  val io = IO(new FPSISO)
   val prev = Reg(new FP)
 
   prev := io.in

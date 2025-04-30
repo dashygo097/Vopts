@@ -1,17 +1,11 @@
 package dsp.filter
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 
 import scala.sys.process._
 
 import chisel3._
-
-
-class FIRIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
 
 class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Module with Config{
   val pyPath = "src/dsp/filter/fir.py"
@@ -25,7 +19,7 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
   val result = command.!!.trim
   val taps = result.split(",").map(_.toDouble).toIndexedSeq
 
-  val io = IO(new FIRIO)
+  val io = IO(new FPSISO)
   val regs = RegInit(VecInit(Seq.fill(taps.length)( FP(0.0) )))
   val coeffs = VecInit(taps.map( c => FP(c) ))
 

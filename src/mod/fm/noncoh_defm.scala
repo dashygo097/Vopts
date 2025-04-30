@@ -1,19 +1,14 @@
 package mod.fm
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 import dsp.filter.FIRCore
 import dsp.lut.{Derivator, Abs}
 
 import chisel3._
 
-class DeFMIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
-
 class DeFMCore(carrierFreq: Int, deltaFreq: Int) extends Module with Config {
-  val io = IO(new DeFMIO)
+  val io = IO(new FPSISO)
   val bps = Module(new FIRCore("bp", Seq(carrierFreq - deltaFreq * 2, carrierFreq + deltaFreq * 2), 64))
   val din = Wire(new FP)
   val din_abs = Wire(new FP)

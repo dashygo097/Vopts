@@ -1,16 +1,11 @@
 package dsp.lut
 
-import datatype.fp.FP
+import datatype.fp._
 
 import chisel3._
 
-class DiodeIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
-
 class DiodeCore extends Module {
-  val io = IO(new DiodeIO)
+  val io = IO(new FPSISO)
   val zero = FP(0.0)
 
   io.out := Mux(io.out > zero, io.in, zero)

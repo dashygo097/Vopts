@@ -1,20 +1,15 @@
 package mod.fm
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 import dds.trig.BaseTrigCore
 
 import scala.math._
 
 import chisel3._
 
-class FMIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
-
 class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
-  val io = IO(new FMIO)
+  val io = IO(new FPSISO)
   val trig = Module(new BaseTrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt

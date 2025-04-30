@@ -36,7 +36,6 @@ lazy val datatype = (project in file("src/datatype"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-
 lazy val dds = (project in file("src/dds"))
   .dependsOn(utils, datatype)
   .settings(
