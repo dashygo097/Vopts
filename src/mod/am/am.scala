@@ -12,6 +12,13 @@ class AMIO extends Bundle {
 }
 
 class AMCore(carrierFreq: Int) extends Module with Config {
+  /*
+  AM Modulator Core
+
+  Description:
+    This module implements an Amplitude Modulation (AM) modulator.
+    NOTE: Input signal should be positive
+  */
   val io = IO(new AMIO)
   val trig = Module(new BaseTrigCore(carrierFreq))
 

@@ -14,7 +14,7 @@ else:
     cutoff = float(sys.argv[4])
 
 # Design IIR filter
-b, a = iirfilter(
+b, a = iirfilter(  # pyright: ignore
     order,
     cutoff,
     btype=filter_type,
