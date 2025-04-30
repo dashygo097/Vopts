@@ -7,7 +7,7 @@ import datatype.fp.FP
 import chisel3._
 
 class ASKIO extends Bundle {
-  val in = Input(Bool())
+  val data = Input(Bool())
   val out = Output(new FP)
 }
 
@@ -16,5 +16,5 @@ class ASKCore(mag: Double, carrierFreq: Int) extends Module with Config {
   val cw = Module(new CWCore(mag, carrierFreq, 0.0))
   val zero = FP(0.0)
 
-  io.out := Mux(io.in, cw.io.out, zero)
+  io.out := Mux(io.data, cw.io.out, zero)
 }

@@ -1,0 +1,36 @@
+package mod.am
+
+import utils._
+import datatype.fp.FP
+import dsp.filter.FIRCore
+import dds.trig.CWCore
+
+import chisel3._
+
+class SyncDetectorIO extends Bundle {
+  val in = Input(new FP)
+  val out = Output(new FP)
+}
+
+class AnalogSyncDetectorIO extends Bundle {
+  val in = Input(new FP)
+  val carrier = Input(new FP)
+  val out = Output(new FP)
+}
+
+class SyncDetectorCore(carrierFreq: Int, baseFreqLimit: Int) extends Module {
+  val io = IO(new SyncDetectorIO)
+  val carrier_dds = Module(new CWCore(1.0, carrierFreq, 0.0))
+  val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), 64))
+
+  fir.io.in := DataWrapper(io.in * carrier_dds.io.out)
+  io.out := fir.io.out
+}
+
+class AnalogSyncDetectorCore(baseFreqLimit: Int) extends Module {
+  val io = IO(new AnalogSyncDetectorIO)
+  val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), 64))
+
+  fir.io.in := DataWrapper(io.carrier * io.in)
+  io.out := fir.io.out
+}
