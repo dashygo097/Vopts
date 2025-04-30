@@ -1,16 +1,11 @@
 package dsp.filter
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 
 import scala.sys.process._
 
 import chisel3._
-
-class IIRIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
 
 class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Module with Config {
   val pyPath = "src/dsp/filter/iir.py"
@@ -27,7 +22,7 @@ class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Modul
   val bCoeffs = lines(0).stripPrefix("b=").split(",").map(_.toDouble).toIndexedSeq
   val aCoeffs = lines(1).stripPrefix("a=").split(",").map(_.toDouble).toIndexedSeq
 
-  val io = IO(new IIRIO)
+  val io = IO(new FPSISO)
 
   val b = VecInit(bCoeffs.map(FP(_)))
   val a = VecInit(aCoeffs.map(FP(_)))

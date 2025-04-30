@@ -1,19 +1,15 @@
 package dds.trig
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 
 import scala.math._
 
 import chisel3._
 import chisel3.util._
 
-class CWIO extends Bundle {
-  val out = Output(new FP)
-}
-
 class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
-  val io = IO(new CWIO)
+  val io = IO(new FPSO)
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
   val poff = (freq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
@@ -35,7 +31,7 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
   val nChannels = mags.length
   require(freqs.length == nChannels && phas.length == nChannels)
 
-  val io = IO(Vec(nChannels, new CWIO))
+  val io = IO(new FPMO(mags.length))
 
   val sine_rom = VecInit((0 until lutWidth).map { i =>
     val angle = 2 * Pi * i / lutWidth
@@ -50,6 +46,6 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
 
     phase := phase + poff
     val addr = ((phase + pha_offset)(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth))).asUInt
-    io(ch).out := sine_rom(addr) * mags(ch)
+    io.out(ch) := sine_rom(addr) * mags(ch)
   }
 }

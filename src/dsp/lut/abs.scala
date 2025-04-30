@@ -1,16 +1,11 @@
 package dsp.lut
 
-import datatype.fp.FP
+import datatype.fp._
 
 import chisel3._
 
-class AbsIO extends Bundle {
-  val in = Input(new FP)
-  val out = Output(new FP)
-}
-
 class AbsCore extends Module {
-  val io = IO(new AbsIO)
+  val io = IO(new FPSISO)
   val zero = Wire(new FP)
   zero := (new FP).fromDouble(0.0)
   io.out := Mux(io.in > zero, io.in, zero - io.in)

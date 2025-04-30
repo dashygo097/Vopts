@@ -1,7 +1,7 @@
 package dds.trig
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 
 import scala.math._
 

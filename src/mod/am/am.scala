@@ -1,15 +1,10 @@
 package mod.am
 import utils._
 
-import datatype.fp.FP
+import datatype.fp._
 import dds.trig.BaseTrigCore
 
 import chisel3._
-
-class AMIO extends Bundle {
-  val in = Input(new FP)
-  val out =  Output(new FP)
-}
 
 class AMCore(carrierFreq: Int) extends Module with Config {
   /*
@@ -19,7 +14,7 @@ class AMCore(carrierFreq: Int) extends Module with Config {
     This module implements an Amplitude Modulation (AM) modulator.
     NOTE: Input signal should be positive
   */
-  val io = IO(new AMIO)
+  val io = IO(new FPSISO)
   val trig = Module(new BaseTrigCore(carrierFreq))
 
   trig.io.mag := io.in
