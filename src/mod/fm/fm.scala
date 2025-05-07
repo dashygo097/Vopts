@@ -9,7 +9,7 @@ import scala.math._
 import chisel3._
 
 class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
-  val io = IO(new FPSISO)
+  val io = IO(new SISO(new FP))
   val trig = Module(new BaseTrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt

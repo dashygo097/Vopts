@@ -22,7 +22,7 @@ class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Modul
   val bCoeffs = lines(0).stripPrefix("b=").split(",").map(_.toDouble).toIndexedSeq
   val aCoeffs = lines(1).stripPrefix("a=").split(",").map(_.toDouble).toIndexedSeq
 
-  val io = IO(new FPSISO)
+  val io = IO(new SISO(new FP))
 
   val b = VecInit(bCoeffs.map(FP(_)))
   val a = VecInit(aCoeffs.map(FP(_)))

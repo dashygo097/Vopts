@@ -14,7 +14,7 @@ class AMCore(carrierFreq: Int) extends Module with Config {
     This module implements an Amplitude Modulation (AM) modulator.
     NOTE: Input signal should be positive
   */
-  val io = IO(new FPSISO)
+  val io = IO(new SISO(new FP))
   val trig = Module(new BaseTrigCore(carrierFreq))
 
   trig.io.mag := io.in
