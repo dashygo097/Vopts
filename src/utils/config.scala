@@ -17,4 +17,8 @@ trait Config {
   // Mod Default Params
   val defaultCarrierFreq: Int = 1000000 // 1MHz
   val defaultFMDeltaFreq: Int = 500000 // 500kHz
+
+  // CORDIC Default Params
+  val cordicIter: Int = 16
+  val cordicAngleWidth: Int = 32
 }

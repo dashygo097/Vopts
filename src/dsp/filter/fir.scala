@@ -19,7 +19,7 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
   val result = command.!!.trim
   val taps = result.split(",").map(_.toDouble).toIndexedSeq
 
-  val io = IO(new FPSISO)
+  val io = IO(new SISO(new FP))
   val regs = RegInit(VecInit(Seq.fill(taps.length)( FP(0.0) )))
   val coeffs = VecInit(taps.map( c => FP(c) ))
 

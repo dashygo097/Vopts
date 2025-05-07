@@ -1,4 +1,4 @@
-package dsp.resample
+package func.resample
 
 import datatype.fp.FP
 

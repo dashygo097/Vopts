@@ -1,20 +1,19 @@
 package dds.noise
 import utils._
 
-import datatype.fp._
-
 import chisel3._
+import chisel3.util.random._
 
-class WhiteNoiseCore extends Module with Config {
-  val io = IO(new FPSO)
-  val rand_sint = Module(new RandomSIntCore(dataWidth))
+class WhiteNoiseCore[T <: Data](gen: T) extends Module with Config {
+  val io = IO(new SO(gen))
+  val lfsr = LFSR(dataWidth)
 
-  io.out := rand_sint.io.out.asTypeOf(new FP)
+  io.out := lfsr.asTypeOf(gen)
 }
 
 object WhiteNoise {
-  def apply(): FP = {
-    val noise_source = Module(new WhiteNoiseCore)
+  def apply[T <: Data](gen: T): T = {
+    val noise_source = Module(new WhiteNoiseCore(gen))
     noise_source.io.out
   }
 }

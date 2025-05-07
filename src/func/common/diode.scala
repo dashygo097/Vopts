@@ -1,12 +1,13 @@
-package dsp.lut
+package func.common
 
+import utils._
 import datatype.fp._
 
 import chisel3._
 
 class DiodeCore extends Module {
-  val io = IO(new FPSISO)
-  val zero = FP(0.0)
+  val io = IO(new SISO(new FP))
+  val zero = Wire(FP(0.0))
 
   io.out := Mux(io.out > zero, io.in, zero)
 }
