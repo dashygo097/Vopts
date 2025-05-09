@@ -1,4 +1,4 @@
-package app.test
+package test
 import app.VerilogEmitter
 
 import dsp.filter.FIRCore

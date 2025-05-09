@@ -3,7 +3,7 @@ BUILD_DIR = $(BASE_DIR)/build
 TESTBENCH_DIR = $(BASE_DIR)/testbench
 
 
-.PHONY: pre run build clean test update debug
+.PHONY: pre run build clean test-build update debug
 
 pre:
 	@mkdir -p $(BUILD_DIR)
@@ -14,6 +14,9 @@ build: pre update
 
 run: pre
 	@sbt app/run
+
+test-build: pre
+	@sbt test/run
 
 clean:
 	@rm -rf $(TESTBENCH_DIR)/obj_dir
