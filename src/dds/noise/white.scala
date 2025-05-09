@@ -4,9 +4,9 @@ import utils._
 import chisel3._
 import chisel3.util.random._
 
-class WhiteNoiseCore[T <: Data](gen: T) extends Module with Config {
+class WhiteNoiseCore[T <: Data](gen: T) extends Module {
   val io = IO(new SO(gen))
-  val lfsr = LFSR(dataWidth)
+  val lfsr = LFSR(gen.getWidth)
 
   io.out := lfsr.asTypeOf(gen)
 }

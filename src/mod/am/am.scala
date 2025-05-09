@@ -6,7 +6,7 @@ import dds.trig.BaseTrigCore
 
 import chisel3._
 
-class AMCore(carrierFreq: Int) extends Module with Config {
+class AMCore(carrierFreq: Int) extends Module {
   /*
   AM Modulator Core
 
