@@ -35,7 +35,7 @@ ALSO, the global params can be changed in src/utils/config.scala
 
 ## Run AutoTest
 
-Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through ./test.sh and fzf.
+Run test using verilator(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and gtkwave(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through ./tb.sh and fzf.
 
 ```
 make tb
