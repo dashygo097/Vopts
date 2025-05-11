@@ -2,9 +2,9 @@ package test
 import app.VerilogEmitter
 
 import datatype.fp.FP
-import com.fifo.QueueCore
+import mem.fifo.SyncQueueCore
 
 object Queue extends App {
-  VerilogEmitter.parse(new QueueCore(new FP, 4), "queue.sv")
+  VerilogEmitter.parse(new SyncQueueCore(new FP, 4), "queue.sv")
 }
 
