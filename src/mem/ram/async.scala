@@ -1,6 +1,7 @@
 package mem.sram
 
 import chisel3._
+import chisel3.util._
 
 class AsyncRWIO extends Bundle {
   val we = Input(Bool())
@@ -10,18 +11,19 @@ class AsyncRWIO extends Bundle {
   val wr_clk = Input(Clock())
 }
 
-class AsyncSRAMIO[T <: Data](gen: T, addrWidth: Int) extends Bundle {
-  val addr = Input(UInt(addrWidth.W))
+class AsyncRAMIO[T <: Data](gen: T, size: Int) extends Bundle {
+  val addr = Input(UInt(log2Ceil(size).W))
   val dataIn = Input(gen)
   val dataOut = Output(gen)
 
   val en = new AsyncRWIO
 }
 
-class AsyncSRAMCore[T <: Data](gen: T, addrWidth: Int) extends Module {
-  val io = IO(new AsyncSRAMIO(gen, addrWidth))
+class AsyncRAMCore[T <: Data](gen: T, size: Int) extends Module {
+  val io = IO(new AsyncRAMIO(gen, size))
 
-  val mem = SyncReadMem(1 << addrWidth, gen)
+  val mem = SyncReadMem(size, gen)
+  val rdata = Reg(gen)
 
   when(io.en.we) {
     mem.write(io.addr, io.dataIn, io.en.wr_clk)
@@ -29,8 +31,6 @@ class AsyncSRAMCore[T <: Data](gen: T, addrWidth: Int) extends Module {
 
   when (io.en.re) {
     io.dataOut := mem.read(io.addr, io.en.rd_clk)
-  } .otherwise {
-    io.dataOut := 0.U.asTypeOf(gen)
-  }
+  } 
 }
  
