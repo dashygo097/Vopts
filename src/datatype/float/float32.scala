@@ -53,4 +53,13 @@ trait Float32Ops {
     val fl = Wire(new Float32).fromDouble(that)
     this === fl
   }
+
+  def =/=(that: Float32): Bool = {
+    this.value =/= that.value
+  }
+
+  def =/=(that: Double): Bool = {
+    val fl = Wire(new Float32).fromDouble(that)
+    this =/= fl
+  }
 }
