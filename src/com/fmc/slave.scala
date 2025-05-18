@@ -21,7 +21,6 @@ class FMCSlaveRAMCore[T <: Data](gen: T, addrWidth: Int) extends Module {
   val io = IO(new FMCSlaveInterfaceIO(gen, addrWidth))
   val sram = Module(new AsyncRAMCore(gen, addrWidth))
 
-  // TOBE impled
   sram.io.addr := io.addr
   sram.io.dataIn := io.dataIn
 

@@ -61,10 +61,10 @@ lazy val func = (project in file("src/func"))
   )
 
 
-lazy val mod = (project in file("src/mod"))
-  .dependsOn(utils, datatype, dds, dsp, func)
+lazy val mem = (project in file("src/mem"))
+  .dependsOn(utils, datatype)
   .settings(
-    name := "mod",
+    name := "mem",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
@@ -78,17 +78,18 @@ lazy val com = (project in file("src/com"))
   )
 
 lazy val peripheral = (project in file("src/peripheral"))
-  .dependsOn(utils, datatype)
+  .dependsOn(utils, datatype, mem)
   .settings(
     name := "peripheral",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val mem = (project in file("src/mem"))
-  .dependsOn(utils, datatype)
+
+lazy val mod = (project in file("src/mod"))
+  .dependsOn(utils, datatype, dds, dsp, func)
   .settings(
-    name := "mem",
+    name := "mod",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )

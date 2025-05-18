@@ -19,7 +19,6 @@ class AsyncQueueCore[T <: Data](gen: T, depth: Int) extends Module {
   val readPtr = RegInit(0.U(log2Ceil(depth).W))
   val count = RegInit(0.U(log2Ceil(depth + 1).W))
 
-
   io.enq.ready := count < depth.U
   withClock(io.enq_clk) {
     when(io.enq.fire) {
