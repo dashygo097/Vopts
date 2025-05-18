@@ -154,6 +154,18 @@ trait FPOps {
   def ===(that: FP): Bool = {
     this.value === that.value
   }
+
+  def ==(that: Double): Bool = {
+    this.value === (that * pow(2, _bp)).toInt.S
+  }
+
+  def =/=(that: FP): Bool = {
+    this.value =/= that.value
+  } 
+
+  def =/=(that: Double): Bool = {
+    this.value =/= (that * pow(2, _bp)).toInt.S
+  }
 }
 
 

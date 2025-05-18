@@ -1,4 +1,4 @@
-package test
+package app
 import app.VerilogEmitter
 
 import com.fmc.{FMCSlaveRAMCore, FMCMuxedSlaveRAMCore}

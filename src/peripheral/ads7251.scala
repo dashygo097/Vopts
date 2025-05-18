@@ -36,28 +36,26 @@ class ADS7251Core extends Module with Config {
     val shiftRegB = RegInit(0.U(12.W))
     val bitCounterB = RegInit(0.U(4.W))
 
-    bitCounterA := Mux(bitCounterA === 12.U, 0.U, bitCounterA + 1.U)
-    bitCounterB := Mux(bitCounterB === 12.U, 0.U, bitCounterB + 1.U)
+    bitCounterA := Mux(bitCounterA === 13.U, 0.U, bitCounterA + 1.U)
+    bitCounterB := Mux(bitCounterB === 13.U, 0.U, bitCounterB + 1.U)
 
     shiftRegA := Mux(!io.cs_n, Cat(shiftRegA(10, 0), io.sdoa), shiftRegA)
     shiftRegB := Mux(!io.cs_n, Cat(shiftRegB(10, 0), io.sdob), shiftRegB)
 
     fifoA.io.wdata := shiftRegA.asTypeOf(new FP(12, 11))
-    fifoA.io.wr := bitCounterA === 12.U
+    fifoA.io.wr := bitCounterA === 13.U
     fifoB.io.wdata := shiftRegB.asTypeOf(new FP(12, 11))
-    fifoB.io.wr := bitCounterB === 12.U
+    fifoB.io.wr := bitCounterB === 13.U
 
-    fifoA.io.wr := bitCounterA === 12.U
-    fifoB.io.rd := bitCounterB === 12.U
     fifoA.io.wclk := io.sclk
     fifoB.io.wclk := io.sclk
+
+    fifoA.io.rd := bitCounterA === 13.U
+    fifoB.io.rd := bitCounterB === 13.U
   }
 
   fifoA.io.rclk := clock
   fifoB.io.rclk := clock
-  fifoA.io.rd := true.B
-  fifoB.io.rd := true.B
-
 
   io.dataA := fifoA.io.rdata
   io.dataB := fifoB.io.rdata
