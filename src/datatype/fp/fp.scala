@@ -33,34 +33,6 @@ object FP extends Config {
   }
 }
 
-class FPAdd extends Module with Config {
-  val io = IO(new Bundle {
-    val a = Input(new FP)
-    val b = Input(new FP)
-    val c = Output(new FP)
-  })
-  io.c := io.a + io.b
-}
-
-class FPSub extends Module with Config {
-  val io = IO(new Bundle {
-    val a = Input(new FP)
-    val b = Input(new FP)
-    val c = Output(new FP)
-  })
-  io.c := io.a - io.b
-}
-
-class FPMul extends Module with Config {
-  val io = IO(new Bundle {
-
-    val a = Input(new FP)
- val b = Input(new FP)
-    val c = Output(new FP)
-  })
-  io.c := io.a * io.b
-}
-
 trait FPOps {
   // NOTE: Note that +-* etc. for FP and FP only support same (dataWidth, bp)-typed Float.
   self: FP =>

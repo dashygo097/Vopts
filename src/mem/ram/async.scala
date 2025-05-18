@@ -24,6 +24,7 @@ class AsyncRAMCore[T <: Data](gen: T, size: Int) extends Module {
 
   val mem = SyncReadMem(size, gen)
   val rdata = Reg(gen)
+  io.dataOut := DontCare
 
   when(io.en.we) {
     mem.write(io.addr, io.dataIn, io.en.wr_clk)
