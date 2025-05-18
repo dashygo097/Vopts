@@ -27,8 +27,8 @@ class FMCMuxedSlaveRAMCore[T <: Data](gen: T, addrWidth: Int) extends Module {
   
   attach(io.data, biDirBuffer.io.dataIO)
   
-  val wr_en = !(io.cs_n && io.we_n)
-  val rd_en = !(io.cs_n && io.oe_n)
+  val wr_en = !io.cs_n && !io.we_n
+  val rd_en = !io.cs_n && !io.oe_n
   
   biDirBuffer.io.oe := rd_en
   

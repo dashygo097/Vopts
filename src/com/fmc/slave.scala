@@ -24,8 +24,8 @@ class FMCSlaveRAMCore[T <: Data](gen: T, addrWidth: Int) extends Module {
   sram.io.addr := io.addr
   sram.io.dataIn := io.dataIn
 
-  val wr_en = !(io.cs_n && io.we_n)
-  val rd_en = !(io.cs_n && io.oe_n)
+  val wr_en = !io.cs_n && !io.we_n
+  val rd_en = !io.cs_n && !io.oe_n
 
   sram.io.en.we := wr_en
   sram.io.en.re := rd_en
