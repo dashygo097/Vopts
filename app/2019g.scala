@@ -22,7 +22,7 @@ class TxCoreIO_Advanced extends Bundle {
 class TxCore extends Module {
   val io = IO(new TxCoreIO)
 
-  val fm = Module(new FMCore(1.0, 10000000, 10000))
+  val fm = Module(new FMCore(1.0, 15500000, 10000))
   val downsampler = Module(new ScaledDownSamplerCore(14, 13, 4))
 
   fm.io.in := DataWrapper(UpSample(io.in))
@@ -35,7 +35,7 @@ class TxCore_Advanced extends Module {
   val io = IO(new TxCoreIO_Advanced)
 
   val upsampler_mod = Module(new UpSamplerCore(12, 11))
-  val fm = Module(new ModFMCore(1.0, 10000000, 10000))
+  val fm = Module(new ModFMCore(1.0, 15500000, 10000))
   val downsampler = Module(new ScaledDownSamplerCore(14, 13, 4))
 
   upsampler_mod.io.in := io.mod
