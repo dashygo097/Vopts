@@ -31,6 +31,11 @@ object FP extends Config {
   def apply(value: Double): FP = {
     (new FP).fromDouble(value)
   }
+  def apply(value: SInt): FP = {
+    val fl = Wire(new FP)
+    fl.value := value.asSInt
+    fl
+  }
 }
 
 trait FPOps {
@@ -42,54 +47,27 @@ trait FPOps {
     fl.value := this.value + that.value
     fl
   }
-
-  def +(that: Double): FP = {
-    val fl = Wire(new FP)
-    fl.value := this.value + (that * pow(2, _bp)).toInt.S
-    fl
-  }
-
-  def +(that: UInt): FP = {
-    val fl = Wire(new FP)
-    fl.value := this.value + (that << _bp).asSInt
-    fl
-  }
+  def +(that: Double): FP = this + FP(that)
+  def +(that: SInt): FP = this + FP(that)
+  def +(that: UInt): FP = this + FP(that.asSInt)
 
   def -(that: FP): FP = {
     val fl = Wire(new FP)
     fl.value := this.value - that.value
     fl
   }
-
-  def -(that: Double): FP = {
-    val fl = Wire(new FP)
-    fl.value := this.value - (that * pow(2, _bp)).toInt.S
-    fl
-  }
-
-  def -(that: UInt): FP = {
-    val fl = Wire(new FP)
-    fl.value := this.value - (that << _bp).asSInt
-    fl
-  }
+  def -(that: Double): FP = this - FP(that)
+  def -(that: SInt): FP = this - FP(that)
+  def -(that: UInt): FP = this - FP(that.asSInt)
 
   def *(that: FP): FP = {
     val fl = Wire(new FP)
     fl.value := (this.value * that.value) >> _bp
     fl
   }
-
-  def *(that: Double): FP = {
-    val fl = Wire(new FP)
-    fl.value := (this.value * (that * pow(2, _bp)).toInt.S) >> _bp
-    fl
-  }
-
-  def *(that: UInt): FP = {
-    val fl = Wire(new FP)
-    fl.value := (this.value * (that << _bp).asSInt) >> _bp
-    fl
-  }
+  def *(that: Double): FP = this * FP(that)
+  def *(that: SInt): FP = this * FP(that)
+  def *(that: UInt): FP = this * FP(that.asSInt)
 
   def shiftleft(that: UInt): FP = {
     val fl = Wire(new FP)
@@ -103,69 +81,35 @@ trait FPOps {
     fl
   }
 
-  def >(that: FP): Bool = {
-    this.value > that.value
-  }
+  def <(that: FP): Bool = this.value < that.value
+  def <(that: Double): Bool = this < FP(that)
+  def <(that: SInt): Bool = this < FP(that)
+  def <(that: UInt): Bool = this < FP(that.asSInt)
 
-  def >(that: Double): Bool = {
-    this.value > (that * pow(2, _bp)).toInt.S
-  }
+  def ===(that: FP): Bool = this.value === that.value
+  def ===(that: Double): Bool = this === FP(that)
+  def ===(that: SInt): Bool = this === FP(that)
+  def ===(that: UInt): Bool = this === FP(that.asSInt)
 
-  def >(that: UInt): Bool = {
-    this.value > (that << _bp).asSInt
-  }
+  def =/=(that: FP): Bool = !(this === that)
+  def =/=(that: Double): Bool = !(this === FP(that))
+  def =/=(that: SInt): Bool = !(this === FP(that))
+  def =/=(that: UInt): Bool = !(this === FP(that.asSInt))
 
-  def <(that: FP): Bool = {
-    this.value < that.value
-  }
+  def <=(that: FP): Bool = this === that || this < that
+  def <=(that: Double): Bool = this < FP(that) || this === FP(that)
+  def <=(that: SInt): Bool = this < FP(that) || this === FP(that)
+  def <=(that: UInt): Bool = this < FP(that.asSInt) || this === FP(that.asSInt)
 
-  def <(that: Double): Bool = {
-    this.value < (that * pow(2, _bp)).toInt.S
-  }
+  def >(that: FP): Bool = !(this <= that)
+  def >(that: Double): Bool = !(this <= FP(that))
+  def >(that: SInt): Bool = !(this <= FP(that))
+  def >(that: UInt): Bool = !(this <= FP(that.asSInt))
 
-  def <(that: UInt): Bool = {
-   this.value < (that << _bp).asSInt
-  }
-
-  def >=(that: FP): Bool = {
-    this.value >= that.value
-  }
-
-  def >=(that: Double): Bool = {
-    this.value >= (that * pow(2, _bp)).toInt.S
-  }
-
-  def >=(that: UInt): Bool = {
-    this.value >= (that << _bp).asSInt
-  }
-
-  def <=(that: FP): Bool = {
-    this.value <= that.value
-  }
-
-  def <=(that: Double): Bool = {
-    this.value <= (that * pow(2, _bp)).toInt.S
-  }
-
-  def <=(that: UInt): Bool = {
-    this.value <= (that << _bp).asSInt
-  }
-
-  def ===(that: FP): Bool = {
-    this.value === that.value
-  }
-
-  def ==(that: Double): Bool = {
-    this.value === (that * pow(2, _bp)).toInt.S
-  }
-
-  def =/=(that: FP): Bool = {
-    this.value =/= that.value
-  } 
-
-  def =/=(that: Double): Bool = {
-    this.value =/= (that * pow(2, _bp)).toInt.S
-  }
+  def >=(that: FP): Bool = !(this < that)
+  def >=(that: Double): Bool = !(this < FP(that))
+  def >=(that: SInt): Bool = !(this < FP(that))
+  def >=(that: UInt): Bool = !(this < FP(that.asSInt))
 }
 
 

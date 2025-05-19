@@ -40,26 +40,28 @@ object Float32 {
   def apply(value: Double): Float32 = {
     (new Float32).fromDouble(value)
   }
+  def apply(value: UInt): Float32 = {
+    val fl = Wire(new Float32)
+    fl.value := value
+    fl
+  }
+  def apply(value: SInt): Float32 = {
+    val fl = Wire(new Float32)
+    fl.value := value.asUInt
+    fl
+  }
 }
 
 trait Float32Ops {
   self: Float32 =>
 
-   def ===(that: Float32): Bool = {
-    this.value === that.value
-  }
-  
-  def ===(that: Double): Bool = {
-    val fl = Wire(new Float32).fromDouble(that)
-    this === fl
-  }
+  def ===(that: Float32): Bool = this.value === that.value
+  def ===(that: Double): Bool = this === Float32(that)
+  def ===(that: UInt): Bool = this === Float32(that)
+  def ===(that: SInt): Bool = this === Float32(that.asUInt)
 
-  def =/=(that: Float32): Bool = {
-    this.value =/= that.value
-  }
-
-  def =/=(that: Double): Bool = {
-    val fl = Wire(new Float32).fromDouble(that)
-    this =/= fl
-  }
+  def =/=(that: Float32): Bool = !(this === that)
+  def =/=(that: Double): Bool = !(this === Float32(that))
+  def =/=(that: UInt): Bool = !(this === Float32(that))
+  def =/=(that: SInt): Bool = !(this === Float32(that.asUInt))
 }
