@@ -46,13 +46,14 @@ class ADC122S625Core extends Module {
     shiftRegA := Mux(!io.cs_n && onSamplingA, Cat(io.sdo, shiftRegA(11, 1)), shiftRegA)
     shiftRegB := Mux(!io.cs_n && onSamplingB, Cat(io.sdo, shiftRegB(11, 1)), shiftRegB)
 
-    fifoA.io.wdata := shiftRegA.asTypeOf(new FP(12, 11))
-    fifoA.io.wr := bitCounterA === 11.U
-    fifoB.io.wdata := shiftRegB.asTypeOf(new FP(12, 11))
-    fifoB.io.wr := bitCounterB === 11.U
-
     fifoA.io.wclk := io.sclk
     fifoB.io.wclk := io.sclk
+
+    fifoA.io.wdata := shiftRegA.asTypeOf(new FP(12, 11))
+    fifoB.io.wdata := shiftRegB.asTypeOf(new FP(12, 11))
+
+    fifoA.io.wr := bitCounterA === 11.U
+    fifoB.io.wr := bitCounterB === 11.U
 
     fifoA.io.rd := bitCounterA === 11.U
     fifoB.io.rd := bitCounterB === 11.U
