@@ -7,7 +7,9 @@ import mem.fifo.AsyncFIFOCore
 import chisel3._
 import chisel3.util._
 
+// ADS7251 is a dual-channel 12-bit ADC with SPI interface
 class ADS7251IO extends Bundle {
+  val en = Input(Bool())
   val cs_n = Output(Bool())
   val sdoa = Input(Bool())
   val sdob = Input(Bool())
