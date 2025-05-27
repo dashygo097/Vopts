@@ -21,3 +21,17 @@ class ComparatorCore[T <: Data](gen: T, threshold: AnyVal)(implicit ord: Partial
 
   io.out := io.in > thresholdValue
 }
+
+class MaximumCore[T <: Data](gen: T, ins: Int)(implicit ord: PartialOrdered[T]) extends Module {
+  require(ins > 0, "Number of inputs must be greater than zero")
+  val io = IO(new MISO(gen, ins))
+  val out = io.in.reduce((a, b) => Mux(a > b, a, b))
+  io.out := out
+}
+
+class MinimumCore[T <: Data](gen: T, ins: Int)(implicit ord: PartialOrdered[T]) extends Module {
+  require(ins > 0, "Number of inputs must be greater than zero")
+  val io = IO(new MISO(gen, ins))
+  val out = io.in.reduce((a, b) => Mux(a < b, a, b))
+  io.out := out
+}
