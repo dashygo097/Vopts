@@ -1,6 +1,6 @@
 package test
-import app.VerilogEmitter
 
+import app.VerilogEmitter
 import mod.fsk.FSKCore
 
 object FSK extends App {

@@ -1,6 +1,7 @@
-package datatype.float
+package utils
 
 import scala.math.pow
+
 import chisel3._
 import chisel3.util._
 

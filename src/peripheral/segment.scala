@@ -1,7 +1,6 @@
 package peripheral
 
 import utils._
-
 import chisel3._
 
 class SegmentCore extends Module {

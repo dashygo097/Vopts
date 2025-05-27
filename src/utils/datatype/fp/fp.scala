@@ -1,5 +1,4 @@
-package datatype.fp 
-import utils._
+package utils 
 
 import scala.math.pow
 
@@ -21,9 +20,14 @@ class FP(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with F
 
   def fromDouble(value: Double): FP = {
     val scale = pow(2, _bp).toInt
-    val fl = Wire(new FP)
+    val fl = Wire(new FP(_dataWidth, _bp))
     fl.value := (value * scale).toInt.S
     fl
+  }
+
+  def _match(that: FP): Unit = {
+    require(this.get_dw() == that.get_dw() && this.get_bp() == that.get_bp(),
+      s"FP match requires same dataWidth and bp: (${this.get_dw()}, ${this.get_bp()}) vs (${that.get_dw()}, ${that.get_bp()})")
   }
 }
 
@@ -43,7 +47,8 @@ trait FPOps {
   self: FP =>
  
   def +(that: FP): FP = {
-    val fl = Wire(new FP)
+    this._match(that)
+    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
     fl.value := this.value + that.value
     fl
   }
@@ -52,7 +57,8 @@ trait FPOps {
   def +(that: UInt): FP = this + FP(that.asSInt)
 
   def -(that: FP): FP = {
-    val fl = Wire(new FP)
+    this._match(that)
+    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
     fl.value := this.value - that.value
     fl
   }
@@ -61,7 +67,8 @@ trait FPOps {
   def -(that: UInt): FP = this - FP(that.asSInt)
 
   def *(that: FP): FP = {
-    val fl = Wire(new FP)
+    this._match(that)
+    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
     fl.value := (this.value * that.value) >> _bp
     fl
   }
@@ -70,7 +77,7 @@ trait FPOps {
   def *(that: UInt): FP = this * FP(that.asSInt)
 
   def shiftleft(that: UInt): FP = {
-    val fl = Wire(new FP)
+    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
     fl.value := this.value << that
     fl
   }
@@ -81,17 +88,26 @@ trait FPOps {
     fl
   }
 
-  def <(that: FP): Bool = this.value < that.value
+  def <(that: FP): Bool = {
+    this._match(that)
+    this.value < that.value
+  }
   def <(that: Double): Bool = this < FP(that)
   def <(that: SInt): Bool = this < FP(that)
   def <(that: UInt): Bool = this < FP(that.asSInt)
 
-  def ===(that: FP): Bool = this.value === that.value
+  def ===(that: FP): Bool = {
+    this._match(that)
+    this.value === that.value
+  }
   def ===(that: Double): Bool = this === FP(that)
   def ===(that: SInt): Bool = this === FP(that)
   def ===(that: UInt): Bool = this === FP(that.asSInt)
 
-  def =/=(that: FP): Bool = !(this === that)
+  def =/=(that: FP): Bool = {
+    this._match(that)
+    !(this === that)
+  }
   def =/=(that: Double): Bool = !(this === FP(that))
   def =/=(that: SInt): Bool = !(this === FP(that))
   def =/=(that: UInt): Bool = !(this === FP(that.asSInt))
@@ -111,6 +127,3 @@ trait FPOps {
   def >=(that: SInt): Bool = !(this < FP(that))
   def >=(that: UInt): Bool = !(this < FP(that.asSInt))
 }
-
-
-

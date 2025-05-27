@@ -1,7 +1,6 @@
 package func.resample
 
-import datatype.fp.FP
-
+import utils._
 import chisel3._
 
 class InterpolatorIO extends Bundle {

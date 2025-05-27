@@ -1,5 +1,4 @@
-package datatype.fp 
-import utils._
+package utils 
 
 import scala.math._
 

@@ -1,10 +1,9 @@
 package mod.am
 
-import utils._
-import datatype.fp._
 import dsp.filter.FIRCore
 import dds.trig.CWCore
 
+import utils._
 import chisel3._
 
 class AnalogSyncDetectorIO extends Bundle {

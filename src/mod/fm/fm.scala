@@ -1,11 +1,9 @@
 package mod.fm
-import utils._
 
-import datatype.fp._
 import dds.trig.BaseTrigCore
 
 import scala.math._
-
+import utils._
 import chisel3._
 
 class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {

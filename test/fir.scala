@@ -1,6 +1,6 @@
 package test
-import app.VerilogEmitter
 
+import app.VerilogEmitter
 import dsp.filter.FIRCore
 
 object FIR extends App {

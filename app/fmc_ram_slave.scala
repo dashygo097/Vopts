@@ -1,6 +1,6 @@
 package app
-import app.VerilogEmitter
 
+import app.VerilogEmitter
 import com.fmc.{FMCSlaveRAMCore, FMCMuxedSlaveRAMCore}
 import chisel3._
 

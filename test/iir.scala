@@ -1,6 +1,6 @@
 package test
-import app.VerilogEmitter
 
+import app.VerilogEmitter
 import dsp.filter.IIRCore
 
 object IIR extends App {

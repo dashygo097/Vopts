@@ -1,4 +1,4 @@
-package datatype.fp 
+package utils 
 
 import scala.math.pow
 

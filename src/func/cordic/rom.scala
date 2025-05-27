@@ -1,10 +1,8 @@
 package func.cordic
 
-import utils._
-import datatype.fp.FP
-
-import chisel3._
 import scala.math._
+import utils._
+import chisel3._
 
 class CordicIO extends Bundle {
   val in = Input(new FP)

@@ -1,10 +1,7 @@
 package dsp.filter
-import utils._
-
-import datatype.fp._
 
 import scala.sys.process._
-
+import utils._
 import chisel3._
 
 class IIRCore(filterType: String, cutoff: Seq[Double], order: Int) extends Module with Config {

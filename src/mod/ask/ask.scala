@@ -1,9 +1,8 @@
 package mod.ask
-import utils._
 
 import dds.trig.CWCore
-import datatype.fp.FP
 
+import utils._
 import chisel3._
 
 class ASKIO extends Bundle {

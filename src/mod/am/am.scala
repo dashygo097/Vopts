@@ -1,9 +1,7 @@
 package mod.am
-import utils._
-
-import datatype.fp._
 import dds.trig.BaseTrigCore
 
+import utils._
 import chisel3._
 
 class AMCore(carrierFreq: Int) extends Module {
