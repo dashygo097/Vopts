@@ -50,3 +50,4 @@ class DMIMO[InT <: Data, OutT <: Data](ins: (InT, Int), outs: (OutT, Int)) exten
   val out = Output(Vec(outs._2, outs._1))
 }
 
+

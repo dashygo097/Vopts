@@ -7,7 +7,7 @@ trait PartialOrdered[T <: Data] {
   def le(x: T, y: T): Bool
   def gt(x: T, y: T): Bool = lt(y, x)
   def ge(x: T, y: T): Bool = le(y, x)
-  def eq(x: T, y: T): Bool = x === y
+  def eq(x: T, y: T): Bool = le(x, y) && le(y, x)
   def ne(x: T, y: T): Bool = !eq(x, y)
 }
 

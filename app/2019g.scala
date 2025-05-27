@@ -1,6 +1,7 @@
 package app
 
 import mod.fm.{FMCore, ModFMCore}
+import peripheral.ADS7251Core
 
 import utils._
 import chisel3._
@@ -51,4 +52,8 @@ object TX_2019G extends App {
 
 object TX_2019G_Advanced extends App {
   VerilogEmitter.parse(new TxCore_Advanced, "2019g_tx_advanced.sv")
+}
+
+object ADS7251 extends App {
+  VerilogEmitter.parse(new ADS7251Core, "ads7251.sv")
 }
