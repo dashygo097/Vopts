@@ -1,7 +1,5 @@
 package func.common
 
-import utils.PartialOrderedSyntax._
-import utils.ArithmeticSyntax._
 import utils._
 import chisel3._
 

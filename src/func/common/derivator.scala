@@ -1,7 +1,6 @@
 package func.common 
 
 import utils._
-import utils.ArithmeticSyntax._
 import chisel3._
 
 class DerivatorCore[T <: Data](gen: T)(implicit ev: Arithmetic[T]) extends Module {

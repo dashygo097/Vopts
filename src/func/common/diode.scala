@@ -1,8 +1,6 @@
 package func.common
 
 import utils._
-import utils.PartialOrderedSyntax._
-import utils.ArithmeticSyntax._
 import chisel3._
 
 class DiodeCore[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
