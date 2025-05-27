@@ -1,8 +1,9 @@
 package test
-import app.VerilogEmitter
 
-import datatype.fp.FP
+import app.VerilogEmitter
 import mem.sram.{SyncRAMCore, AsyncRAMCore}
+
+import utils._
 
 object RAM extends App {
   VerilogEmitter.parse(new SyncRAMCore(new FP, 5), "ram.sv")

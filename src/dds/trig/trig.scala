@@ -1,10 +1,7 @@
 package dds.trig
-import utils._
-
-import datatype.fp._
 
 import scala.math._
-
+import utils._
 import chisel3._
 import chisel3.util._
 

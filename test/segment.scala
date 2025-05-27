@@ -1,6 +1,6 @@
 package test
-import app.VerilogEmitter
 
+import app.VerilogEmitter
 import peripheral.SegmentCore
 
 object Segment extends App {

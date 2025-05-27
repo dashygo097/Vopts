@@ -1,9 +1,8 @@
 package app
-import utils._
 
-import datatype.fp._
 import mod.fm.{FMCore, ModFMCore}
 
+import utils._
 import chisel3._
 
 class TxCoreIO extends Bundle {

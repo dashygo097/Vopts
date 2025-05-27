@@ -1,6 +1,6 @@
 package dds.noise
-import utils._
 
+import utils._
 import chisel3._
 import chisel3.util.random._
 

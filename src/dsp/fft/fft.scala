@@ -1,10 +1,7 @@
 package dsp.fft
-import utils._
-
-import datatype.fp.FPComplex
 
 import scala.math._
-
+import utils._
 import chisel3._
 import chisel3.util._
 

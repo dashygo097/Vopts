@@ -1,10 +1,11 @@
 package mod.am
 
-import utils._
-import datatype.fp._
 import func.common.Abs
 import dsp.filter.FIRCore
 
+import utils._
+import utils.PartialOrderedInstances._
+import utils.ArithmeticInstances._
 import chisel3._
 
 class EDDeAMCore(baseFreqLimit: Int, filterOrder: Int = 64) extends Module {

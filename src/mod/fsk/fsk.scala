@@ -1,8 +1,8 @@
 package mod.fsk
 
-import datatype.fp.FP
 import dds.trig.MultiCWCore
 
+import utils._
 import chisel3._
 
 class FSKIO extends Bundle {

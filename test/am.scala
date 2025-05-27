@@ -1,6 +1,6 @@
 package test
-import app.VerilogEmitter
 
+import app.VerilogEmitter
 import mod.am.AMCore
 
 object AM extends App {

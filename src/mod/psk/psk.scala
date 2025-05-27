@@ -1,10 +1,9 @@
 package mod.psk
 
-import utils._
-import datatype.fp.FP
 import dds.trig.{BaseTrigCore, CWCore}
 
 import scala.math.pow
+import utils._
 import chisel3._
 
 class BPSKIO extends Bundle {

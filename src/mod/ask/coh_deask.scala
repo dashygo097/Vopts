@@ -1,10 +1,11 @@
 package mod.ask
 
-import utils._
-import datatype.fp._
 import dsp.filter.FIRCore
 import func.common.{ComparatorCore, Abs}
 
+import utils._
+import utils.PartialOrderedInstances._
+import utils.ArithmeticInstances._
 import chisel3._
 
 class EnvelopDetectorIO extends Bundle {
@@ -15,7 +16,7 @@ class EnvelopDetectorIO extends Bundle {
 class EDDeASKCore(baseFreqLimit: Int, threshold: Double, filterOrder : Int = 64) extends Module {
   val io = IO(new EnvelopDetectorIO)
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
-  val comparator = Module(new ComparatorCore(threshold))
+  val comparator = Module(new ComparatorCore(new FP, threshold))
 
   fir.io.in := DataWrapper(Abs(io.in))
   comparator.io.in := DataWrapper(fir.io.out)

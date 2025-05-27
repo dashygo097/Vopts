@@ -1,8 +1,6 @@
 package func.common
 
 import utils._
-import datatype.fp._
-
 import chisel3._
 
 class DiodeCore extends Module {

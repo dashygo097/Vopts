@@ -1,7 +1,6 @@
 package dsp.fft
 
-import datatype.fp.FPComplex
-
+import utils._
 import chisel3._
 
 class ButterflyIO extends Bundle {

@@ -28,32 +28,16 @@ lazy val utils = (project in file("src/utils"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val datatype = (project in file("src/datatype"))
-  .dependsOn(utils)
-  .settings(
-    name := "datatype",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
-  )
-
 lazy val dds = (project in file("src/dds"))
-  .dependsOn(utils, datatype)
+  .dependsOn(utils)
   .settings(
     name := "dds",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val dsp = (project in file("src/dsp"))
-  .dependsOn(utils, datatype)
-  .settings(
-    name := "dsp",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
-  )
-
 lazy val func = (project in file("src/func"))
-  .dependsOn(utils, datatype)
+  .dependsOn(utils)
   .settings(
     name := "func",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -62,15 +46,23 @@ lazy val func = (project in file("src/func"))
 
 
 lazy val mem = (project in file("src/mem"))
-  .dependsOn(utils, datatype)
+  .dependsOn(utils)
   .settings(
     name := "mem",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
+lazy val dsp = (project in file("src/dsp"))
+  .dependsOn(utils, func)
+  .settings(
+    name := "dsp",
+    Compile / unmanagedSourceDirectories += baseDirectory.value,
+    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
+  )
+
 lazy val com = (project in file("src/com"))
-  .dependsOn(utils, datatype, mem)
+  .dependsOn(utils, mem)
   .settings(
     name := "com",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -78,7 +70,7 @@ lazy val com = (project in file("src/com"))
   )
 
 lazy val peripheral = (project in file("src/peripheral"))
-  .dependsOn(utils, datatype, mem)
+  .dependsOn(utils, mem)
   .settings(
     name := "peripheral",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -87,7 +79,7 @@ lazy val peripheral = (project in file("src/peripheral"))
 
 
 lazy val mod = (project in file("src/mod"))
-  .dependsOn(utils, datatype, dds, dsp, func)
+  .dependsOn(utils, dds, dsp, func)
   .settings(
     name := "mod",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -96,7 +88,7 @@ lazy val mod = (project in file("src/mod"))
 
 
 lazy val app = (project in file("app"))
-  .dependsOn(utils, datatype, peripheral, dds, dsp, mem, com, mod, func)
+  .dependsOn(utils, peripheral, dds, dsp, mem, com, mod, func)
   .settings(
     name := "app",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -104,7 +96,7 @@ lazy val app = (project in file("app"))
   )
 
 lazy val test = (project in file("test"))
-  .dependsOn(utils, datatype, peripheral, dds, dsp, mem, com, mod, func, app)
+  .dependsOn(utils, peripheral, dds, dsp, mem, com, mod, func, app)
   .settings(
     name := "test",
     Compile / unmanagedSourceDirectories += baseDirectory.value,

@@ -1,11 +1,9 @@
 package mod.fm
-import utils._
 
-import datatype.fp.FP
 import dds.trig.TrigCore
 
 import scala.math.pow
-
+import utils._
 import chisel3._
 
 class ModFMIO extends Bundle {
