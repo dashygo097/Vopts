@@ -3,8 +3,6 @@ package test
 import func.common.ComparatorCore
 import app.VerilogEmitter
 
-import utils.PartialOrderedInstances._
-import utils.ArithmeticInstances._
 import utils._
 import chisel3._
 

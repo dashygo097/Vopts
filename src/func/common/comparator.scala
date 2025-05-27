@@ -1,8 +1,6 @@
 package func.common
 
 import utils._
-import utils.PartialOrderedSyntax._
-import utils.ArithmeticSyntax._
 import chisel3._
 
 class ComparatorIO[T <: Data](gen: T) extends Bundle {

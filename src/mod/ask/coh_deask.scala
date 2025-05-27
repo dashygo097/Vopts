@@ -4,8 +4,6 @@ import dsp.filter.FIRCore
 import func.common.{ComparatorCore, Abs}
 
 import utils._
-import utils.PartialOrderedInstances._
-import utils.ArithmeticInstances._
 import chisel3._
 
 class EnvelopDetectorIO extends Bundle {
