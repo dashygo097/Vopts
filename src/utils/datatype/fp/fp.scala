@@ -76,6 +76,16 @@ trait FPOps {
   def *(that: SInt): FP = this * FP(that)
   def *(that: UInt): FP = this * FP(that.asSInt)
 
+  def /(that: FP): FP = {
+    this._match(that)
+    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
+    fl.value := (this.value << _bp) / that.value
+    fl
+  }
+  def /(that: Double): FP = this / FP(that)
+  def /(that: SInt): FP = this / FP(that)
+  def /(that: UInt): FP = this / FP(that.asSInt)
+
   def shiftleft(that: UInt): FP = {
     val fl = Wire(new FP(this.get_dw(), this.get_bp()))
     fl.value := this.value << that

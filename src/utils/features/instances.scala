@@ -24,6 +24,7 @@ object ArithmeticInstances {
     def add(x: UInt, y: UInt): UInt = x + y
     def sub(x: UInt, y: UInt): UInt = x - y
     def mul(x: UInt, y: UInt): UInt = x * y
+    def div(x: UInt, y: UInt): UInt = x / y
     def zero(x: UInt): UInt = 0.U(x.getWidth.W)
     def fromInt(x: UInt, y: Int): UInt = {
       require(y >= 0, "Cannot convert negative int to UInt")
@@ -40,6 +41,9 @@ object ArithmeticInstances {
     def add(x: SInt, y: SInt): SInt = x + y
     def sub(x: SInt, y: SInt): SInt = x - y
     def mul(x: SInt, y: SInt): SInt = x * y
+    def mul(x: SInt, y: UInt): SInt = x * y.asSInt
+    def div(x: SInt, y: SInt): SInt = x / y
+    def div(x: SInt, y: UInt): SInt = x / y.asSInt
     def zero(x: SInt): SInt = 0.S(x.getWidth.W)
     def fromInt(x: SInt, y: Int): SInt = y.S(x.getWidth.W)
     def fromDouble(x: SInt, y: Double): SInt = {
@@ -51,6 +55,9 @@ object ArithmeticInstances {
     def add(x: FP, y: FP): FP = x + y
     def sub(x: FP, y: FP): FP = x - y
     def mul(x: FP, y: FP): FP = x * y
+    def mul(x: FP, y: UInt): FP = x * y
+    def div(x: FP, y: FP): FP = x / y
+    def div(x: FP, y: UInt): FP = x / y
     def zero(x: FP): FP = new FP(x.get_dw(), x.get_bp()).fromDouble(0.0)
     def fromInt(x: FP, y: Int): FP = new FP(x.get_dw(), x.get_bp()).fromDouble(y.toDouble)
     def fromDouble(x: FP, y: Double): FP = new FP(x.get_dw(), x.get_bp()).fromDouble(y)

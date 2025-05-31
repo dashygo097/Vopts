@@ -1,13 +1,10 @@
 package app
 
 import app.VerilogEmitter
-import com.fmc.{FMCSlaveRAMCore, FMCMuxedSlaveRAMCore}
+import com.fsmc.FSMCSlaveRAMCore
 import chisel3._
 
-object FMCSlaveSRAM extends App {
-  VerilogEmitter.parse(new FMCSlaveRAMCore(UInt(8.W), 16), "fmc_sram_slave.sv")
+object FSMCSlaveRAM extends App {
+  VerilogEmitter.parse(new FSMCSlaveRAMCore(UInt(8.W), 4), "fsmc_ram_slave.sv")
 }
 
-object FMCMuxedSlaveSRAM extends App {
-  VerilogEmitter.parse(new FMCMuxedSlaveRAMCore(UInt(8.W), 4), "fmc_muxed_sram_slave.sv")
-}
