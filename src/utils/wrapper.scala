@@ -34,3 +34,20 @@ class BidirectionalBuffer(width: Int) extends BlackBox with HasBlackBoxInline {
     |endmodule
     """.stripMargin)
 }
+
+
+class SyncBidirectionalBuffer(width: Int) extends Module {
+  val io = IO(new Bundle {
+    val dataIO = Analog(width.W)
+    val dataIn = Output(UInt(width.W))
+    val dataOut = Input(UInt(width.W))
+    val oe = Input(Bool())
+  })
+  
+  val buffer = Module(new BidirectionalBuffer(width))
+  attach(io.dataIO, buffer.io.dataIO)
+  buffer.io.dataOut := io.dataOut
+  buffer.io.oe := io.oe
+  
+  io.dataIn := RegNext(buffer.io.dataIn)
+}
