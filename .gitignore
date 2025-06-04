@@ -5,7 +5,6 @@
 .metals/
 project/project
 target/
-build/
 obj_dir/
 testbench/
 totestls.txt
