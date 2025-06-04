@@ -59,52 +59,56 @@ module FSMCSlaveRAMCore(
   inout [7:0] io_data
 );
 
-  wire [7:0]      _bi_buffer_dataIn;
-  wire [7:0]      _mem_io_dataOut;
-  reg  [1:0]      cnt;
-  reg  [3:0]      addrNext;
-  wire            _GEN = cnt == 2'h0;
-  wire            _GEN_0 = cnt == 2'h1;
-  wire            _GEN_1 = cnt == 2'h2;
-  wire            _GEN_2 = _GEN | _GEN_0;
-  wire            _GEN_3 = ~_GEN & _GEN_0;
-  wire [3:0][3:0] _GEN_4 = {{4'h0}, {addrNext}, {addrNext}, {4'h0}};
+  wire [7:0] _bi_buffer_dataIn;
+  wire [7:0] _mem_io_dataOut;
+  reg  [1:0] cnt;
+  reg  [3:0] addrNext;
+  wire       _GEN = cnt == 2'h0;
+  wire       _GEN_0 = cnt == 2'h1;
+  wire       _GEN_1 = cnt == 2'h2;
+  wire       _GEN_2 = ~_GEN & _GEN_0;
+  wire       _GEN_3 = ~io_ne & io_noe;
+  wire       _GEN_4 = _GEN_1 & _GEN_3;
+  wire       _GEN_5 = _GEN | _GEN_0;
   always @(posedge clock) begin
     if (reset) begin
       cnt <= 2'h0;
       addrNext <= 4'h0;
     end
     else if (_GEN) begin
-      automatic logic _GEN_5 = ~io_ne & ~io_noe;
-      automatic logic _GEN_6 = ~io_ne & io_noe;
-      cnt <= _GEN_5 ? 2'h1 : {_GEN_6, 1'h0};
-      if (_GEN_5 | _GEN_6)
+      if (io_ne) begin
+      end
+      else begin
+        cnt <= io_noe ? 2'h2 : 2'h1;
         addrNext <= io_addr;
+      end
     end
     else begin
-      if (_GEN_0)
-        cnt <= {1'h0, ~(io_ne | io_noe)};
-      else
+      automatic logic _GEN_6;
+      _GEN_6 = io_ne | io_noe;
+      if (_GEN_0 ? _GEN_6 : _GEN_1 & (io_ne | ~_GEN_3))
         cnt <= 2'h0;
-      if (_GEN_0 | ~(_GEN_1 & io_nwe)) begin
+      if (_GEN_0) begin
+        if (~_GEN_6)
+          addrNext <= io_addr;
       end
-      else
+      else if (_GEN_4 & io_nwe)
         addrNext <= io_addr;
     end
   end // always @(posedge)
   SyncRAMCore mem (
     .clock      (clock),
-    .io_addr    (_GEN_4[cnt]),
-    .io_dataIn  (_GEN_2 | ~(_GEN_1 & ~io_nwe) ? 8'h0 : _bi_buffer_dataIn),
+    .io_addr    (_GEN | ~(_GEN_0 | _GEN_4) ? 4'h0 : addrNext),
+    .io_dataIn  (_GEN_5 | ~(_GEN_1 & _GEN_3 & ~io_nwe) ? 8'h0 : _bi_buffer_dataIn),
     .io_dataOut (_mem_io_dataOut),
-    .io_en_we   (~_GEN_2 & _GEN_1 & ~io_nwe),
-    .io_en_re   (_GEN_3)
+    .io_en_we   (~_GEN_5 & _GEN_4 & ~io_nwe),
+    .io_en_re   (_GEN_2)
   );
   BidirectionalBuffer bi_buffer (
     .dataIO  (io_data),
     .dataIn  (_bi_buffer_dataIn),
     .dataOut (_GEN | ~_GEN_0 ? 8'h0 : _mem_io_dataOut),
-    .oe      (_GEN_3)
+    .oe      (_GEN_2)
   );
 endmodule
 

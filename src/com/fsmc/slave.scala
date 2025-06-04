@@ -4,6 +4,7 @@ import mem.sram.SyncRAMCore
 
 import utils._
 import chisel3._
+import chisel3.util._
 import chisel3.experimental._
 
 class FSMCSlaveInterfaceIO[T <: Data](gen: T, addrWidth: Int) extends Bundle {
@@ -32,62 +33,78 @@ class FSMCSlaveRAMCore[T <: Data](gen: T, addrWidth: Int) extends Module {
   val bi_buffer = Module(new BidirectionalBuffer(gen.getWidth))
   attach(io.data, bi_buffer.io.dataIO)
 
-  cnt := sFSMC.IDLE
-  mem.io.dataIn := 0.U.asTypeOf(gen)
-  mem.io.addr := 0.U(gen.getWidth.W)
   mem.io.en.re := false.B
   mem.io.en.we := false.B
+  mem.io.addr := 0.U(addrWidth.W)
+  mem.io.dataIn := 0.U.asTypeOf(gen)
+
   bi_buffer.io.oe := false.B
   bi_buffer.io.dataOut := 0.U(gen.getWidth.W)
 
-  when(cnt === sFSMC.IDLE) {
-    mem.io.en.re := false.B
-    mem.io.en.we := false.B
-    bi_buffer.io.oe := false.B
-    when(!io.ne && !io.noe) {
-      cnt := sFSMC.READ
-      addrNext := io.addr
-    }.elsewhen(!io.ne && io.noe) {
-      cnt := sFSMC.WRITE
-      addrNext := io.addr
-    } .otherwise {
-      cnt := sFSMC.IDLE
-    }
-  }.elsewhen(cnt === sFSMC.READ) {
-    mem.io.en.we := false.B
-    mem.io.en.re := true.B
-    bi_buffer.io.oe := true.B
-    mem.io.addr := addrNext
-    bi_buffer.io.dataOut := mem.io.dataOut.asUInt
-
-    when(io.ne | io.noe) {
-      cnt := sFSMC.IDLE
-    } .otherwise {
-      cnt := sFSMC.READ
-    }
-
-  }.elsewhen(cnt === sFSMC.WRITE) {
-    when(!io.nwe) {
-      mem.io.en.re := false.B
-      mem.io.en.we := true.B
-      bi_buffer.io.oe := false.B
-      mem.io.addr := addrNext
-      mem.io.dataIn := bi_buffer.io.dataIn.asTypeOf(gen)
-    } .elsewhen(io.nwe) {
+  switch(cnt) {
+    is(sFSMC.IDLE) {
       mem.io.en.re := false.B
       mem.io.en.we := false.B
-      bi_buffer.io.oe := false.B
-      addrNext := io.addr
-      mem.io.addr := addrNext
-    } .elsewhen(!io.ne && io.noe && io.nwe) {
-      /// DO NOTHING, just wait for next command
-    } .elsewhen(io.ne | io.noe) {
-      cnt := sFSMC.IDLE
-    } .otherwise {
-      cnt := sFSMC.WRITE
-    }
+      mem.io.addr := 0.U(addrWidth.W)
+      mem.io.dataIn := 0.U.asTypeOf(gen)
 
-  }.elsewhen(cnt === sFSMC.WAIT) {
-    /// TODO: Implement WAIT state if needed
+      bi_buffer.io.oe := false.B
+      bi_buffer.io.dataOut := 0.U(gen.getWidth.W)
+      
+      when(!io.ne) {
+        addrNext := io.addr
+        when(!io.noe) {
+          cnt := sFSMC.READ
+        }.elsewhen(io.noe) {
+          cnt := sFSMC.WRITE
+        }
+      }
+    }
+    
+    is(sFSMC.READ) {
+      mem.io.en.re := true.B
+      mem.io.en.we := false.B
+      mem.io.addr := addrNext
+      mem.io.dataIn := 0.U.asTypeOf(gen)
+      
+      bi_buffer.io.oe := true.B
+      bi_buffer.io.dataOut := mem.io.dataOut.asUInt
+      
+      when(io.ne || io.noe) {
+        cnt := sFSMC.IDLE
+      }.otherwise {
+        addrNext := io.addr
+      }
+    }
+    
+    is(sFSMC.WRITE) {
+      bi_buffer.io.oe := false.B 
+      bi_buffer.io.dataOut := 0.U(gen.getWidth.W)
+      
+      when(!io.ne && io.noe) {
+        when(!io.nwe) {
+          mem.io.en.re := false.B
+          mem.io.en.we := true.B
+          mem.io.addr := addrNext
+          mem.io.dataIn := bi_buffer.io.dataIn.asTypeOf(gen)
+        }.otherwise {
+          mem.io.en.re := false.B
+          mem.io.en.we := false.B
+          mem.io.addr := addrNext
+          mem.io.dataIn := 0.U.asTypeOf(gen)
+          addrNext := io.addr
+        }
+      }.otherwise {
+        mem.io.en.re := false.B
+        mem.io.en.we := false.B
+        mem.io.addr := 0.U(addrWidth.W)
+        mem.io.dataIn := 0.U.asTypeOf(gen)
+        cnt := sFSMC.IDLE
+      }
+      
+      when(io.ne) {
+        cnt := sFSMC.IDLE
+      }
+    }
   }
 }
