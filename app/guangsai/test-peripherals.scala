@@ -1,4 +1,4 @@
-package app
+package app.guangsai
 
 import peripheral.{ADC122S625Core, MCP4921Core}
 import app.VerilogEmitter
