@@ -15,13 +15,20 @@ class ADC122S625IO extends Bundle {
   val dataB = Output(new FP(12, 11))
 
   val sclk = Input(Clock())
+  val gateIn = Input(Bool())
+  val gateOut = Input(Bool())
+
+  val fullA = Output(Bool())
+  val fullB = Output(Bool())
+  val emptyA = Output(Bool())
+  val emptyB = Output(Bool())
 }
 
-class ADC122S625Core extends Module {
+class ADC122S625Core(bufferSize: Int) extends Module {
   val io = IO(new ADC122S625IO)
 
-  val fifoA = Module(new AsyncFIFOCore(new FP(12, 11), 4))
-  val fifoB = Module(new AsyncFIFOCore(new FP(12, 11), 4))
+  val fifoA = Module(new AsyncFIFOCore(new FP(12, 11), bufferSize))
+  val fifoB = Module(new AsyncFIFOCore(new FP(12, 11), bufferSize))
 
   io.cs_n := !io.en
 
@@ -52,15 +59,37 @@ class ADC122S625Core extends Module {
     fifoA.io.wdata := shiftRegA.asTypeOf(new FP(12, 11))
     fifoB.io.wdata := shiftRegB.asTypeOf(new FP(12, 11))
 
-    fifoA.io.wr := bitCounterA === 11.U
-    fifoB.io.wr := bitCounterB === 11.U
+    when(io.gateIn && io.gateOut) {
+      fifoA.io.wr := bitCounterA === 11.U
+      fifoB.io.wr := bitCounterB === 11.U
+      fifoA.io.rd := bitCounterA === 11.U
+      fifoB.io.rd := bitCounterB === 11.U
+    } .elsewhen(io.gateIn && !io.gateOut) {
+      fifoA.io.wr := bitCounterA === 11.U
+      fifoB.io.wr := bitCounterB === 11.U
+      fifoA.io.rd := false.B
+      fifoB.io.rd := false.B
+    } .elsewhen(!io.gateIn && io.gateOut) {
+      fifoA.io.wr := false.B
+      fifoB.io.wr := false.B
+      fifoA.io.rd := true.B
+      fifoB.io.rd := true.B
+    } .otherwise {
+      fifoA.io.wr := false.B
+      fifoB.io.wr := false.B
+      fifoA.io.rd := false.B
+      fifoB.io.rd := false.B
+    }
 
-    fifoA.io.rd := bitCounterA === 11.U
-    fifoB.io.rd := bitCounterB === 11.U
   }
 
   fifoA.io.rclk := clock
   fifoB.io.rclk := clock
+
+  io.fullA := fifoA.io.full
+  io.fullB := fifoB.io.full
+  io.emptyA := fifoA.io.empty
+  io.emptyB := fifoB.io.empty
 
   io.dataA := fifoA.io.rdata
   io.dataB := fifoB.io.rdata

@@ -40,11 +40,11 @@ class MCP4921Core extends Module {
       is(MCP4921State.IDLE) {
         when(io.en) {
           transmitReg := Cat(
-            0.U(1.W),               
-            io.buf,                      
-            io.gain_n,                   
-            io.shdn_n,                   
-            io.dataIn.value.asUInt       
+            0.U(1.W),
+            io.buf,
+            io.gain_n,
+            io.shdn_n,
+            io.dataIn.value.asUInt
           )
           bitCounter := 0.U
           state := MCP4921State.TRANSMIT
