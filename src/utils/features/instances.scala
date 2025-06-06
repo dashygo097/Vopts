@@ -35,6 +35,8 @@ object ArithmeticInstances {
       require(y.isValidInt, "Double value is not a valid UInt")
       y.toInt.U(x.getWidth.W)
     }
+    def mapUInt(x: UInt, y: UInt): UInt = y
+    def mapSInt(x: UInt, y: SInt): UInt = y.asUInt
   }
 
   implicit val sintArithmetic: Arithmetic[SInt] = new Arithmetic[SInt] {
@@ -50,6 +52,8 @@ object ArithmeticInstances {
       require(y.isValidInt, "Double value is not a valid SInt")
       y.toInt.S(x.getWidth.W)
     }
+    def mapUInt(x: SInt, y: UInt): SInt = y.asSInt
+    def mapSInt(x: SInt, y: SInt): SInt = y
   }
   implicit val fpArithmetic: Arithmetic[FP] = new Arithmetic[FP] {
     def add(x: FP, y: FP): FP = x + y
@@ -61,5 +65,7 @@ object ArithmeticInstances {
     def zero(x: FP): FP = new FP(x.get_dw(), x.get_bp()).fromDouble(0.0)
     def fromInt(x: FP, y: Int): FP = new FP(x.get_dw(), x.get_bp()).fromDouble(y.toDouble)
     def fromDouble(x: FP, y: Double): FP = new FP(x.get_dw(), x.get_bp()).fromDouble(y)
+    def mapUInt(x: FP, y: UInt): FP = new FP(x.get_dw(), x.get_bp()).mapSInt(y.asSInt)
+    def mapSInt(x: FP, y: SInt): FP = new FP(x.get_dw(), x.get_bp()).mapSInt(y)
   }
 }

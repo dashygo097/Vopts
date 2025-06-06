@@ -25,6 +25,23 @@ class FP(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with F
     fl
   }
 
+  def fromSInt(value: SInt): FP = {
+    val fl = Wire(new FP(_dataWidth, _bp))
+    fl.value := value
+    fl
+  }
+
+  def mapDouble(x: Double): FP = {
+    this.fromDouble(x)
+  }
+
+  def mapSInt(x: SInt): FP = {
+    val scale = pow(2, _bp).toInt
+    val fl = Wire(new FP(_dataWidth, _bp))
+    fl.value := x * scale.S
+    fl
+  }
+
   def _match(that: FP): Unit = {
     require(this.get_dw() == that.get_dw() && this.get_bp() == that.get_bp(),
       s"FP match requires same dataWidth and bp: (${this.get_dw()}, ${this.get_bp()}) vs (${that.get_dw()}, ${that.get_bp()})")
@@ -36,9 +53,7 @@ object FP extends Config {
     (new FP).fromDouble(value)
   }
   def apply(value: SInt): FP = {
-    val fl = Wire(new FP)
-    fl.value := value.asSInt
-    fl
+    new FP().fromSInt(value)
   }
 }
 

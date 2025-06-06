@@ -2,6 +2,7 @@ package mem.fifo
 
 import mem.register.RegisterFileCore
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -107,7 +108,7 @@ class AsyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
   val rclk = Input(Clock())
 }
 
-class AsyncFIFOCore[T <: Data](gen: T, depth: Int) extends Module {
+class AsyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
   val io = IO(new AsyncFIFOIO(gen, depth))
 
   val control = Module(new AsyncFIFOCtrlCore(gen, depth))
