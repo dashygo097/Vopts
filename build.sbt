@@ -45,7 +45,7 @@ lazy val mem = (project in file("src/mem"))
   )
 
 lazy val func = (project in file("src/func"))
-  .dependsOn(utils, mem)
+  .dependsOn(utils)
   .settings(
     name := "func",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
