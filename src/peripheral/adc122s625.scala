@@ -8,8 +8,7 @@ import chisel3.util._
 
 // ADC122S625 is a dual-channel 12-bit ADC with SPI interface
 class ADC122S625IO extends Bundle {
-  val en = Input(Bool())
-  val cs_n = Output(Bool())
+  val cs_n = Input(Bool())
   val sdo = Input(Bool())
   val dataA = Output(new FP(12, 11))
   val dataB = Output(new FP(12, 11))
@@ -29,8 +28,6 @@ class ADC122S625Core(bufferSize: Int) extends Module {
 
   val fifoA = Module(new AsyncFIFOCore(new FP(12, 11), bufferSize))
   val fifoB = Module(new AsyncFIFOCore(new FP(12, 11), bufferSize))
-
-  io.cs_n := !io.en
 
   withClock(io.sclk) {
     val csCounter = RegInit(0.U(5.W))

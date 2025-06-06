@@ -167,9 +167,8 @@ endmodule
 module ADC122S625Core(
   input         clock,
                 reset,
-                io_en,
-  output        io_cs_n,
-  input         io_sdo,
+                io_cs_n,
+                io_sdo,
   output [11:0] io_dataA_value,
                 io_dataB_value,
   input         io_sclk,
@@ -204,19 +203,19 @@ module ADC122S625Core(
       bitCounterB <= 4'h0;
     end
     else begin
-      if (io_en)
-        csCounter <= csCounter + 5'h1;
-      else
+      if (io_cs_n)
         csCounter <= 5'h0;
+      else
+        csCounter <= csCounter + 5'h1;
       onSamplingA <= (|(csCounter[4:2])) & ~(csCounter[4]);
       onSamplingB <= csCounter > 5'h13;
-      if (io_en & onSamplingA)
+      if (~io_cs_n & onSamplingA)
         shiftRegA <= {io_sdo, shiftRegA[11:1]};
       if (onSamplingA)
         bitCounterA <= bitCounterA + 4'h1;
       else
         bitCounterA <= 4'h0;
-      if (io_en & onSamplingB)
+      if (~io_cs_n & onSamplingB)
         shiftRegB <= {io_sdo, shiftRegB[11:1]};
       if (onSamplingB)
         bitCounterB <= bitCounterB + 4'h1;
@@ -248,6 +247,5 @@ module ADC122S625Core(
     .io_wclk        (io_sclk),
     .io_rclk        (clock)
   );
-  assign io_cs_n = ~io_en;
 endmodule
 
