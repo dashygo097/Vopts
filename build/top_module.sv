@@ -844,7 +844,7 @@ module ADC122S625Core(
   );
 endmodule
 
-module Top(
+module TopModule(
   input         clock,
                 reset,
                 DFB1_ADC_CS,
