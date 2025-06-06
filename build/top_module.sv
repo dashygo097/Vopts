@@ -772,6 +772,8 @@ module ADC122S625Core(
   output [11:0] io_dataA_value,
                 io_dataB_value,
   input         io_sclk,
+                io_gateIn,
+                io_gateOut,
   output        io_fullA,
                 io_fullB,
                 io_emptyA,
@@ -785,8 +787,11 @@ module ADC122S625Core(
   reg  [3:0]  bitCounterA;
   reg  [11:0] shiftRegB;
   reg  [3:0]  bitCounterB;
+  wire        _GEN = io_gateIn & io_gateOut;
   wire        _fifoA_io_rd_T = bitCounterA == 4'hB;
   wire        _fifoB_io_rd_T = bitCounterB == 4'hB;
+  wire        _GEN_0 = io_gateIn & ~io_gateOut;
+  wire        _GEN_1 = ~_GEN_0 & ~io_gateIn & io_gateOut;
   always @(posedge io_sclk) begin
     if (reset) begin
       csCounter <= 5'h0;
@@ -823,8 +828,8 @@ module ADC122S625Core(
     .reset          (reset),
     .io_wdata_value (shiftRegA),
     .io_rdata_value (io_dataA_value),
-    .io_wr          (_fifoA_io_rd_T),
-    .io_rd          (_fifoA_io_rd_T),
+    .io_wr          (_GEN ? _fifoA_io_rd_T : _GEN_0 & bitCounterA == 4'hB),
+    .io_rd          (_GEN ? _fifoA_io_rd_T : _GEN_1),
     .io_empty       (io_emptyA),
     .io_full        (io_fullA),
     .io_wclk        (io_sclk),
@@ -835,8 +840,8 @@ module ADC122S625Core(
     .reset          (reset),
     .io_wdata_value (shiftRegB),
     .io_rdata_value (io_dataB_value),
-    .io_wr          (_fifoB_io_rd_T),
-    .io_rd          (_fifoB_io_rd_T),
+    .io_wr          (_GEN ? _fifoB_io_rd_T : _GEN_0 & bitCounterB == 4'hB),
+    .io_rd          (_GEN ? _fifoB_io_rd_T : _GEN_1),
     .io_empty       (io_emptyB),
     .io_full        (io_fullB),
     .io_wclk        (io_sclk),
@@ -844,21 +849,95 @@ module ADC122S625Core(
   );
 endmodule
 
+module MCP4921Core(
+  input         reset,
+                io_en,
+                io_buf,
+                io_gain_n,
+                io_shdn_n,
+  output        io_cs_n,
+                io_sdi,
+                io_ldac_n,
+  input  [11:0] io_dataIn_value,
+  input         io_sclk
+);
+
+  reg [1:0]  state;
+  reg [4:0]  bitCounter;
+  reg [15:0] transmitReg;
+  reg        cs_n_reg;
+  reg        sdi_reg;
+  reg        ldac_n_reg;
+  always @(posedge io_sclk) begin
+    if (reset) begin
+      state <= 2'h0;
+      bitCounter <= 5'h0;
+      transmitReg <= 16'h0;
+      cs_n_reg <= 1'h1;
+      sdi_reg <= 1'h0;
+      ldac_n_reg <= 1'h1;
+    end
+    else begin
+      automatic logic        _GEN;
+      automatic logic        _GEN_0 = state == 2'h1;
+      automatic logic        _GEN_1;
+      automatic logic [15:0] _sdi_reg_T_3 = transmitReg >> 4'hF - bitCounter[3:0];
+      _GEN = state == 2'h0;
+      _GEN_1 = _GEN_0 & ~(bitCounter[4]);
+      if (io_en) begin
+        automatic logic [3:0][1:0] _GEN_2 =
+          {{state}, {2'h0}, {bitCounter[4] ? 2'h2 : state}, {io_en ? 2'h1 : state}};
+        state <= _GEN_2[state];
+        if (_GEN) begin
+          if (io_en)
+            bitCounter <= 5'h0;
+        end
+        else if (_GEN_1)
+          bitCounter <= bitCounter + 5'h1;
+      end
+      else begin
+        state <= 2'h0;
+        bitCounter <= 5'h0;
+      end
+      if (_GEN & io_en)
+        transmitReg <= {1'h0, io_buf, io_gain_n, io_shdn_n, io_dataIn_value};
+      cs_n_reg <= ~io_en | (_GEN ? ~io_en & cs_n_reg : _GEN_0 & bitCounter[4] | cs_n_reg);
+      sdi_reg <= io_en & (_GEN | ~_GEN_1 ? sdi_reg : _sdi_reg_T_3[0]);
+      ldac_n_reg <=
+        ~io_en | (_GEN ? io_en | ldac_n_reg : (_GEN_0 | state != 2'h2) & ldac_n_reg);
+    end
+  end // always @(posedge)
+  assign io_cs_n = cs_n_reg;
+  assign io_sdi = sdi_reg;
+  assign io_ldac_n = ldac_n_reg;
+endmodule
+
 module TopModule(
   input         clock,
                 reset,
+                DFB1_ADC_SCLK,
                 DFB1_ADC_CS,
                 DFB1_ADC_DOUT,
-                DFB1_ADC_SCLK,
   output [11:0] DFB1_ADC_DATA_A_value,
                 DFB1_ADC_DATA_B_value,
+  input         DFB1_ADC_GATE_IN,
+                DFB1_ADC_GATE_OUT,
   output        DFB1_ADC_FULL_A,
                 DFB1_ADC_FULL_B,
                 DFB1_ADC_EMPTY_A,
-                DFB1_ADC_EMPTY_B
+                DFB1_ADC_EMPTY_B,
+  input         DFB1_DAC_SCK,
+  output        DFB1_DAC_CS,
+                DFB1_DAC_SDI,
+                DFB1_DAC_LDAC,
+  input         DFB1_DAC_EN,
+                DFB1_DAC_BUF,
+                DFB1_DAC_GAIN_N,
+                DFB1_DAC_SHDN_N,
+  input  [11:0] DFB1_DAC_DATA_IN_value
 );
 
-  ADC122S625Core adc1 (
+  ADC122S625Core dfb1_adc (
     .clock          (clock),
     .reset          (reset),
     .io_cs_n        (DFB1_ADC_CS),
@@ -866,10 +945,24 @@ module TopModule(
     .io_dataA_value (DFB1_ADC_DATA_A_value),
     .io_dataB_value (DFB1_ADC_DATA_B_value),
     .io_sclk        (DFB1_ADC_SCLK),
+    .io_gateIn      (DFB1_ADC_GATE_IN),
+    .io_gateOut     (DFB1_ADC_GATE_OUT),
     .io_fullA       (DFB1_ADC_FULL_A),
     .io_fullB       (DFB1_ADC_FULL_B),
     .io_emptyA      (DFB1_ADC_EMPTY_A),
     .io_emptyB      (DFB1_ADC_EMPTY_B)
+  );
+  MCP4921Core dfb1_dac (
+    .reset           (reset),
+    .io_en           (DFB1_DAC_EN),
+    .io_buf          (DFB1_DAC_BUF),
+    .io_gain_n       (DFB1_DAC_GAIN_N),
+    .io_shdn_n       (DFB1_DAC_SHDN_N),
+    .io_cs_n         (DFB1_DAC_CS),
+    .io_sdi          (DFB1_DAC_SDI),
+    .io_ldac_n       (DFB1_DAC_LDAC),
+    .io_dataIn_value (DFB1_DAC_DATA_IN_value),
+    .io_sclk         (DFB1_DAC_SCK)
   );
 endmodule
 

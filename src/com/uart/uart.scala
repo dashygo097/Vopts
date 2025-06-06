@@ -7,14 +7,12 @@ import chisel3.util._
 class UartTXIO extends Bundle {
   val txd = Output(Bool())
   val channel = Flipped(Decoupled(UInt(8.W))) 
-  val tick = Output(Bool())
   val busy = Output(Bool())
 }
 
 class UartRXIO extends Bundle {
   val rxd = Input(Bool())
   val channel = Decoupled(UInt(8.W))
-  val tick = Output(Bool())
   val error = Output(Bool())
 }
 
@@ -24,13 +22,13 @@ class UartTXCore(baudRate: Int) extends Module with Config {
   
   val state = RegInit(UartState.IDLE)
 
-  
   val data = Reg(UInt(8.W))
+  val tick = RegInit(false.B)
   val bitCounter = RegInit(0.U(3.W))
   val tickCounter = RegInit(0.U(log2Ceil(baudTickDivider).W))
 
   tickCounter := Mux(tickCounter === (baudTickDivider - 1).U, 0.U, tickCounter + 1.U)
-  io.tick := Mux(tickCounter === (baudTickDivider - 1).U, true.B, false.B)
+  tick := Mux(tickCounter === (baudTickDivider - 1).U, true.B, false.B)
   io.busy := state =/= UartState.IDLE
   io.txd := true.B  
   io.channel.ready := state === UartState.IDLE
@@ -45,7 +43,7 @@ class UartTXCore(baudRate: Int) extends Module with Config {
     
     is (UartState.START) {
       io.txd := false.B
-      when (io.tick) {
+      when (tick) {
         state := UartState.DATA
         bitCounter := 0.U
       }
@@ -53,7 +51,7 @@ class UartTXCore(baudRate: Int) extends Module with Config {
     
     is (UartState.DATA) {
       io.txd := data(0)  
-      when (io.tick) {
+      when (tick) {
         when (bitCounter === 7.U) {
           state := UartState.STOP
         } .otherwise {
@@ -65,12 +63,11 @@ class UartTXCore(baudRate: Int) extends Module with Config {
     
     is (UartState.STOP) {
       io.txd := true.B  
-      when (io.tick) {
+      when (tick) {
         state := UartState.IDLE
       }
     }
   }
-
 }
 
 class UartRXCore(baudRate: Int) extends Module with Config {
@@ -80,11 +77,12 @@ class UartRXCore(baudRate: Int) extends Module with Config {
   val state = RegInit(UartState.IDLE)
   
   val data = Reg(UInt(8.W))
+  val tick = RegInit(false.B)
   val bitCounter = RegInit(0.U(3.W))
   val tickCounter = RegInit(0.U(log2Ceil(baudTickDivider).W))
 
   tickCounter := Mux(tickCounter === (baudTickDivider - 1).U, 0.U, tickCounter + 1.U)
-  io.tick := Mux(tickCounter === (baudTickDivider - 1).U, true.B, false.B)
+  tick := Mux(tickCounter === (baudTickDivider - 1).U, true.B, false.B)
   io.channel.valid := false.B
   io.channel.bits := data
   io.error := false.B
@@ -99,14 +97,14 @@ class UartRXCore(baudRate: Int) extends Module with Config {
     }
     
     is (UartState.START) {
-      when (io.tick) {
+      when (tick) {
         state := UartState.DATA
         bitCounter := 0.U
       }
     }
     
     is (UartState.DATA) {
-      when (io.tick) {
+      when (tick) {
         data := Cat(rxd, data(7, 1))  
         when (bitCounter === 7.U) {
           state := UartState.STOP
@@ -117,7 +115,7 @@ class UartRXCore(baudRate: Int) extends Module with Config {
     }
     
     is (UartState.STOP) {
-      when (io.tick) {
+      when (tick) {
         io.channel.valid := true.B
         io.error := !rxd  
         state := UartState.IDLE
