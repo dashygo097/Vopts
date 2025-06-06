@@ -22,7 +22,7 @@ class ADCIO extends Bundle {
 
 }
 
-class Top extends Module {
+class TopModule extends Module {
   val DFB1_ADC = IO(new ADCIO)
   val adc1 = Module(new ADC122S625Core(128))
 
@@ -42,5 +42,5 @@ class Top extends Module {
 }
 
 object Top extends App {
-  VerilogEmitter.parse(new Top, "top.sv")
+  VerilogEmitter.parse(new TopModule, "top_module.sv")
 }
