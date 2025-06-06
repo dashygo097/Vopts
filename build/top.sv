@@ -767,14 +767,11 @@ endmodule
 module ADC122S625Core(
   input         clock,
                 reset,
-                io_en,
-  output        io_cs_n,
-  input         io_sdo,
+                io_cs_n,
+                io_sdo,
   output [11:0] io_dataA_value,
                 io_dataB_value,
   input         io_sclk,
-                io_gateIn,
-                io_gateOut,
   output        io_fullA,
                 io_fullB,
                 io_emptyA,
@@ -788,11 +785,8 @@ module ADC122S625Core(
   reg  [3:0]  bitCounterA;
   reg  [11:0] shiftRegB;
   reg  [3:0]  bitCounterB;
-  wire        _GEN = io_gateIn & io_gateOut;
   wire        _fifoA_io_rd_T = bitCounterA == 4'hB;
   wire        _fifoB_io_rd_T = bitCounterB == 4'hB;
-  wire        _GEN_0 = io_gateIn & ~io_gateOut;
-  wire        _GEN_1 = ~_GEN_0 & ~io_gateIn & io_gateOut;
   always @(posedge io_sclk) begin
     if (reset) begin
       csCounter <= 5'h0;
@@ -804,19 +798,19 @@ module ADC122S625Core(
       bitCounterB <= 4'h0;
     end
     else begin
-      if (io_en)
-        csCounter <= csCounter + 5'h1;
-      else
+      if (io_cs_n)
         csCounter <= 5'h0;
+      else
+        csCounter <= csCounter + 5'h1;
       onSamplingA <= (|(csCounter[4:2])) & ~(csCounter[4]);
       onSamplingB <= csCounter > 5'h13;
-      if (io_en & onSamplingA)
+      if (~io_cs_n & onSamplingA)
         shiftRegA <= {io_sdo, shiftRegA[11:1]};
       if (onSamplingA)
         bitCounterA <= bitCounterA + 4'h1;
       else
         bitCounterA <= 4'h0;
-      if (io_en & onSamplingB)
+      if (~io_cs_n & onSamplingB)
         shiftRegB <= {io_sdo, shiftRegB[11:1]};
       if (onSamplingB)
         bitCounterB <= bitCounterB + 4'h1;
@@ -829,8 +823,8 @@ module ADC122S625Core(
     .reset          (reset),
     .io_wdata_value (shiftRegA),
     .io_rdata_value (io_dataA_value),
-    .io_wr          (_GEN ? _fifoA_io_rd_T : _GEN_0 & bitCounterA == 4'hB),
-    .io_rd          (_GEN ? _fifoA_io_rd_T : _GEN_1),
+    .io_wr          (_fifoA_io_rd_T),
+    .io_rd          (_fifoA_io_rd_T),
     .io_empty       (io_emptyA),
     .io_full        (io_fullA),
     .io_wclk        (io_sclk),
@@ -841,48 +835,41 @@ module ADC122S625Core(
     .reset          (reset),
     .io_wdata_value (shiftRegB),
     .io_rdata_value (io_dataB_value),
-    .io_wr          (_GEN ? _fifoB_io_rd_T : _GEN_0 & bitCounterB == 4'hB),
-    .io_rd          (_GEN ? _fifoB_io_rd_T : _GEN_1),
+    .io_wr          (_fifoB_io_rd_T),
+    .io_rd          (_fifoB_io_rd_T),
     .io_empty       (io_emptyB),
     .io_full        (io_fullB),
     .io_wclk        (io_sclk),
     .io_rclk        (clock)
   );
-  assign io_cs_n = ~io_en;
 endmodule
 
 module Top(
   input         clock,
                 reset,
-                adc1_io_ADC1_EN,
-  output        adc1_io_ADC1_CS_N,
-  input         adc1_io_ADC1_SDO,
-  output [11:0] adc1_io_ADC1_DATA_A_value,
-                adc1_io_ADC1_DATA_B_value,
-  input         adc1_io_ADC1_SCLK,
-                adc1_io_ADC1_GATE_IN,
-                adc1_io_ADC1_GATE_OUT,
-  output        adc1_io_ADC1_FULL_A,
-                adc1_io_ADC1_FULL_B,
-                adc1_io_ADC1_EMPTY_A,
-                adc1_io_ADC1_EMPTY_B
+                DFB1_ADC_CS,
+                DFB1_ADC_DOUT,
+                DFB1_ADC_SCLK,
+  output [11:0] DFB1_ADC_DATA_A_value,
+                DFB1_ADC_DATA_B_value,
+  output        DFB1_ADC_FULL_A,
+                DFB1_ADC_FULL_B,
+                DFB1_ADC_EMPTY_A,
+                DFB1_ADC_EMPTY_B
 );
 
   ADC122S625Core adc1 (
     .clock          (clock),
     .reset          (reset),
-    .io_en          (adc1_io_ADC1_EN),
-    .io_cs_n        (adc1_io_ADC1_CS_N),
-    .io_sdo         (adc1_io_ADC1_SDO),
-    .io_dataA_value (adc1_io_ADC1_DATA_A_value),
-    .io_dataB_value (adc1_io_ADC1_DATA_B_value),
-    .io_sclk        (adc1_io_ADC1_SCLK),
-    .io_gateIn      (adc1_io_ADC1_GATE_IN),
-    .io_gateOut     (adc1_io_ADC1_GATE_OUT),
-    .io_fullA       (adc1_io_ADC1_FULL_A),
-    .io_fullB       (adc1_io_ADC1_FULL_B),
-    .io_emptyA      (adc1_io_ADC1_EMPTY_A),
-    .io_emptyB      (adc1_io_ADC1_EMPTY_B)
+    .io_cs_n        (DFB1_ADC_CS),
+    .io_sdo         (DFB1_ADC_DOUT),
+    .io_dataA_value (DFB1_ADC_DATA_A_value),
+    .io_dataB_value (DFB1_ADC_DATA_B_value),
+    .io_sclk        (DFB1_ADC_SCLK),
+    .io_fullA       (DFB1_ADC_FULL_A),
+    .io_fullB       (DFB1_ADC_FULL_B),
+    .io_emptyA      (DFB1_ADC_EMPTY_A),
+    .io_emptyB      (DFB1_ADC_EMPTY_B)
   );
 endmodule
 
