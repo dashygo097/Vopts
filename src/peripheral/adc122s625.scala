@@ -77,7 +77,6 @@ class ADC122S625Core(bufferSize: Int) extends Module {
       fifoA.io.rd := false.B
       fifoB.io.rd := false.B
     }
-
   }
 
   fifoA.io.rclk := clock

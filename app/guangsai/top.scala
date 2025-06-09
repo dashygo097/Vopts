@@ -158,5 +158,5 @@ class TopModule extends Module {
 }
 
 object Top extends App {
-  VerilogEmitter.parse(new TopModule, "top_module.sv")
+  VerilogEmitter.parse(new TopModule, "guangsai/top_module.sv")
 }
