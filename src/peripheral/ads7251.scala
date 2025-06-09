@@ -11,10 +11,10 @@ class ADS7251IO extends Bundle {
   val cs_n = Output(Bool())
   val sdoa = Input(Bool())
   val sdob = Input(Bool())
+  val sclk = Input(Clock())
+
   val dataA = Output(new FP(12, 11))
   val dataB = Output(new FP(12, 11))
-
-  val sclk = Input(Clock())
 }
 
 class ADS7251Core extends Module {
