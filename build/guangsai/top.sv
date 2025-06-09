@@ -116,13 +116,51 @@ module Top (
   wire UART_RX_CHANNEL_ready;
   wire UART_RX_ERROR;
 
+  reg DFB1_DAC_EN;
+  reg DFB2_DAC_EN;
+  reg DFB3_DAC_EN;
+  reg DFBM1_DAC_EN;
+  reg DFBM2_DAC_EN;
+  reg DFBM3_DAC_EN;
+  reg DFBM4_DAC_EN;
+  reg TEC1_DAC_EN;
+  reg TEC2_DAC_EN;
+  reg TEC3_DAC_EN;
+  reg TEC4_DAC_EN;
+
   // Control Panel
   assign {DFB1_ADC_CS, DFB2_ADC_CS, DFB3_ADC_CS, DFB4_ADC_CS,
         TEC1_ADC_CS, TEC2_ADC_CS, TEC3_ADC_CS, TEC4_ADC_CS} = 8'b00000000;
 
-  assign {DFB1_DAC_CS, DFB2_DAC_CS, DFB3_DAC_CS, DFB4_DAC_CS,
-        DFBM1_DAC_CS, DFBM2_DAC_CS, DFBM3_DAC_CS, DFBM4_DAC_CS,
-        TEC1_DAC_CS, TEC2_DAC_CS, TEC3_DAC_CS, TEC4_DAC_CS} = 12'b000000000000;
+  always @(posedge clock or posedge reset) begin
+    if (reset) begin
+      DFB1_DAC_EN  <= 1'b0;
+      DFB2_DAC_EN  <= 1'b0;
+      DFB3_DAC_EN  <= 1'b0;
+      DFB4_DAC_EN  <= 1'b0;
+      DFBM1_DAC_EN <= 1'b0;
+      DFBM2_DAC_EN <= 1'b0;
+      DFBM3_DAC_EN <= 1'b0;
+      DFBM4_DAC_EN <= 1'b0;
+      TEC1_DAC_EN  <= 1'b0;
+      TEC2_DAC_EN  <= 1'b0;
+      TEC3_DAC_EN  <= 1'b0;
+      TEC4_DAC_EN  <= 1'b0;
+    end else begin
+      DFB1_DAC_EN  <= 1'b1;
+      DFB2_DAC_EN  <= 1'b1;
+      DFB3_DAC_EN  <= 1'b1;
+      DFB4_DAC_EN  <= 1'b1;
+      DFBM1_DAC_EN <= 1'b1;
+      DFBM2_DAC_EN <= 1'b1;
+      DFBM3_DAC_EN <= 1'b1;
+      DFBM4_DAC_EN <= 1'b1;
+      TEC1_DAC_EN  <= 1'b1;
+      TEC2_DAC_EN  <= 1'b1;
+      TEC3_DAC_EN  <= 1'b1;
+      TEC4_DAC_EN  <= 1'b1;
+    end
+  end
 
   TopModule top_module (
       .clock(clock),
@@ -164,50 +202,62 @@ module Top (
       .TEC4_ADC_CS(TEC4_ADC_CS),
       .TEC4_ADC_DOUT(TEC4_ADC_DOUT),
       // DACs
+      .DFB1_DAC_EN(DFB1_DAC_EN),
       .DFB1_DAC_SCK(DFB1_DAC_SCK),
       .DFB1_DAC_CS(DFB1_DAC_CS),
       .DFB1_DAC_SDI(DFB1_DAC_SDI),
       .DFB1_DAC_LDAC(DFB1_DAC_LDAC),
+      .DFB2_DAC_EN(DFB2_DAC_EN),
       .DFB2_DAC_SCK(DFB2_DAC_SCK),
       .DFB2_DAC_CS(DFB2_DAC_CS),
       .DFB2_DAC_SDI(DFB2_DAC_SDI),
       .DFB2_DAC_LDAC(DFB2_DAC_LDAC),
+      .DFB3_DAC_EN(DFB3_DAC_EN),
       .DFB3_DAC_SCK(DFB3_DAC_SCK),
       .DFB3_DAC_CS(DFB3_DAC_CS),
       .DFB3_DAC_SDI(DFB3_DAC_SDI),
       .DFB3_DAC_LDAC(DFB3_DAC_LDAC),
+      .DFB4_DAC_EN(DFB4_DAC_EN),
       .DFB4_DAC_SCK(DFB4_DAC_SCK),
       .DFB4_DAC_CS(DFB4_DAC_CS),
       .DFB4_DAC_SDI(DFB4_DAC_SDI),
       .DFB4_DAC_LDAC(DFB4_DAC_LDAC),
+      .DFBM1_DAC_EN(DFBM1_DAC_EN),
       .DFBM1_DAC_SCK(DFBM1_DAC_SCK),
       .DFBM1_DAC_CS(DFBM1_DAC_CS),
       .DFBM1_DAC_SDI(DFBM1_DAC_SDI),
       .DFBM1_DAC_LDAC(DFBM1_DAC_LDAC),
+      .DFBM2_DAC_EN(DFBM2_DAC_EN),
       .DFBM2_DAC_SCK(DFBM2_DAC_SCK),
       .DFBM2_DAC_CS(DFBM2_DAC_CS),
       .DFBM2_DAC_SDI(DFBM2_DAC_SDI),
       .DFBM2_DAC_LDAC(DFBM2_DAC_LDAC),
+      .DFBM3_DAC_EN(DFBM3_DAC_EN),
       .DFBM3_DAC_SCK(DFBM3_DAC_SCK),
       .DFBM3_DAC_CS(DFBM3_DAC_CS),
       .DFBM3_DAC_SDI(DFBM3_DAC_SDI),
       .DFBM3_DAC_LDAC(DFBM3_DAC_LDAC),
+      .DFBM4_DAC_EN(DFBM4_DAC_EN),
       .DFBM4_DAC_SCK(DFBM4_DAC_SCK),
       .DFBM4_DAC_CS(DFBM4_DAC_CS),
       .DFBM4_DAC_SDI(DFBM4_DAC_SDI),
       .DFBM4_DAC_LDAC(DFBM4_DAC_LDAC),
+      .TEC1_DAC_EN(TEC1_DAC_EN),
       .TEC1_DAC_SCK(TEC1_DAC_SCK),
       .TEC1_DAC_CS(TEC1_DAC_CS),
       .TEC1_DAC_SDI(TEC1_DAC_SDI),
       .TEC1_DAC_LDAC(TEC1_DAC_LDAC),
+      .TEC2_DAC_EN(TEC2_DAC_EN),
       .TEC2_DAC_SCK(TEC2_DAC_SCK),
       .TEC2_DAC_CS(TEC2_DAC_CS),
       .TEC2_DAC_SDI(TEC2_DAC_SDI),
       .TEC2_DAC_LDAC(TEC2_DAC_LDAC),
+      .TEC3_DAC_EN(TEC3_DAC_EN),
       .TEC3_DAC_SCK(TEC3_DAC_SCK),
       .TEC3_DAC_CS(TEC3_DAC_CS),
       .TEC3_DAC_SDI(TEC3_DAC_SDI),
       .TEC3_DAC_LDAC(TEC3_DAC_LDAC),
+      .TEC4_DAC_EN(TEC4_DAC_EN),
       .TEC4_DAC_SCK(TEC4_DAC_SCK),
       .TEC4_DAC_CS(TEC4_DAC_CS),
       .TEC4_DAC_SDI(TEC4_DAC_SDI),
