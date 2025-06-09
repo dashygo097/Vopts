@@ -7,6 +7,7 @@
 `timescale 1ns / 1ps
 module Top (
     input clock,
+    input sclk,
     input reset,
 
     output DFB1_ADC_SCLK,
@@ -128,6 +129,28 @@ module Top (
   reg TEC2_DAC_EN;
   reg TEC3_DAC_EN;
   reg TEC4_DAC_EN;
+
+  assign DFB1_ADC_SCLK = sclk;
+  assign DFB2_ADC_SCLK = sclk;
+  assign DFB3_ADC_SCLK = sclk;
+  assign DFB4_ADC_SCLK = sclk;
+  assign TEC1_ADC_SCLK = sclk;
+  assign TEC2_ADC_SCLK = sclk;
+  assign TEC3_ADC_SCLK = sclk;
+  assign TEC4_ADC_SCLK = sclk;
+  assign DFB1_DAC_SCK = sclk;
+  assign DFB2_DAC_SCK = sclk;
+  assign DFB3_DAC_SCK = sclk;
+  assign DFB4_DAC_SCK = sclk;
+  assign DFBM1_DAC_SCK = sclk;
+  assign DFBM2_DAC_SCK = sclk;
+  assign DFBM3_DAC_SCK = sclk;
+  assign DFBM4_DAC_SCK = sclk;
+  assign TEC1_DAC_SCK = sclk;
+  assign TEC2_DAC_SCK = sclk;
+  assign TEC3_DAC_SCK = sclk;
+  assign TEC4_DAC_SCK = sclk;
+
 
   // Control Panel
   assign {DFB1_ADC_CS, DFB2_ADC_CS, DFB3_ADC_CS, DFB4_ADC_CS,
