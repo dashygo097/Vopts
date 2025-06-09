@@ -3,15 +3,15 @@
 module MCP4921Core(
   input         clock,
                 reset,
-                io_en,
-                io_buf,
-                io_gain_n,
-                io_shdn_n,
+                io_sclk,
   output        io_cs_n,
                 io_sdi,
                 io_ldac_n,
-  input  [11:0] io_dataIn_value,
-  input         io_sclk
+  input         io_en,
+                io_buf,
+                io_gain_n,
+                io_shdn_n,
+  input  [11:0] io_dataIn_value
 );
 
   reg [1:0]  state;

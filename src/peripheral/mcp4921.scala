@@ -5,17 +5,17 @@ import chisel3._
 import chisel3.util._
 
 class MCP4921IO extends Bundle {
+  val sclk = Input(Clock())
+  val cs_n = Output(Bool())
+  val sdi = Output(Bool())
+  val ldac_n = Output(Bool())
+
   val en = Input(Bool())
   val buf = Input(Bool())
   val gain_n = Input(Bool())
   val shdn_n = Input(Bool())
 
-  val cs_n = Output(Bool())
-  val sdi = Output(Bool())
-  val ldac_n = Output(Bool())
   val dataIn = Input(new FP(12, 11))
-
-  val sclk = Input(Clock())
 }
 
 object MCP4921State {
