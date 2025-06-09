@@ -11,6 +11,8 @@ object VerilogEmitter {
       firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
     )
 
+    val num_lines = code.split("\n").length
+
     val buildDir = new File("build")
     if (!buildDir.exists()) buildDir.mkdirs()
 
@@ -22,6 +24,7 @@ object VerilogEmitter {
 
     val codePreview = code.split("\n").take(20).mkString("\n")
     println(s"[INFO] Verilog emitted to $file")
+    print(s"[INFO] Total lines: $num_lines\n")
     println("[INFO] Verilog code preview:")
     println(codePreview)
     println("...")
