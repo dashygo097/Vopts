@@ -5,9 +5,6 @@ import mod.am.{SDDeAMCore, EDDeAMCore}
 
 object EDDeAM extends App {
   VerilogEmitter.parse(new EDDeAMCore(10000, 256), "evlp_detector.sv")
-}
-
-object SDDeAM extends App {
   VerilogEmitter.parse(new SDDeAMCore(1000000, 10000, 256), "sync_detector.sv")
 }
 
