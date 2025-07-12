@@ -1,6 +1,6 @@
 package mod.am
-import dds.trig.BaseTrigCore
 
+import dds.trig.BaseTrigCore
 import utils._
 import chisel3._
 

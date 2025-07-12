@@ -4,7 +4,7 @@ trait Config {
   // Overall config
   val clkFreq: Int = 100000000
   val dataWidth: Int = 32
-  val binaryPoint: Int = 20
+  val binaryPoint: Int = 16
 
   // DDS config
   val sampleFreq: Int = clkFreq

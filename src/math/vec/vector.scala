@@ -8,13 +8,8 @@ class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends B
 
   val value = Vec(size, gen.cloneType)
 
-  def get_size(): Int = {
-    _size
-  }
-
-  def get_gen(): T = {
-    value.head
-  }
+  def size(): Int = _size
+  def gen(): T = value.head.cloneType
 
   def apply(idx: Int): T = {
     require(idx >= 0 && idx < _size, s"Vector index out of bounds: $idx, size=${_size}")
@@ -41,10 +36,15 @@ class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends B
     vec
   }
 
-  def _match(that: Vector[T]): Unit = {
-    require(this.get_size() == that.get_size(),
-      s"Vector match requires same size: ${this.get_size()} vs ${that.get_size()}")
+  def isCompatible(that: Vector[T]): Boolean = {
+    this.size() == that.size() && this.gen().getClass == that.gen().getClass
   }
+
+  def requireCompatible(that: Vector[T]): Unit = {
+      require(isCompatible(that),
+        s"Vector compatibility check failed: " +
+        s"this(${this.size()}, ${this.gen()}) vs that(${that.size()}, ${that.gen()})")
+    }
 }
 
 object Vector {
@@ -91,65 +91,77 @@ object vec3 {
   }
 }
 
+object vec4 {
+  def apply[T <: Data](gen: T)(implicit ev: Arithmetic[T]): Vector[T] = {
+    new Vector(gen, 4)
+  }
+  def apply[T <: Data](x: T, y: T, z: T, w: T)(implicit ev: Arithmetic[T]): Vector[T] = {
+    val vec = new Vector(x, 4)
+    vec.value(0) := x
+    vec.value(1) := y
+    vec.value(2) := z
+    vec.value(3) := w
+    vec
+  }
+  def apply[T <: Data](seq: Seq[T])(implicit ev: Arithmetic[T]): Vector[T] = {
+    require(seq.length == 4, s"vec4 requires exactly 4 elements, got ${seq.length}")
+    new Vector(seq.head, 4).fromSeq(seq)
+  }
+}
+
 trait VectorOps[T <: Data] {
   self: Vector[T] =>
   
   def +(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
-    this._match(that)
-    val vec = Wire(new Vector(self.get_gen(), self.get_size()))
+    this.requireCompatible(that)
+    val vec = Wire(new Vector(self.gen(), self.size()))
     vec.value := self.value.zip(that.value).map { case (a, b) => a + b }
     vec
   }
   
   def -(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
-    this._match(that)
-    val vec = Wire(new Vector(self.get_gen(), self.get_size()))
+    this.requireCompatible(that)
+    val vec = Wire(new Vector(self.gen(), self.size()))
     vec.value := self.value.zip(that.value).map { case (a, b) => a - b }
     vec
   }
 
   def *(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
-    this._match(that)
-    val vec = Wire(new Vector(self.get_gen(), self.get_size()))
+    this.requireCompatible(that)
+    val vec = Wire(new Vector(self.gen(), self.size()))
     vec.value := self.value.zip(that.value).map { case (a, b) => a * b }
     vec
   }
   
   def *(that: UInt)(implicit ev: Arithmetic[T]): Vector[T] = {
-    val vec = Wire(new Vector(self.get_gen(), self.get_size()))
+    val vec = Wire(new Vector(self.gen(), self.size()))
     vec.value := self.value.map(a => a * that)
     vec
   }
 
   def /(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
-    this._match(that)
-    val vec = Wire(new Vector(self.get_gen(), self.get_size()))
+    this.requireCompatible(that)
+    val vec = Wire(new Vector(self.gen(), self.size()))
     vec.value := self.value.zip(that.value).map { case (a, b) => a / b }
     vec
   }
   
   def /(that: UInt)(implicit ev: Arithmetic[T]): Vector[T] = {
-    val vec = Wire(new Vector(self.get_gen(), self.get_size()))
+    val vec = Wire(new Vector(self.gen(), self.size()))
     vec.value := self.value.map(a => a / that)
     vec
   }
 
   def sum()(implicit ev: Arithmetic[T]): T = {
-    val sum = Wire(self.get_gen())
+    val sum = Wire(self.gen())
     sum := self.value.reduce(_ + _)
     sum
   }
 
   def dot(that: Vector[T])(implicit ev: Arithmetic[T]): T = {
-    this._match(that)
-    val sum = Wire(self.get_gen())
+    this.requireCompatible(that)
+    val sum = Wire(self.gen())
     sum := self.value.zip(that.value).map { case (a, b) => a * b }.reduce(_ + _)
-    sum
-  }
-
-  def norm2()(implicit ev: Arithmetic[T]): T = {
-    val sum = Wire(self.get_gen())
-    sum := self.value.map(a => a * a).reduce(_ + _)
     sum
   }
 }
