@@ -14,14 +14,14 @@ class ScaledDownSamplerIO(outDataWidth: Int, outBp: Int, ctrlWidth: Int) extends
 }
 class DownSamplerCore(outDataWidth: Int, outBp: Int) extends Module with Config {
   val io = IO(new DownSamplerIO(outDataWidth, outBp))
-  val converter = Module(new FPConverterCore(dataWidth, bp, outDataWidth, outDataWidth - 1))
+  val converter = Module(new FPConverterCore(dataWidth, binaryPoint, outDataWidth, outDataWidth - 1))
   converter.io.in := io.in
   io.out := converter.io.out
 }
 
 class ScaledDownSamplerCore(outDataWidth: Int, outBp: Int, ctrlWidth: Int) extends Module with Config {
   val io = IO(new ScaledDownSamplerIO(outDataWidth, outBp, ctrlWidth))
-  val converter = Module(new FPConverterCore(dataWidth, bp, outDataWidth, outDataWidth - 1))
+  val converter = Module(new FPConverterCore(dataWidth, binaryPoint, outDataWidth, outDataWidth - 1))
   converter.io.in := io.in * (io.ctrl + 1.U)
   io.out := converter.io.out 
 }

@@ -1,32 +1,48 @@
 package utils 
 
 import scala.math.pow
-
 import chisel3._
 
-class FP(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with FPOps {
-  var _dataWidth: Int = if (s_dataWidth == 0) dataWidth else s_dataWidth
-  var _bp: Int = if (s_bp == -1) bp else s_bp
+class FP(s_dataWidth: Int = 0, s_binaryPoint: Int = -1) extends Bundle with Config with FPOps {
+  var _dw: Int = if (s_dataWidth == 0) dataWidth else s_dataWidth
+  var _bp: Int = if (s_binaryPoint == -1) binaryPoint else s_binaryPoint
 
-  val value: SInt = SInt(_dataWidth.W)
+  val value: SInt = SInt(_dw.W)
 
-  def get_dw(): Int = {
-    _dataWidth
+  def dw(): Int = _dw
+  def bp(): Int = _bp
+  def scale(): Int = pow(2, _bp).toInt
+
+  def apply(idx: Int): Bool = {
+    require(idx >= 0 && idx < _dw, s"Index {$idx} out of bounds for dataWidth ${_dw}")
+    value(idx)
   }
 
-  def get_bp(): Int = {
-    _bp
+  def update(idx: Int, b: Bool): Unit = {
+    require(idx >= 0 && idx < _dw, s"Index {$idx} out of bounds for dataWidth ${_dw}")
+    value(idx) := b
   }
+
+  def isCompatible(that: FP): Boolean = {
+    this.dataWidth == that.dataWidth && this.binaryPoint == that.binaryPoint
+  }
+
+  def requireCompatible(that: FP): Unit = {
+      require(isCompatible(that),
+        s"FP operations require matching formats: " +
+        s"FP(${this.dataWidth}, ${this.binaryPoint}) vs FP(${that.dataWidth}, ${that.binaryPoint})")
+    }
+
+  def newInstance(): FP = new FP(_dw, _bp)
 
   def fromDouble(value: Double): FP = {
-    val scale = pow(2, _bp).toInt
-    val fl = Wire(new FP(_dataWidth, _bp))
-    fl.value := (value * scale).toInt.S
+    val fl = Wire(new FP(_dw, _bp))
+    fl.value := (value * scale()).toInt.S
     fl
   }
 
   def fromSInt(value: SInt): FP = {
-    val fl = Wire(new FP(_dataWidth, _bp))
+    val fl = Wire(new FP(_dw, _bp))
     fl.value := value
     fl
   }
@@ -37,20 +53,18 @@ class FP(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config with F
 
   def mapSInt(x: SInt): FP = {
     val scale = pow(2, _bp).toInt
-    val fl = Wire(new FP(_dataWidth, _bp))
+    val fl = Wire(new FP(_dw, _bp))
     fl.value := x * scale.S
     fl
-  }
-
-  def _match(that: FP): Unit = {
-    require(this.get_dw() == that.get_dw() && this.get_bp() == that.get_bp(),
-      s"FP match requires same dataWidth and bp: (${this.get_dw()}, ${this.get_bp()}) vs (${that.get_dw()}, ${that.get_bp()})")
   }
 }
 
 object FP extends Config {
+  def apply() : FP = {
+    new FP().fromSInt(0.S)
+  }
   def apply(value: Double): FP = {
-    (new FP).fromDouble(value)
+    new FP().fromDouble(value)
   }
   def apply(value: SInt): FP = {
     new FP().fromSInt(value)
@@ -62,8 +76,8 @@ trait FPOps {
   self: FP =>
  
   def +(that: FP): FP = {
-    this._match(that)
-    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
+    this.requireCompatible(that)
+    val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value + that.value
     fl
   }
@@ -72,8 +86,8 @@ trait FPOps {
   def +(that: UInt): FP = this + FP(that.asSInt)
 
   def -(that: FP): FP = {
-    this._match(that)
-    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
+    this.requireCompatible(that)
+    val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value - that.value
     fl
   }
@@ -82,8 +96,8 @@ trait FPOps {
   def -(that: UInt): FP = this - FP(that.asSInt)
 
   def *(that: FP): FP = {
-    this._match(that)
-    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
+    this.requireCompatible(that)
+    val fl = this.newInstance().fromSInt(0.S)
     fl.value := (this.value * that.value) >> _bp
     fl
   }
@@ -92,8 +106,8 @@ trait FPOps {
   def *(that: UInt): FP = this * FP(that.asSInt)
 
   def /(that: FP): FP = {
-    this._match(that)
-    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
+    this.requireCompatible(that)
+    val fl = this.newInstance().fromSInt(0.S)
     fl.value := (this.value << _bp) / that.value
     fl
   }
@@ -102,19 +116,19 @@ trait FPOps {
   def /(that: UInt): FP = this / FP(that.asSInt)
 
   def shiftleft(that: UInt): FP = {
-    val fl = Wire(new FP(this.get_dw(), this.get_bp()))
+  val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value << that
     fl
   }
 
   def shiftright(that: UInt): FP = {
-    val fl = Wire(new FP)
+    val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value >> that
     fl
   }
 
   def <(that: FP): Bool = {
-    this._match(that)
+    this.requireCompatible(that)
     this.value < that.value
   }
   def <(that: Double): Bool = this < FP(that)
@@ -122,7 +136,7 @@ trait FPOps {
   def <(that: UInt): Bool = this < FP(that.asSInt)
 
   def ===(that: FP): Bool = {
-    this._match(that)
+    this.requireCompatible(that)
     this.value === that.value
   }
   def ===(that: Double): Bool = this === FP(that)
@@ -130,7 +144,7 @@ trait FPOps {
   def ===(that: UInt): Bool = this === FP(that.asSInt)
 
   def =/=(that: FP): Bool = {
-    this._match(that)
+    this.requireCompatible(that)
     !(this === that)
   }
   def =/=(that: Double): Bool = !(this === FP(that))

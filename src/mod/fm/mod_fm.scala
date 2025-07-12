@@ -17,7 +17,7 @@ class ModFMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module wi
   val sine = Module(new TrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
-  val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+  val deviation = ((io.in.value * deviationFactor.S) >> binaryPoint)(phaseWidth - 1, 0).asUInt
 
   sine.io.mag := (new FP).fromDouble(mag)
   sine.io.freqRatio := io.mod
