@@ -5,9 +5,9 @@ import scala.math._
 import chisel3._
 
 
-class FPComplex(s_dataWidth: Int = 0, s_bp: Int = -1) extends Bundle with Config {
+class FPComplex(s_dataWidth: Int = 0, s_binaryPoint: Int = -1) extends Bundle with Config {
   val _dataWidth = if (s_dataWidth == 0) dataWidth else s_dataWidth
-  val _bp = if (s_bp == -1) bp else s_bp
+  val _bp = if (s_binaryPoint == -1) binaryPoint else s_binaryPoint
 
   val real = SInt(_dataWidth.W)
   val imag = SInt(_dataWidth.W)

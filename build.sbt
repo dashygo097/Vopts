@@ -52,6 +52,14 @@ lazy val func = (project in file("src/func"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
+lazy val math = (project in file("src/math"))
+  .dependsOn(utils)
+  .settings(
+    name := "math",
+    Compile / unmanagedSourceDirectories += baseDirectory.value,
+    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
+  )
+
 lazy val dsp = (project in file("src/dsp"))
   .dependsOn(utils, func)
   .settings(
@@ -87,7 +95,7 @@ lazy val mod = (project in file("src/mod"))
 
 
 lazy val app = (project in file("app"))
-  .dependsOn(utils, peripheral, dds, dsp, mem, com, mod, func)
+  .dependsOn(utils, peripheral, dds, dsp, mem, com, mod, func, math)
   .settings(
     name := "app",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -95,7 +103,7 @@ lazy val app = (project in file("app"))
   )
 
 lazy val test = (project in file("test"))
-  .dependsOn(utils, peripheral, dds, dsp, mem, com, mod, func, app)
+  .dependsOn(utils, peripheral, dds, dsp, mem, com, mod, func, math, app)
   .settings(
     name := "test",
     Compile / unmanagedSourceDirectories += baseDirectory.value,

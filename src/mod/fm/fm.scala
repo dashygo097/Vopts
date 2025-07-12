@@ -11,7 +11,7 @@ class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with 
   val trig = Module(new BaseTrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
-  val deviation = ((io.in.value * deviationFactor.S) >> bp)(phaseWidth - 1, 0).asUInt
+  val deviation = ((io.in.value * deviationFactor.S) >> binaryPoint)(phaseWidth - 1, 0).asUInt
 
   trig.io.mag := (new FP).fromDouble(mag)
   trig.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal 

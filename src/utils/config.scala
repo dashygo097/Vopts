@@ -4,7 +4,7 @@ trait Config {
   // Overall config
   val clkFreq: Int = 100000000
   val dataWidth: Int = 32
-  val bp: Int = 20
+  val binaryPoint: Int = 20
 
   // DDS config
   val sampleFreq: Int = clkFreq
@@ -12,7 +12,7 @@ trait Config {
   val phaseWidth: Int = 24
 
   // FFT Default Params
-  val defaultFFTSize: Int = 256
+  val defaultFFTSize: Int = 128
 
   // Mod Default Params
   val defaultCarrierFreq: Int = 1000000 // 1MHz

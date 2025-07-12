@@ -15,21 +15,21 @@ class ScaledUpSamplerIO(inDataWidth: Int, inBp: Int, ctrlWidth: Int) extends Bun
 
 class UpSamplerCore(inDataWidth: Int, inBp: Int) extends Module with Config {
   val io = IO(new UpSamplerIO(inDataWidth, inBp))
-  val converter = Module(new FPConverterCore(inDataWidth, inBp, dataWidth, bp))
+  val converter = Module(new FPConverterCore(inDataWidth, inBp, dataWidth, binaryPoint))
   converter.io.in := io.in
   io.out := converter.io.out
 }
 
 class ScaledUpSamplerCore(inDataWidth: Int, inBp: Int, ctrlWidth: Int) extends Module with Config {
   val io = IO(new ScaledUpSamplerIO(inDataWidth, inBp, ctrlWidth))
-  val converter = Module(new FPConverterCore(inDataWidth, inBp, dataWidth, bp))
+  val converter = Module(new FPConverterCore(inDataWidth, inBp, dataWidth, binaryPoint))
   converter.io.in := io.in * (io.ctrl + 1.U)
   io.out := converter.io.out
 }
 
 object UpSample {
   def apply(in: FP): FP = {
-    val sampler = Module(new UpSamplerCore(in.get_dw(), in.get_bp()))
+    val sampler = Module(new UpSamplerCore(in.dw(), in.bp()))
     sampler.io.in := in
     sampler.io.out
   }
@@ -37,7 +37,7 @@ object UpSample {
 
 object ScaledUpSample {
   def apply(in: FP, ctrl: UInt): FP = {
-    val sampler = Module(new ScaledUpSamplerCore(in.get_dw(), in.get_bp(), ctrl.getWidth))
+    val sampler = Module(new ScaledUpSamplerCore(in.dw(), in.bp(), ctrl.getWidth))
     sampler.io.in := in
     sampler.io.ctrl := ctrl
     sampler.io.out

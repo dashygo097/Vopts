@@ -5,7 +5,7 @@ import java.io.{BufferedWriter, File, FileWriter}
 import _root_.circt.stage.ChiselStage
 
 object VerilogEmitter {
-  def parse(gen: => chisel3.Module, filename: String): Unit = {
+  def parse(gen: => chisel3.Module, filename: String, info: Boolean = false): Unit = {
     val code = ChiselStage.emitSystemVerilog(
       gen = gen,
       firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
@@ -23,10 +23,12 @@ object VerilogEmitter {
     bw.close()
 
     val codePreview = code.split("\n").take(20).mkString("\n")
-    println(s"[INFO] Verilog emitted to $file")
-    print(s"[INFO] Total lines: $num_lines\n")
-    println("[INFO] Verilog code preview:")
-    println(codePreview)
-    println("...")
+    if (info) {
+      println(s"[INFO] Verilog emitted to $file")
+      print(s"[INFO] Total lines: $num_lines\n")
+      println("[INFO] Verilog code preview:")
+      println(codePreview)
+      println("...")
+    }
   }
 }

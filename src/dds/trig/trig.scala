@@ -18,7 +18,7 @@ class TrigCore(baseFreq: Int) extends Module with Config {
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
 
   val poff = (baseFreq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
-  val poffDelta = ((io.freqRatio.value * baseFreq.S) << phaseWidth >> bp) / sampleFreq.S
+  val poffDelta = ((io.freqRatio.value * baseFreq.S) << phaseWidth >> binaryPoint) / sampleFreq.S
 
   val sine_rom = VecInit(
     (0 until lutWidth).map { i => 
