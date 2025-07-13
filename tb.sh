@@ -1,11 +1,11 @@
 #!/bin/bash
 
 BASE_DIR=$(pwd)
-TESTBENCH_DIR="$BASE_DIR/testbench"
+TB_DIR="$BASE_DIR/testbench/tb"
 
 run_test() {
-	cd "$TESTBENCH_DIR" || exit
-	printf "\e[1;31m[INFO] Choose the testbench.\n\e[0m"
+	cd "$TB_DIR" || exit
+	printf "\e[1;31m[INFO] Choose testbench.\n\e[0m"
 
 	tb_file=$(find . -type f -name "*_tb.sv" -o -name "*_tb.v" | fzf)
 	module_file=$(basename "$tb_file" | sed 's/_tb\.sv//')
