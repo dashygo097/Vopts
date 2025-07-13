@@ -16,7 +16,7 @@ run: pre
 	@sbt app/run
 
 test-build: pre
-	@sbt test/run
+	@sbt tests/run
 
 clean:
 	@rm -rf $(TESTBENCH_DIR)/obj_dir
