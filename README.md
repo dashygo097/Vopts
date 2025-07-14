@@ -16,7 +16,7 @@
 
 - gtkwave (waveform visualization)
 - verilator (generating executable files for testbench)
-- [ ] icarus & cocotb (to be continued)
+- [x] icarus & cocotb (to be continued)
 
 ## How to use
 
@@ -56,5 +56,4 @@ Make sure that the tb file located in **testbench/** and to end with **xxx_tb.v(
 
 #### Some code references:
 
-- [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br>
-- [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git)
+> [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br> [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git) <br> [AXI-IF](https://github.com/maltanar/axi-in-chisel)
