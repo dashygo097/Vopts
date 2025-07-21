@@ -48,7 +48,7 @@ or
 > ./tb.sh
 > ```
 
-Make sure that the tb file located in **testbench/** and to end with **xxx_tb.v(or xxx_tb.sv)** and dumpfiles are named as **xxx.vcd** <br>
+Make sure that the tb file located in **testbench/** and to end with **xxx_tb.v(or xxx_tb.sv)** and dumpfiles are named as **xxx_tb.vcd** <br>
 
 ( e.g. adder.sv | adder_tb.sv | adder.vcd )
 
