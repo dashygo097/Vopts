@@ -1,7 +1,7 @@
 package mod.fm
 
 import dsp.filter.FIRCore
-import func.common.{Derivator, Abs}
+import math.common.{Derivator, Abs}
 
 import utils._
 import chisel3._

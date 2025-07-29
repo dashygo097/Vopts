@@ -1,7 +1,7 @@
 package mod.ask
 
 import dsp.filter.FIRCore
-import func.common.{ComparatorCore, Abs}
+import math.common.{ComparatorCore, Abs}
 
 import utils._
 import chisel3._

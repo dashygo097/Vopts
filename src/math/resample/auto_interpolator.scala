@@ -1,4 +1,4 @@
-package func.resample
+package math.resample
 
 import utils._
 import chisel3._
