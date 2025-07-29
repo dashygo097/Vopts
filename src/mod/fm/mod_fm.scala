@@ -13,7 +13,7 @@ class ModFMIO extends Bundle {
 }
 
 class ModFMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
-  val io = IO(new ModFMIO)
+  val io = IO(new ModFMIO).suggestName("ModFM")
   val sine = Module(new TrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt

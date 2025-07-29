@@ -6,7 +6,7 @@ import chisel3.util._
 
 class DecimatorCore[T <: Data](gen: T, factor: Int) extends Module {
   require(factor > 0, "Decimation factor must be greater than 0")
-  val io = IO(new SISO(gen))
+  val io = IO(new SISO(gen)).suggestName("DECIMATOR")
   val count = RegInit(0.U(log2Ceil(factor).W))
   val out_next = RegInit(0.U.asTypeOf(gen))
 

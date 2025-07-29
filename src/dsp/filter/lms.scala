@@ -13,7 +13,7 @@ class LMSCoreIO extends Bundle {
 }
 
 class LMSCore(order: Int, lr: Double = 0.01) extends Module {
-  val io = IO(new LMSCoreIO)
+  val io = IO(new LMSCoreIO).suggestName("LMS")
   val coeffs = RegInit(VecInit(Seq.fill(order)(FP(0.0))))
   val xHistory = RegInit(VecInit(Seq.fill(order)(FP(0.0))))
   val mu = FP(lr)

@@ -17,7 +17,7 @@ class UartRXIO extends Bundle {
 }
 
 class UartTXCore(baudRate: Int) extends Module with Config {
-  val io = IO(new UartTXIO)
+  val io = IO(new UartTXIO).suggestName("UART_TX")
   val baudTickDivider = clkFreq / baudRate
   
   val state = RegInit(UartState.IDLE)
@@ -71,7 +71,7 @@ class UartTXCore(baudRate: Int) extends Module with Config {
 }
 
 class UartRXCore(baudRate: Int) extends Module with Config {
-  val io = IO(new UartRXIO)
+  val io = IO(new UartRXIO).suggestName("UART_RX")
   val baudTickDivider = clkFreq / baudRate
   
   val state = RegInit(UartState.IDLE)
@@ -128,7 +128,7 @@ class UartCore(baudRate: Int) extends Module with Config {
   val io = IO(new Bundle {
     val tx = new UartTXIO
     val rx = new UartRXIO
-  })
+  }).suggestName("UART")
   
   val tx = Module(new UartTXCore(baudRate))
   val rx = Module(new UartRXCore(baudRate))

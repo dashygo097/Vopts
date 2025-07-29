@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 
 class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
-  val io = IO(new SO(new FP))
+  val io = IO(new SO(new FP)).suggestName("DDS_CW")
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
   val poff = (freq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
@@ -28,7 +28,7 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
   val nChannels = mags.length
   require(freqs.length == nChannels && phas.length == nChannels)
 
-  val io = IO(new MO(new FP, mags.length))
+  val io = IO(new MO(new FP, mags.length)).suggestName("DDS_MultiCW")
 
   val sine_rom = VecInit((0 until lutWidth).map { i =>
     val angle = 2 * Pi * i / lutWidth

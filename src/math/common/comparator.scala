@@ -9,7 +9,7 @@ class ComparatorIO[T <: Data](gen: T) extends Bundle {
 }
 
 class ComparatorCore[T <: Data](gen: T, threshold: AnyVal)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
-  val io = IO(new ComparatorIO(gen))
+  val io = IO(new ComparatorIO(gen)).suggestName("COMPARATOR")
 
   val thresholdValue = threshold match {
     case int: Int => gen.fromInt(int)

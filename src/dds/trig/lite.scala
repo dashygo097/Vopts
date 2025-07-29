@@ -5,14 +5,14 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class BaseTrigIO extends Bundle with Config {
+class LiteTrigIO extends Bundle with Config {
   val mag = Input(new FP)
   val phaseDelta = Input(UInt(phaseWidth.W))
   val out = Output(new FP)
 }
 
-class BaseTrigCore(freq: Int) extends Module with Config {
-  val io = IO(new BaseTrigIO)
+class LiteTrigCore(freq: Int) extends Module with Config {
+  val io = IO(new LiteTrigIO).suggestName("DDS_LiteTRI")
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
 

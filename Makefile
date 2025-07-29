@@ -12,7 +12,7 @@ pre:
 	@mkdir -p $(TB_DIR)
 	@mkdir -p $(COCOTB_DIR)
 
-build: pre update
+build: pre
 	@sbt compile
 
 run: pre

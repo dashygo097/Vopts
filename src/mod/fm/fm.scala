@@ -1,14 +1,14 @@
 package mod.fm
 
-import dds.trig.BaseTrigCore
+import dds.trig.LiteTrigCore
 
 import scala.math._
 import utils._
 import chisel3._
 
 class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
-  val io = IO(new SISO(new FP))
-  val trig = Module(new BaseTrigCore(carrierFreq))
+  val io = IO(new SISO(new FP)).suggestName("FM")
+  val trig = Module(new LiteTrigCore(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> binaryPoint)(phaseWidth - 1, 0).asUInt

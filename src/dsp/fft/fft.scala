@@ -15,7 +15,7 @@ class MDCIO extends Bundle with Config {
 
 class MDCCore(fftSize: Int) extends Module with Config {
 
-  val io = IO(new MDCIO)
+  val io = IO(new MDCIO).suggestName("MDC")
 
   val num_stages = log2Ceil(fftSize)
   val cnt = RegInit(0.U((1 + num_stages).W))

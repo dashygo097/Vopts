@@ -20,7 +20,7 @@ class AsyncRAMIO[T <: Data](gen: T, size: Int) extends Bundle {
 }
 
 class AsyncRAMCore[T <: Data](gen: T, size: Int) extends Module {
-  val io = IO(new AsyncRAMIO(gen, size))
+  val io = IO(new AsyncRAMIO(gen, size)).suggestName("A_RAM")
 
   val mem = SyncReadMem(size, gen)
   val rdata = Reg(gen)

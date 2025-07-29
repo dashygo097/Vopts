@@ -10,7 +10,7 @@ class ModPWMIO extends Bundle {
 }
 
 class ModPWMCore(freq: Int) extends Module with Config {
-  val io = IO(new ModPWMIO)
+  val io = IO(new ModPWMIO).suggestName("DDS_ModPWM")
   val freqDivider = (clkFreq / freq).toInt
 
   val counter = RegInit(0.U(log2Ceil(freqDivider).W))
