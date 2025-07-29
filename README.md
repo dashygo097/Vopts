@@ -16,7 +16,7 @@
 
 - gtkwave (waveform visualization)
 - verilator (generating executable files for testbench)
-- [x] icarus & cocotb (to be continued)
+- icarus & cocotb
 
 ## How to use
 
