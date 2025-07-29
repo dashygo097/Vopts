@@ -4,7 +4,7 @@ import utils._
 import chisel3._
 
 class DiodeCore[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
-  val io = IO(new SISO(gen))
+  val io = IO(new SISO(gen)).suggestName("DIODE")
   val zero = gen.zero()
 
   io.out := Mux(io.in > zero, io.in, zero)

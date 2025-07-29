@@ -1,6 +1,6 @@
 package mod.am
 
-import dds.trig.BaseTrigCore
+import dds.trig.LiteTrigCore
 import utils._
 import chisel3._
 
@@ -12,8 +12,8 @@ class AMCore(carrierFreq: Int) extends Module {
     This module implements an Amplitude Modulation (AM) modulator.
     NOTE: Input signal should be positive
   */
-  val io = IO(new SISO(new FP))
-  val trig = Module(new BaseTrigCore(carrierFreq))
+  val io = IO(new SISO(new FP)).suggestName("AM")
+  val trig = Module(new LiteTrigCore(carrierFreq))
 
   trig.io.mag := io.in
   trig.io.phaseDelta := 0.U

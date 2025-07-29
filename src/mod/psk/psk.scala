@@ -1,6 +1,6 @@
 package mod.psk
 
-import dds.trig.{BaseTrigCore, CWCore}
+import dds.trig.{LiteTrigCore, CWCore}
 
 import scala.math.pow
 import utils._
@@ -12,7 +12,7 @@ class BPSKIO extends Bundle {
 }
 
 class BPSKCore(carrierFreq: Int) extends Module {
-  val io = IO(new BPSKIO)
+  val io = IO(new BPSKIO).suggestName("BPSK")
   val cw = Module(new CWCore(1.0, carrierFreq, 0.0))
   val zero = FP(0.0)
 
@@ -25,8 +25,8 @@ class QPSKIO extends Bundle {
 }
 
 class QPSKCore(carrierFreq: Int) extends Module with Config {
-  val io = IO(new QPSKIO)
-  val trig = Module(new BaseTrigCore(carrierFreq))
+  val io = IO(new QPSKIO).suggestName("QPSK")
+  val trig = Module(new LiteTrigCore(carrierFreq))
 
   val deltaPhase = (pow(2.0, phaseWidth) / pow(2.0, 2)).toInt.U
 
@@ -49,8 +49,8 @@ class nPSKIO(dw: Int) extends Bundle {
 }
 
 class nPSKCore(carrierFreq: Int, dw: Int) extends Module with Config {
-  val io = IO(new nPSKIO(dw))
-  val trig = Module(new BaseTrigCore(carrierFreq))
+  val io = IO(new nPSKIO(dw)).suggestName("nPSK")
+  val trig = Module(new LiteTrigCore(carrierFreq))
   
   val deltaPhase = (pow(2.0, phaseWidth) / pow(2.0, dw)).toInt.U
   val last_data = RegInit(0.U(dw.W))

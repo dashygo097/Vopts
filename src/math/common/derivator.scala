@@ -4,7 +4,7 @@ import utils._
 import chisel3._
 
 class DerivatorCore[T <: Data](gen: T)(implicit ev: Arithmetic[T]) extends Module {
-  val io = IO(new SISO(gen))
+  val io = IO(new SISO(gen)).suggestName("DERIVATOR")
   val prev = RegInit(Zero(gen))
 
   prev := io.in

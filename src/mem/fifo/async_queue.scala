@@ -12,7 +12,7 @@ class AsyncQueueIO[T <: Data](gen: T) extends Bundle {
 }
 
 class AsyncQueueCore[T <: Data](gen: T, depth: Int) extends Module {
-  val io = IO(new AsyncQueueIO(gen))
+  val io = IO(new AsyncQueueIO(gen)).suggestName("A_QUEUE")
 
   val queue = RegInit(VecInit(Seq.fill(depth)(0.U.asTypeOf(gen))))
   val writePtr = RegInit(0.U(log2Ceil(depth).W))

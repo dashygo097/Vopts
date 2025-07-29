@@ -9,7 +9,7 @@ class SyncQueueIO[T <: Data](gen: T) extends Bundle {
 }
 
 class SyncQueueCore[T <: Data](gen: T, depth: Int) extends Module {
-  val io = IO(new SyncQueueIO(gen))
+  val io = IO(new SyncQueueIO(gen)).suggestName("S_QUEUE")
 
   val queue = RegInit(VecInit(Seq.fill(depth)(0.U.asTypeOf(gen))))
   val writePtr = RegInit(0.U(log2Ceil(depth).W))

@@ -16,7 +16,7 @@ class SyncFIFOCtrlIO[T <: Data](gen: T, depth: Int) extends Bundle {
 }
 
 class SyncFIFOCtrlCore[T <: Data](gen: T, depth: Int) extends Module {
-  val io = IO(new SyncFIFOCtrlIO(gen, depth))
+  val io = IO(new SyncFIFOCtrlIO(gen, depth)).suggestName("S_CTRL")
 
   val wr_ptr = RegInit(0.U(log2Ceil(depth).W))
   val rd_ptr = RegInit(0.U(log2Ceil(depth).W))
@@ -78,7 +78,7 @@ class SyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
 }
 
 class SyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
-  val io = IO(new SyncFIFOIO(gen, depth))
+  val io = IO(new SyncFIFOIO(gen, depth)).suggestName("S_FIFO")
   val control = Module(new SyncFIFOCtrlCore(gen, depth))
   val register = Module(new RegisterFileCore(gen, depth))
 

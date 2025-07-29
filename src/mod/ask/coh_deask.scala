@@ -12,7 +12,7 @@ class EnvelopDetectorIO extends Bundle {
 }
 
 class EDDeASKCore(baseFreqLimit: Int, threshold: Double, filterOrder : Int = 64) extends Module {
-  val io = IO(new EnvelopDetectorIO)
+  val io = IO(new EnvelopDetectorIO).suggestName("DeASK_ED")
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
   val comparator = Module(new ComparatorCore(new FP, threshold))
 

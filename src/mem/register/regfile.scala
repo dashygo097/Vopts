@@ -13,7 +13,7 @@ class RegisterFileIO[T <: Data](gen: T, size: Int) extends Bundle {
 }
 
 class RegisterFileCore[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Module {
-  val io = IO(new RegisterFileIO(gen, size))
+  val io = IO(new RegisterFileIO(gen, size)).suggestName("REGFILE")
   val regFile = RegInit(VecInit(Seq.fill(size)(gen.zero())))
   when(io.we) {
     regFile(io.waddr) := io.wdata
