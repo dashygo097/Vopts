@@ -13,25 +13,30 @@ class TrigIO extends Bundle with Config {
 }
 
 class TrigCore(baseFreq: Int) extends Module with Config {
+
   val io = IO(new TrigIO).suggestName("DDS_TRI")
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))
 
-  val poff = (baseFreq * pow(2.0, phaseWidth) / sampleFreq).toInt.U
-  val poffDelta = ((io.freqRatio.value * baseFreq.S) << phaseWidth >> io.out.bp()) / sampleFreq.S
+
+  val freqDelta = RegNext(io.freqRatio.value * baseFreq.S)
+  val poffDeltaShifted = RegNext(freqDelta << phaseWidth >> io.out.bp())
+  val poffDeltaScaled = RegNext(poffDeltaShifted * magic.U)
+  val poffDelta = RegNext(poffDeltaScaled >> magicShift.U)
 
   val sine_rom = VecInit(
     (0 until lutWidth).map { i => 
       val angle = 2 * Pi * i / lutWidth
       val value = sin(angle)
-      FP(value)
+      new FP(binaryPoint + 2, binaryPoint).fromDouble(value)
     }
   )
 
-  phase := phase + io.phaseDelta + poff + poffDelta.asUInt
+  phase := phase + io.phaseDelta + poffDelta.asUInt
 
   lutAddr := phase(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth))
-  io.out := sine_rom(lutAddr) * io.mag
+  val lutValue = sine_rom(lutAddr)
+  io.out := lutValue * io.mag
 }
 
 

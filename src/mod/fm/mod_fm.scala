@@ -21,7 +21,7 @@ class ModFMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module wi
 
   sine.io.mag := (new FP).fromDouble(mag)
   sine.io.freqRatio := io.mod
-  sine.io.phaseDelta := DataWrapper(deviation) // Convert combitional signal to sequential signal 
+  sine.io.phaseDelta := RegNext(deviation) // Convert combitional signal to sequential signal 
 
   io.out := sine.io.out
 }

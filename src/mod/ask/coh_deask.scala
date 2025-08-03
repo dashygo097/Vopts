@@ -16,8 +16,8 @@ class EDDeASKCore(baseFreqLimit: Int, threshold: Double, filterOrder : Int = 64)
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
   val comparator = Module(new ComparatorCore(new FP, threshold))
 
-  fir.io.in := DataWrapper(Abs(io.in))
-  comparator.io.in := DataWrapper(fir.io.out)
+  fir.io.in := RegNext(Abs(io.in))
+  comparator.io.in := RegNext(fir.io.out)
   io.data := comparator.io.out
 }
 

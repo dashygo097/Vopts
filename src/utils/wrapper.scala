@@ -4,10 +4,6 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 
-object DataWrapper {
-  def apply[T <: Data](data: T): T = RegNext(data)
-}
-
 class BidirectionalBuffer(width: Int) extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle {
     val dataIO = Analog(width.W)

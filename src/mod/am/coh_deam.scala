@@ -17,7 +17,7 @@ class SDDeAMCore(carrierFreq: Int, baseFreqLimit: Int, filterOrder: Int = 64) ex
   val carrier_dds = Module(new CWCore(1.0, carrierFreq, 0.0))
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
 
-  fir.io.in := DataWrapper(io.in * carrier_dds.io.out)
+  fir.io.in := RegNext(io.in * carrier_dds.io.out)
   io.out := fir.io.out
 }
 
@@ -25,6 +25,6 @@ class ASDDeAMCore(baseFreqLimit: Int, filterOrder: Int = 64) extends Module {
   val io = IO(new AnalogSyncDetectorIO)
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
 
-  fir.io.in := DataWrapper(io.carrier * io.in)
+  fir.io.in := RegNext(io.carrier * io.in)
   io.out := fir.io.out
 }
