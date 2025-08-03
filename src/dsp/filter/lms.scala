@@ -1,6 +1,7 @@
 package dsp.filter
 
 import utils._
+import sys.process._
 import chisel3._
 
 class LMSCoreIO extends Bundle {
@@ -12,9 +13,15 @@ class LMSCoreIO extends Bundle {
   val e_valid = Input(Bool())
 }
 
-class LMSCore(order: Int, lr: Double = 0.01) extends Module {
+class LMSCore(order: Int, cutoff: Seq[Double], lr: Double = 0.001) extends Module with Config {
+  val pyPath = "src/dsp/filter/fir.py"
+  val command = Seq("python3",  pyPath, "bandpass", sampleFreq.toString, order.toString, cutoff(0).toString, cutoff(1).toString)
+
+  val result = command.!!.trim
+  val taps = result.split(",").map(_.toDouble).toIndexedSeq
+
   val io = IO(new LMSCoreIO).suggestName("LMS")
-  val coeffs = RegInit(VecInit(Seq.fill(order)(FP(0.0))))
+  val coeffs = RegInit(VecInit(taps.map(FP(_))))
   val xHistory = RegInit(VecInit(Seq.fill(order)(FP(0.0))))
   val mu = FP(lr)
 
@@ -26,6 +33,7 @@ class LMSCore(order: Int, lr: Double = 0.01) extends Module {
       xHistory(i) := xHistory(i - 1)
     }
   }
+
   when(io.e_valid) {
     for (i <- 0 until order) {
       coeffs(i) := coeffs(i) + mu * io.e * xHistory(i)

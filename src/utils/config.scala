@@ -2,12 +2,14 @@ package utils
 
 trait Config {
   // Overall config
-  val clkFreq: Int = 100000000
+  val clkFreq: Int = 100000000 // 100MHz
   val dataWidth: Int = 32
   val binaryPoint: Int = 16
 
   // DDS config
   val sampleFreq: Int = clkFreq
+  val magic: Int = 1441151826 
+  val magicShift : Int = 57
   val lutWidth: Int = 256
   val phaseWidth: Int = 24
 
