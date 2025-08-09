@@ -4,7 +4,7 @@ import scala.sys.process._
 import utils._
 import chisel3._
 
-class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Module with Config{
+class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int, groupSize: Int = 2) extends Module with Config{
   val pyPath = "src/dsp/filter/fir.py"
   val command = filterType match {
     case "bp" | "bandpass" => Seq("python3",  pyPath, "bandpass", sampleFreq.toString, numTaps.toString, cutoff(0).toString, cutoff(1).toString)
@@ -29,7 +29,7 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
     i => RegNext(regs(i) * coeffs(i))
   }
 
-  val stage2Sums = Pipeline.buildBinaryTree(stage1Products)(_ + _)
+  val stage2Sums = Pipeline.buildTree(stage1Products, groupSize)(_ + _)
 
   io.out := stage2Sums
 }
