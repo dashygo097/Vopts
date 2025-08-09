@@ -1,7 +1,6 @@
 package utils 
 
 import scala.math._
-
 import chisel3._
 
 
@@ -46,39 +45,9 @@ class FPComplex(s_dataWidth: Int = 0, s_binaryPoint: Int = -1) extends Bundle wi
   }
 }
 
-class FPComplexOpIO extends Bundle with Config {
-  val in_1 = Input(new FPComplex)
-  val in_2 = Input(new FPComplex)
-  val out = Output(new FPComplex)
-}
-
 object FPComplex extends Config {
   def apply(real: Double, imag: Double): FPComplex = {
     (new FPComplex).fromDouble(real, imag)
   }
-}
-
-class FPComplexAdd(width: Int, bp: Int) extends Module {
-  val io = IO(new FPComplexOpIO)
-  io.out := io.in_1 + io.in_2
-}
-
-class FPComplexSub(width: Int, bp: Int) extends Module {
-  val io = IO(new FPComplexOpIO)
-  io.out := io.in_1 - io.in_2
-}
-
-class FPComplexMul(width: Int, bp: Int) extends Module {
-  val io = IO(new FPComplexOpIO)
-  io.out := io.in_1 * io.in_2
-}
-
-class FPComplexMulTest(real1: Double, imag1: Double, real2: Double, imag2: Double) extends Module with Config {
-  val io = IO(new Bundle {
-    val out = Output(new FPComplex)
-  })
-  val complex1 = FPComplex(real1, imag1)
-  val complex2 = FPComplex(real2, imag2)
-  io.out := complex1 * complex2
 }
 
