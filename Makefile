@@ -27,7 +27,7 @@ clean:
 	@sbt clean
 
 tb: pre
-	@./tb.sh
+	@./scripts/tb.sh
 
 cocotb: pre
 	@echo "\033[1;32m[INFO] Select DUT (.v or .sv) file from build/...\033[0m"; \

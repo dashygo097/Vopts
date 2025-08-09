@@ -1,6 +1,6 @@
 package mod.am
 
-import math.common.Abs
+import math.Abs
 import dsp.filter.FIRCore
 import utils._
 import chisel3._

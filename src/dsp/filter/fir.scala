@@ -20,9 +20,17 @@ class FIRCore(filterType: String, cutoff: Seq[Double], numTaps: Int) extends Mod
   val regs = RegInit(VecInit(Seq.fill(taps.length)( FP(0.0) )))
   val coeffs = VecInit(taps.map( c => FP(c) ))
 
-  regs := io.in +: regs.init
+  regs(0) := io.in
+  for (i <- 1 until taps.length) {
+    regs(i) := regs(i - 1)
+  }
 
-  io.out := (regs zip coeffs).map { case (r, c) => r * c }.reduce(_ + _)
+  val stage1Products = VecInit.tabulate(taps.length) {
+    i => RegNext(regs(i) * coeffs(i))
+  }
 
+  val stage2Sums = Pipeline.buildBinaryTree(stage1Products)(_ + _)
+
+  io.out := stage2Sums
 }
 
