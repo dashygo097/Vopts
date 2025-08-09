@@ -1,4 +1,4 @@
-package math.common 
+package math
 
 import utils._
 import chisel3._
