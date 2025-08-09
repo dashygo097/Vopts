@@ -13,15 +13,20 @@ object Pipeline {
     currentData
   }
 
-  def buildBinaryTree[T <: Data](data: Vec[T])(op : (T, T) => T) : T = {
+  def buildTree[T <: Data](data: Vec[T], groupSize: Int)(op: (T, T) => T) : T = {
     val n = data.length
-    if (n == 1) {
-      data(0)
+    if (n <= groupSize) {
+      data.reduce(op)
     } else {
-      val half = n / 2
-      val left = VecInit(data.take(half))
-      val right = VecInit(data.drop(half))
-      RegNext(op(buildBinaryTree(left)(op), buildBinaryTree(right)(op)))
+      val groupNum = n / groupSize
+      val reminder = n % groupNum
+      val groups = (0 until groupNum).map { i =>
+        val startIdx = i * groupSize
+        val endIdx = if (i == groupNum - 1) startIdx + groupSize + reminder else startIdx + groupSize
+        VecInit(data.slice(startIdx, endIdx))
+      }
+      val reducedGroups = RegNext(VecInit(groups.map(_.reduce(op)))) 
+      buildTree(reducedGroups, groupSize)(op)
     }
   }
 }
