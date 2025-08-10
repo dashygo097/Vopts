@@ -9,6 +9,8 @@ trait PartialOrdered[T <: Data] {
   def ge(x: T, y: T): Bool = le(y, x)
   def eq(x: T, y: T): Bool = le(x, y) && le(y, x)
   def ne(x: T, y: T): Bool = !eq(x, y)
+  def min(x: T, y: T): T
+  def max(x: T, y: T): T
 }
 
 object PartialOrderedSyntax {
@@ -19,5 +21,7 @@ object PartialOrderedSyntax {
     def >=(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.ge(x, y)
     def ===(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.eq(x, y)
     def =/=(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.ne(x, y)
+    def min(y: T)(implicit cmp: PartialOrdered[T]): T = cmp.min(x, y)
+    def max(y: T)(implicit cmp: PartialOrdered[T]): T = cmp.max(x, y)
   }
 }
