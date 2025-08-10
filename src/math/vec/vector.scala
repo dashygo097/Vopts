@@ -1,6 +1,7 @@
 package math
 
 import utils._
+import scala.math.{min, max}
 import chisel3._
 
 class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Bundle with VectorOps[T] {
@@ -165,6 +166,18 @@ trait VectorOps[T <: Data] {
     }
     val sum = Pipeline.buildTree(products, groupSize)(_ + _)
     sum
+  }
+
+  def min(groupSize: Int = 2)(implicit ord: PartialOrdered[T]): T = {
+    val minimum = Wire(self.gen())
+    minimum := Pipeline.buildTree(self.value, groupSize)(_ min _)
+    minimum
+  }
+
+  def max(groupSize: Int = 2)(implicit ord: PartialOrdered[T]): T = {
+    val maximum = Wire(self.gen())
+    maximum := Pipeline.buildTree(self.value, groupSize)(_ max _)
+    maximum
   }
 }
 
