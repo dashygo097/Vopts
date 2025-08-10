@@ -112,56 +112,58 @@ object vec4 {
 trait VectorOps[T <: Data] {
   self: Vector[T] =>
   
-  def +(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
+  def +(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
     val vec = Wire(new Vector(self.gen(), self.size()))
-    vec.value := self.value.zip(that.value).map { case (a, b) => a + b }
+    vec.value := Pipeline.buildChunkTree(self.value, that.value, chunkSize)(_ + _)
     vec
   }
   
-  def -(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
+  def -(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
     val vec = Wire(new Vector(self.gen(), self.size()))
-    vec.value := self.value.zip(that.value).map { case (a, b) => a - b }
+    vec.value := Pipeline.buildChunkTree(self.value, that.value, chunkSize)(_ - _)
     vec
   }
 
-  def *(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
+  def *(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
     val vec = Wire(new Vector(self.gen(), self.size()))
-    vec.value := self.value.zip(that.value).map { case (a, b) => a * b }
+    vec.value := Pipeline.buildChunkTree(self.value, that.value, chunkSize)(_ * _)
     vec
   }
   
   def *(that: UInt)(implicit ev: Arithmetic[T]): Vector[T] = {
-    val vec = Wire(new Vector(self.gen(), self.size()))
-    vec.value := self.value.map(a => a * that)
-    vec
+    val that_vec = Vector(Seq.fill(self.size())(that.asTypeOf(self.gen())))
+    this.requireCompatible(that_vec)
+    this * that_vec
   }
 
-  def /(that: Vector[T])(implicit ev: Arithmetic[T]): Vector[T] = {
+  def /(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
     val vec = Wire(new Vector(self.gen(), self.size()))
-    vec.value := self.value.zip(that.value).map { case (a, b) => a / b }
+    vec.value := Pipeline.buildChunkTree(self.value, that.value, 16)(_ / _)
     vec
   }
   
   def /(that: UInt)(implicit ev: Arithmetic[T]): Vector[T] = {
-    val vec = Wire(new Vector(self.gen(), self.size()))
-    vec.value := self.value.map(a => a / that)
-    vec
+    val that_vec = Vector(Seq.fill(self.size())(that.asTypeOf(self.gen())))
+    this.requireCompatible(that_vec)
+    this / that_vec
   }
 
-  def sum()(implicit ev: Arithmetic[T]): T = {
+  def sum(groupSize: Int = 2)(implicit ev: Arithmetic[T]): T = {
     val sum = Wire(self.gen())
-    sum := self.value.reduce(_ + _)
+    sum := Pipeline.buildTree(self.value, groupSize)(_ + _)
     sum
   }
 
-  def dot(that: Vector[T])(implicit ev: Arithmetic[T]): T = {
+  def dot(that: Vector[T], groupSize: Int = 2)(implicit ev: Arithmetic[T]): T = {
     this.requireCompatible(that)
-    val sum = Wire(self.gen())
-    sum := self.value.zip(that.value).map { case (a, b) => a * b }.reduce(_ + _)
+    val products = VecInit.tabulate(self.size()) {
+      i => RegNext(self.value(i) * that.value(i))
+    }
+    val sum = Pipeline.buildTree(products, groupSize)(_ + _)
     sum
   }
 }
