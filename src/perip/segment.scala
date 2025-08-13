@@ -1,4 +1,4 @@
-package peripheral
+package perip
 
 import utils._
 import chisel3._
