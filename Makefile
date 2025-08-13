@@ -26,8 +26,11 @@ clean:
 	@sbt clean bloopInstall
 	@sbt clean
 
-tb: pre
+tb-fzf: pre
 	@./scripts/tb_fzf.sh
+
+tb: pre
+	@./scripts/tb.sh
 
 cocotb: pre
 	@echo "\033[1;32m[INFO] Select DUT (.v or .sv) file from build/...\033[0m"; \

@@ -36,24 +36,36 @@ or
 
 ## Run Autotest
 
-Run test using **verilator**(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and **gtkwave**(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through **./tb.sh and fzf.**
+Run test using **verilator**(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and **gtkwave**(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through **tb.sh(or fzf version tb_fzf.sh).**
 
 > ```bash
-> make tb
+> make tb # (make tb-fzf)
 > ```
 
 or
 
 > ```bash
-> ./tb.sh
+> ./scripts/tb.sh # (./scripts/tb-fzf.sh)
 > ```
 
-Make sure that the tb file located in **testbench/** and to end with **xxx_tb.v(or xxx_tb.sv)** and dumpfiles are named as **xxx_tb.vcd** <br>
+Make sure that the tb file located in **testbench/tb** <br>
 
-( e.g. adder.sv | adder_tb.sv | adder.vcd )
+or using
+
+> ```bash
+> make cocotb
+> ```
+
+for cocotb
+
+Similarly, make sure that the py scripts are located in **testbench/cocotb**
 
 ## References
 
 #### Some code references:
 
 > [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br> [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git) <br> [AXI-IF](https://github.com/maltanar/axi-in-chisel)
+
+```
+
+```
