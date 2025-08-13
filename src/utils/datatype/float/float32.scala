@@ -9,9 +9,11 @@ import chisel3.util._
 class Float32 extends Bundle with Float32Ops {
   val value = UInt(32.W)
   
-  def sign: Bool = value(31).asBool
-  def exponent: UInt = value(30, 23)
-  def mantissa: UInt = value(22, 0)
+  def sign(): Bool = value(31).asBool
+  def exponent(): UInt = value(30, 23)
+  def fraction(): UInt = value(22, 0)
+  def mantissa(): UInt = fraction()
+  def significant(): UInt = mantissa()
   
   private val bias = 127
   
@@ -28,11 +30,23 @@ class Float32 extends Bundle with Float32Ops {
       val expValue = math.floor(math.log(absValue) / math.log(2)).toInt + bias
       
       val normValue = absValue / pow(2, expValue - bias)
-      val mantissaValue = ((normValue - 1.0) * pow(2, 23)).toLong
+      val fractionValue = ((normValue - 1.0) * pow(2, 23)).toLong
       
-      fl.value := Cat(signBit, expValue.U(8.W), mantissaValue.U(23.W))
+      fl.value := Cat(signBit, expValue.U(8.W), fractionValue.U(23.W))
     }
     
+    fl
+  }
+
+  def fromUInt(value: UInt): Float32 = {
+    val fl = Wire(new Float32)
+    fl.value := value
+    fl
+  }
+
+  def fromSInt(value: SInt) : Float32 = {
+    val fl = Wire(new Float32)
+    fl.value := value.asUInt
     fl
   }
 }
@@ -42,19 +56,21 @@ object Float32 {
     (new Float32).fromDouble(value)
   }
   def apply(value: UInt): Float32 = {
-    val fl = Wire(new Float32)
-    fl.value := value
-    fl
+    (new Float32).fromUInt(value)
   }
   def apply(value: SInt): Float32 = {
-    val fl = Wire(new Float32)
-    fl.value := value.asUInt
-    fl
+    (new Float32).fromSInt(value)
   }
 }
 
 trait Float32Ops {
-  self: Float32 =>
+  self: Float32 => 
+
+  def unpack(): (Bool, UInt, UInt) = (sign(), exponent(), fraction())
+
+  def isNaN(): Bool = (exponent() === "hFF".U) && (fraction() =/= 0.U)
+  def isInf(): Bool = (exponent() === "hFF".U) && (fraction() === 0.U)
+  def isZero(): Bool = (exponent() === 0.U) && (fraction() === 0.U)
 
   def ===(that: Float32): Bool = this.value === that.value
   def ===(that: Double): Bool = this === Float32(that)
@@ -65,4 +81,5 @@ trait Float32Ops {
   def =/=(that: Double): Bool = !(this === Float32(that))
   def =/=(that: UInt): Bool = !(this === Float32(that))
   def =/=(that: SInt): Bool = !(this === Float32(that.asUInt))
+  
 }

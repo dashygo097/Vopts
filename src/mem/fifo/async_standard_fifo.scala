@@ -1,6 +1,6 @@
 package mem.fifo
 
-import mem.register.RegisterFileCore
+import mem.register.RegFileCore
 
 import utils._
 import chisel3._
@@ -112,7 +112,7 @@ class AsyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) e
   val io = IO(new AsyncFIFOIO(gen, depth)).suggestName("A_FIFO")
 
   val control = Module(new AsyncFIFOCtrlCore(gen, depth))
-  val register = Module(new RegisterFileCore(gen, depth))
+  val register = Module(new RegFileCore(gen, depth))
 
   control.io.wr := io.wr
   control.io.rd := io.rd
