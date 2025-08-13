@@ -1,6 +1,6 @@
 package mem.fifo
 
-import mem.register.RegisterFileCore
+import mem.register.RegFileCore
 
 import utils._
 import chisel3._
@@ -80,7 +80,7 @@ class SyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
 class SyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
   val io = IO(new SyncFIFOIO(gen, depth)).suggestName("S_FIFO")
   val control = Module(new SyncFIFOCtrlCore(gen, depth))
-  val register = Module(new RegisterFileCore(gen, depth))
+  val register = Module(new RegFileCore(gen, depth))
 
   control.io.wr := io.wr
   control.io.rd := io.rd

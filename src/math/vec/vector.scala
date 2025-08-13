@@ -1,7 +1,6 @@
 package math
 
 import utils._
-import scala.math.{min, max}
 import chisel3._
 
 class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Bundle with VectorOps[T] {
