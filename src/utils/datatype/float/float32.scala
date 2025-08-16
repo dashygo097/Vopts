@@ -49,6 +49,26 @@ class Float32 extends Bundle with Float32Ops {
     fl.value := value.asUInt
     fl
   }
+
+  def Zero(): Float32 = {
+    val fl = Wire(new Float32)
+    fl.value := 0.U
+    fl
+  }
+
+  def NaN(): Float32 = {
+    val fl = Wire(new Float32)
+    fl.value(30, 23) := 255.U
+    fl.value(23, 0) := 1.U 
+    fl
+  }
+
+  def Inf(): Float32 = {
+    val fl = Wire(new Float32)
+    fl.value(30, 23) := 255.U
+    fl.value(22, 0) := 0.U 
+    fl
+  }
 }
 
 object Float32 {
@@ -71,6 +91,50 @@ trait Float32Ops {
   def isNaN(): Bool = (exponent() === "hFF".U) && (fraction() =/= 0.U)
   def isInf(): Bool = (exponent() === "hFF".U) && (fraction() === 0.U)
   def isZero(): Bool = (exponent() === 0.U) && (fraction() === 0.U)
+
+  def +(that: Float32): Float32 = {
+    val result = Wire(new Float32)
+
+    val thisSign = this.sign()
+    val thatSign = that.sign()
+    val thisExp = this.exponent()
+    val thatExp = that.exponent()
+    val thisFrac = Cat(1.U, this.fraction())
+    val thatFrac = Cat(1.U, that.fraction())
+
+    when(this.isNaN() || that.isNaN()) {
+      result := (new Float32).NaN()
+    } .elsewhen(this.isInf() && that.isInf() && (thisSign =/= thatSign)) {
+      result := (new Float32).NaN()
+    } .elsewhen(this.isInf()) {
+      result := this
+    }.elsewhen(that.isInf()) {
+      result := that
+    } .otherwise {
+      // stage1
+      val expDiff = (thisExp - thatExp).asSInt
+      val swap = expDiff < 0.S
+      val alignedExp = Mux(swap, thatExp, thisExp)
+      val expDiffAbs = Mux(swap, -expDiff, expDiff).asUInt
+
+      val largerFrac = Mux(swap, thatFrac, thisFrac)
+      val smallerFrac = Mux(swap, thisFrac, thatFrac)
+      val largerSign = Mux(swap, thatSign, thisSign)
+      val smallerSign = Mux(swap, thisSign, thatSign)
+
+      val shiftedSmallerFrac = (smallerFrac >> expDiffAbs).asUInt
+      val guardBit = (smallerFrac >> (expDiffAbs - 1.U))(0)
+      val roundBit = (smallerFrac >> (expDiffAbs - 2.U))(0)
+
+      // stage2
+      
+      // stage3
+
+    }
+
+
+    result
+  } 
 
   def ===(that: Float32): Bool = this.value === that.value
   def ===(that: Double): Bool = this === Float32(that)
