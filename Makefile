@@ -1,10 +1,11 @@
 BASE_DIR = $(shell pwd)
 BUILD_DIR = $(BASE_DIR)/build
+SCRIPTS_DIR = $(BASE_DIR)/scripts
 TESTBENCH_DIR = $(BASE_DIR)/testbench
 TB_DIR = $(TESTBENCH_DIR)/tb
 COCOTB_DIR = $(TESTBENCH_DIR)/cocotb
 
-.PHONY: pre run build clean update debug tb cocotb
+.PHONY: pre run build clean-log clean-build clean-tb update debug tb tb-fzf cocotb cocotb-fzf
 
 pre:
 	@mkdir -p $(BUILD_DIR)
@@ -12,39 +13,47 @@ pre:
 	@mkdir -p $(TB_DIR)
 	@mkdir -p $(COCOTB_DIR)
 
-build: pre
+
+build: pre 
 	@sbt compile
 
 run: pre
 	@sbt app/run
 
-clean:
+clean-log:
 	@rm -rf $(TB_DIR)/obj_dir
-	@rm -rf $(COCOTB_DIR)/sim_build
-	@rm -rf $(COCOTB_DIR)__pycache__
-	@rm -rf $(COCOTB_DIR)results.xml
+	@rm -rf $(TB_DIR)/logs
+	@rm -rf $(COCOTB_DIR)/logs
 	@sbt clean bloopInstall
 	@sbt clean
 
-tb-fzf: pre
-	@./scripts/tb_fzf.sh
+clean-build:
+	@rm -rf $(BUILD_DIR)
 
 tb: pre
-	@./scripts/tb.sh
+	@bash $(SCRIPTS_DIR)/tb.sh
+
+tb-fzf: pre
+	@bash $(SCRIPTS_DIR)/tb_fzf.sh
+
+cocotb: pre
+	@touch $(COCOTB_DIR)/cocotb.make
+	@echo "TOPLEVEL_LANG ?= verilog" > $(COCOTB_DIR)/cocotb.make
+	@echo "SIM = icarus" >> $(COCOTB_DIR)/cocotb.make
+	@echo "" >> $(COCOTB_DIR)/cocotb.make
+	@echo "include $(shell cocotb-config --makefiles)/Makefile.sim" >> $(COCOTB_DIR)/cocotb.make
+
+	@bash $(SCRIPTS_DIR)/cocotb.sh
 
 cocotb-fzf: pre
-	@echo "\033[1;32m[INFO] Select DUT (.v or .sv) file from build/...\033[0m"; \
-	v_file=$$(find $(BUILD_DIR) -name "*.sv" -o -name "*.v" | fzf); \
-	echo "\033[1;32m[INFO] Select testbench (*_tb.py or test_*.py)\033[0m"; \
-	tb_file=$$(find $(COCOTB_DIR) -name "*_tb.py" -o -name "test_*.py" | fzf); \
-	tb_mod=$$(basename $$tb_file .py); \
-	top_mod=$$(basename $$v_file .sv); \
-	cd $(COCOTB_DIR) && \
-	make -f $(BASE_DIR)/cocotb.make \
-		MODULE=$$tb_mod \
-		TOPLEVEL=$$top_mod \
-		SIM=icarus \
-		VERILOG_SOURCES="$$v_file"
+	@touch $(COCOTB_DIR)/cocotb.make
+	@echo "TOPLEVEL = $(TB_DIR)/tb.v" > $(COCOTB_DIR)/cocotb.make
+	@echo "MODULE = tb" >> $(COCOTB_DIR)/cocotb.make
+	@echo "" >> $(COCOTB_DIR)/cocotb.make
+	@echo "include $(shell cocotb-config --makefiles)/Makefile.sim" >> $(COCOTB_DIR)/cocotb.make
+
+	@bash $(SCRIPTS_DIR)/cocotb_fzf.sh
+
 
 update:
 	@sbt bloopInstall

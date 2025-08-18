@@ -60,7 +60,6 @@ select_vcd() {
   local vcd_file=$(find "$TB_DIR/obj_dir" -type f -name "*.vcd" | fzf --height=40% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
 
   if [ -z "$vcd_file" ]; then
-    echo -e "${RED}✖  No VCD file selected. Exiting.${NC}" >&2
     exit 1
   fi
 
@@ -82,7 +81,14 @@ run_test() {
   "./${tb_file%.*}" > "$LOG_DIR/simulation_run.log" 2>&1 
 
   show_status "info" "Using waveform viewer: gtkwave"
-  gtkwave "$(select_vcd)" > "$LOG_DIR/gtkwave.log" 2>&1
+  vcd_file="$(select_vcd)"
+  if [ -z "$vcd_file" ]; then
+    show_status "error" "VCD not selected. Exiting."
+    exit 1
+  fi
+
+  gtkwave "$vcd_file" > "$LOG_DIR/gtkwave.log" 2>&1
+  show_status "success" "Testbench run completed. Logs saved in $LOG_DIR"
 }
 
 # Main execution
