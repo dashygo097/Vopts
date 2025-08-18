@@ -32,7 +32,7 @@ tb-fzf: pre
 tb: pre
 	@./scripts/tb.sh
 
-cocotb: pre
+cocotb-fzf: pre
 	@echo "\033[1;32m[INFO] Select DUT (.v or .sv) file from build/...\033[0m"; \
 	v_file=$$(find $(BUILD_DIR) -name "*.sv" -o -name "*.v" | fzf); \
 	echo "\033[1;32m[INFO] Select testbench (*_tb.py or test_*.py)\033[0m"; \

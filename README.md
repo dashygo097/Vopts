@@ -53,7 +53,7 @@ Make sure that the tb file located in **testbench/tb** <br>
 or using
 
 > ```bash
-> make cocotb
+> make cocotb-fzf
 > ```
 
 for cocotb
