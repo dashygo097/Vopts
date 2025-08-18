@@ -14,9 +14,16 @@
 
 #### For autotest:
 
+##### For regular autotest impled in verilog:
+
 - gtkwave (waveform visualization)
 - verilator (generating executable files for testbench)
-- icarus & cocotb
+- fzf(optional)
+
+##### For cocotb autotest impled in python:
+
+- icarus & cocotb (only tested under cocotb 1.9.2)
+- fzf (optional)
 
 ## How to use
 
@@ -42,23 +49,19 @@ Run test using **verilator**(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and **g
 > make tb # (make tb-fzf)
 > ```
 
-or
-
-> ```bash
-> ./scripts/tb.sh # (./scripts/tb-fzf.sh)
-> ```
-
 Make sure that the tb file located in **testbench/tb** <br>
 
 or using
 
 > ```bash
-> make cocotb-fzf
+> make cocotb # (make cocotb-fzf)
 > ```
 
 for cocotb
 
 Similarly, make sure that the py scripts are located in **testbench/cocotb**
+
+###### All the related scripts can be found in scripts/
 
 ## References
 
