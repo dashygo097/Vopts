@@ -52,9 +52,8 @@ class FP(s_dataWidth: Int = 0, s_binaryPoint: Int = -1) extends Bundle with Conf
   }
 
   def mapSInt(x: SInt): FP = {
-    val scale = pow(2, _bp).toInt
     val fl = Wire(new FP(_dw, _bp))
-    fl.value := x * scale.S
+    fl.value := x << _bp
     fl
   }
 }
@@ -98,7 +97,20 @@ trait FPOps {
   def *(that: FP): FP = {
     this.requireCompatible(that)
     val fl = this.newInstance().fromSInt(0.S)
-    fl.value := (this.value * that.value) >> _bp
+    if (this.dw() >= 16) {
+      val highxhigh = Reg(SInt(((dw() - bp()) * 2).W))
+      val highxlow = Reg(SInt(dw().W))
+      val lowxhigh = Reg(SInt(dw().W))
+      val lowxlow = Reg(SInt((bp() * 2).W))
+      highxhigh := RegNext((this.value(dw() - 1, bp()) * that.value(dw() - 1, bp())).asSInt)
+      lowxlow := RegNext((this.value(bp() - 1, 0) * that.value(bp() - 1, 0)).asSInt)
+      highxlow := RegNext(RegNext((this.value(dw() - 1, bp()) * that.value(bp() - 1, 0)).asSInt))
+      lowxhigh := RegNext(RegNext((this.value(bp() - 1, 0) * that.value(dw() - 1, bp())).asSInt))
+
+      fl.value := (highxhigh << bp()) + (highxlow + lowxhigh) + (lowxlow >> bp())
+    } else {
+      fl.value := (this.value * that.value) >> bp()
+    }
     fl
   }
   def *(that: Double): FP = this * FP(that)
@@ -108,7 +120,7 @@ trait FPOps {
   def /(that: FP): FP = {
     this.requireCompatible(that)
     val fl = this.newInstance().fromSInt(0.S)
-    fl.value := (this.value << _bp) / that.value
+    fl.value := (this.value << bp()) / that.value
     fl
   }
   def /(that: Double): FP = this / FP(that)
