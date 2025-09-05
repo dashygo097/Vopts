@@ -84,14 +84,6 @@ lazy val mod = (project in file("src/mod"))
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
   )
 
-lazy val arch = (project in file("src/arch"))
-  .dependsOn(utils, perip, dds, dsp, mem, com, mod, math)
-  .settings(
-    name := "arch",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
-  )
-
 lazy val app = (project in file("app"))
   .dependsOn(utils, perip, dds, dsp, mem, com, mod, math)
   .settings(
