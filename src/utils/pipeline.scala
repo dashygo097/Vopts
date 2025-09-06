@@ -45,7 +45,7 @@ object Pipeline {
       val chunk1 = data1.slice(startIdx, endIdx)
       val chunk2 = data2.slice(startIdx, endIdx)
 
-      val stagedResult = Wire(Vec(chunkSize, data1.head.cloneType))
+      val stagedResult = Wire(Vec(endIdx - startIdx, data1.head.cloneType))
       stagedResult := chunk1.zip(chunk2).map { case (d1, d2) => op(d1, d2) }
 
       for (i <- 0 until stagedResult.length) {
