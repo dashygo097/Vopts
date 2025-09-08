@@ -50,4 +50,10 @@ class DMIMO[InT <: Data, OutT <: Data](ins: (InT, Int), outs: (OutT, Int)) exten
   val out = Output(Vec(outs._2, outs._1))
 }
 
-
+class CSRBusIO(busWidth: Int, addrWidth: Int) extends Bundle {
+  val addr = Input(UInt(addrWidth.W))
+  val dataIn = Output(UInt(busWidth.W))
+  val dataOut = Input(UInt(busWidth.W))
+  val we = Input(Bool())
+  val re = Input(Bool())
+}

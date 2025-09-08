@@ -5,14 +5,13 @@ TESTBENCH_DIR = $(BASE_DIR)/testbench
 TB_DIR = $(TESTBENCH_DIR)/tb
 COCOTB_DIR = $(TESTBENCH_DIR)/cocotb
 
-.PHONY: pre run build clean-log clean-build clean-tb update debug tb tb-fzf cocotb cocotb-fzf
+.PHONY: pre run build update debug tb tb-fzf cocotb cocotb-fzf clean-tb clean-log clean-build stat stat-fzf
 
 pre:
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(TESTBENCH_DIR)
 	@mkdir -p $(TB_DIR)
 	@mkdir -p $(COCOTB_DIR)
-
 
 build: pre 
 	@sbt compile
@@ -53,6 +52,12 @@ cocotb-fzf: pre
 	@echo "include $(shell cocotb-config --makefiles)/Makefile.sim" >> $(COCOTB_DIR)/cocotb.make
 
 	@bash $(SCRIPTS_DIR)/cocotb_fzf.sh
+
+stat: pre
+	@bash $(SCRIPTS_DIR)/stat_yosys_simple.sh	
+
+stat-fzf: pre
+	@bash $(SCRIPTS_DIR)/stat_yosys_simple_fzf.sh
 
 
 update:
