@@ -9,7 +9,6 @@ class AXILiteAddress(addrWidth: Int) extends Bundle {
   override def clone = { new AXILiteAddress(addrWidth).asInstanceOf[this.type] }
 }
 
-
 class AXILiteWriteData(dataWidth: Int) extends Bundle {
   val data    = UInt(dataWidth.W)
   val strb    = UInt((dataWidth / 8).W)
