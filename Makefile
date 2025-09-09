@@ -5,7 +5,7 @@ TESTBENCH_DIR = $(BASE_DIR)/testbench
 TB_DIR = $(TESTBENCH_DIR)/tb
 COCOTB_DIR = $(TESTBENCH_DIR)/cocotb
 
-.PHONY: pre run build update debug tb tb-fzf cocotb cocotb-fzf clean-tb clean-log clean-build stat stat-fzf
+.PHONY: pre run build update debug tb tb-fzf cocotb cocotb-fzf clean-tb clean-log clean-build stat-xc7 stat-xc7-fzf
 
 pre:
 	@mkdir -p $(BUILD_DIR)
@@ -53,11 +53,11 @@ cocotb-fzf: pre
 
 	@bash $(SCRIPTS_DIR)/cocotb_fzf.sh
 
-stat: pre
-	@bash $(SCRIPTS_DIR)/stat_yosys_simple.sh	
+stat-xc7: pre
+	@bash $(SCRIPTS_DIR)/stat_yosys_xc7.sh	
 
-stat-fzf: pre
-	@bash $(SCRIPTS_DIR)/stat_yosys_simple_fzf.sh
+stat-xc7-fzf: pre
+	@bash $(SCRIPTS_DIR)/stat_yosys_xc7_fzf.sh
 
 
 update:

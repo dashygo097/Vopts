@@ -89,12 +89,10 @@ run_stat() {
 read_verilog ${module_file}
 hierarchy -check -top ${top_module}
 
-synth; opt -full 
-abc
-clean -purge 
+synth_xilinx -family xc7 -top ${top_module}
 
-stat
 write_verilog synth_${top_module}.v
+show
 
 EOF
   show_status "info" "Running Yosys synthesis and stat..."
