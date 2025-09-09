@@ -5,7 +5,6 @@ import chisel3._
 import chisel3.util._
 
 object Pipeline {
-  
   def apply[T <: Data](data: T, stages: Int): T = {
     require(stages > 0, "Number of stages must be greater than 0")
     var currentData = data
@@ -20,7 +19,7 @@ object Pipeline {
     if (n <= groupSize) {
       data.reduce(op)
     } else {
-      val groupNum = n / groupSize
+      val groupNum = (n + groupSize - 1) / groupSize
       val groups = (0 until groupNum).map { i =>
         val startIdx = i * groupSize
         val endIdx = min(startIdx + groupSize, n)
@@ -37,7 +36,7 @@ object Pipeline {
     require(n1 == n2, "Both vectors must have the same length")
 
     val result = Wire(Vec(n1, data1.head.cloneType))
-    val chunkNum = n1 / chunkSize + (if (n1 % chunkSize == 0) 0 else 1)
+    val chunkNum = (n1 + chunkSize - 1) / chunkSize
 
     for (chunkIdx <- 0 until chunkNum) {
       val startIdx = chunkIdx * chunkSize
@@ -49,9 +48,7 @@ object Pipeline {
       stagedResult := chunk1.zip(chunk2).map { case (d1, d2) => op(d1, d2) }
 
       for (i <- 0 until stagedResult.length) {
-        if (startIdx + i < n1) {
-          result(startIdx + i) := ShiftRegister(stagedResult(i), chunkIdx + 1)
-        }
+        result(startIdx + i) := ShiftRegister(stagedResult(i), chunkIdx)
       }
     }
 
