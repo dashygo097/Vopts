@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
-TB_DIR=$BASE_DIR/testbench/tb
+TB_DIR=$BASE_DIR/testbenchs/tb
 
 RED='\033[1;31m'
 GREEN='\033[1;32m'

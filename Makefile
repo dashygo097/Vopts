@@ -1,7 +1,7 @@
 BASE_DIR = $(shell pwd)
 BUILD_DIR = $(BASE_DIR)/build
 SCRIPTS_DIR = $(BASE_DIR)/scripts
-TESTBENCH_DIR = $(BASE_DIR)/testbench
+TESTBENCH_DIR = $(BASE_DIR)/testbenchs
 TB_DIR = $(TESTBENCH_DIR)/tb
 COCOTB_DIR = $(TESTBENCH_DIR)/cocotb
 

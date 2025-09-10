@@ -2,7 +2,7 @@
 
 BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
 BUILD_DIR=$BASE_DIR/build
-COCOTB_DIR=$BASE_DIR/testbench/cocotb
+COCOTB_DIR=$BASE_DIR/testbenchs/cocotb
 COCOTB_MAKEFILE="$COCOTB_DIR/cocotb.make"
 
 RED='\033[1;31m'
