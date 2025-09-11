@@ -16,7 +16,7 @@ object VerilogEmitter {
     val buildDir = new File("build")
     if (!buildDir.exists()) buildDir.mkdirs()
 
-    val file = new File(s"build/$filename")
+    val file = new File(s"../../src/build/$filename")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write("`timescale 1ns / 1ps\n")
     bw.write(code)
