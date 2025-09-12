@@ -16,6 +16,7 @@ class SyncFIFOCtrlIO[T <: Data](gen: T, depth: Int) extends Bundle {
 }
 
 class SyncFIFOCtrlCore[T <: Data](gen: T, depth: Int) extends Module {
+  override def desiredName = s"s_fifo_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new SyncFIFOCtrlIO(gen, depth)).suggestName("S_CTRL")
 
   val wr_ptr = RegInit(0.U(log2Ceil(depth).W))

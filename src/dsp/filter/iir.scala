@@ -5,6 +5,7 @@ import utils._
 import chisel3._
 
 class IIRCore(filterType: String, cutoff: Seq[Double], order: Int, groupSize: Int = 2) extends Module with Config {
+  override def desiredName: String = s"IIRCore_${filterType}_o${order}_g${groupSize}_${cutoff.mkString("_")}"
   val pyPath = "src/dsp/filter/iir.py"
   val command = filterType match {
     case "bp" | "bandpass" => Seq("python3", pyPath, "bandpass", sampleFreq.toString, order.toString, cutoff(0).toString, cutoff(1).toString)

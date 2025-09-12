@@ -5,6 +5,7 @@ import chisel3._
 import chisel3.util.random._
 
 class WhiteNoiseCore[T <: Data](gen: T) extends Module {
+  override def desiredName = s"whitenoise_${gen.toString().toLowerCase()}"
   val io = IO(new SO(gen))
   val lfsr = LFSR(gen.getWidth)
 

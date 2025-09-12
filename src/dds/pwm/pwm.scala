@@ -9,6 +9,7 @@ class PWMIO extends Bundle {
 }
 
 class PWMCore(freq: Int, dutyCycle: Double) extends Module with Config {
+  override def desiredName: String = s"pwd_f${freq}_d${(dutyCycle * 100).toInt}"
   val io = IO(new PWMIO).suggestName("DDS_PWM")
 
   val freqDivider = (clkFreq / freq).toInt

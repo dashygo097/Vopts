@@ -10,22 +10,23 @@ class AsyncRAMIO[T <: Data](gen: T, size: Int) extends Bundle {
 
   val we = Input(Bool())
   val re = Input(Bool())
-  val wrClk = Input(Clock())
-  val rdClk = Input(Clock())
+  val wclk = Input(Clock())
+  val rclk = Input(Clock())
 }
 
 class AsyncRAMCore[T <: Data](gen: T, size: Int) extends Module {
-  val io = IO(new AsyncRAMIO(gen, size)).suggestName("ASYNC_RAM")
+  override def desiredName = s"a_ram_${gen.toString.toLowerCase()}_x${size}"
+  val io = IO(new AsyncRAMIO(gen, size)).suggestName("A_RAM")
 
   val mem = SyncReadMem(size, gen)
   val rdata = Reg(gen)
   io.dataOut := DontCare
 
   when(io.we) {
-    mem.write(io.addr, io.dataIn, io.wrClk)
+    mem.write(io.addr, io.dataIn, io.wclk)
   }
   when (io.re) {
-    io.dataOut := mem.read(io.addr, io.rdClk)
+    io.dataOut := mem.read(io.addr, io.rclk)
   } 
 }
  

@@ -15,6 +15,7 @@ class R2MDCFFTIO extends Bundle with Config {
 }
 
 class R2MDCFFTCore(fftSize: Int) extends Module with Config {
+  override def desiredName = s"fft_radix2_mdc_n${fftSize}"
   val io = IO(new R2MDCFFTIO).suggestName("FFT")
 
   val num_stages = log2Ceil(fftSize)

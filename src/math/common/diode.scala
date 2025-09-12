@@ -4,6 +4,7 @@ import utils._
 import chisel3._
 
 class DiodeCore[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
+  override def desiredName = s"diode_${gen.toString.toLowerCase()}"
   val io = IO(new SISO(gen)).suggestName("DIODE")
   val zero = gen.zero()
 

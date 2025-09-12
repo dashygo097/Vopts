@@ -5,6 +5,7 @@ import chisel3._
 import chisel3.util._
 
 class DecimatorCore[T <: Data](gen: T, factor: Int) extends Module {
+  override def desiredName = s"decimator_${gen.toString.toLowerCase()}_f${factor}"
   require(factor > 0, "Decimation factor must be greater than 0")
   val io = IO(new SISO(gen)).suggestName("DECIMATOR")
   val count = RegInit(0.U(log2Ceil(factor).W))

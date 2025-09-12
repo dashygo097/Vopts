@@ -12,6 +12,7 @@ class LiteTrigIO extends Bundle with Config {
 }
 
 class LiteTrigCore(freq: Int) extends Module with Config {
+  override def desiredName = s"dds_lite_f${freq}"
   val io = IO(new LiteTrigIO).suggestName("DDS_LiteTRI")
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))

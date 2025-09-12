@@ -20,6 +20,7 @@ class AsyncFIFOCtrlIO[T <: Data](gen: T, depth: Int) extends Bundle {
 
 
 class AsyncFIFOCtrlCore[T <: Data](gen: T, depth: Int) extends Module {
+  override def desiredName = s"a_fifo_ctrl_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new AsyncFIFOCtrlIO(gen, depth)).suggestName("A_CTRL")
   
   val ptrWidth = log2Ceil(depth) + 1
@@ -109,6 +110,7 @@ class AsyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
 }
 
 class AsyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
+  override def desiredName = s"a_fifo_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new AsyncFIFOIO(gen, depth)).suggestName("A_FIFO")
 
   val control = Module(new AsyncFIFOCtrlCore(gen, depth))

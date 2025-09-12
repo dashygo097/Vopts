@@ -13,6 +13,7 @@ class AnalogSyncDetectorIO extends Bundle {
 }
 
 class SDDeAMCore(carrierFreq: Int, baseFreqLimit: Int, filterOrder: Int = 64) extends Module {
+  override def desiredName = s"deam_sd_cf${carrierFreq}_fl${baseFreqLimit}_o${filterOrder}"
   val io = IO(new SISO(new FP)).suggestName("DeAM_SD")
   val carrier_dds = Module(new CWCore(1.0, carrierFreq, 0.0))
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
@@ -22,6 +23,7 @@ class SDDeAMCore(carrierFreq: Int, baseFreqLimit: Int, filterOrder: Int = 64) ex
 }
 
 class ASDDeAMCore(baseFreqLimit: Int, filterOrder: Int = 64) extends Module {
+  override def desiredName = s"deam_asd_fl${baseFreqLimit}_o${filterOrder}"
   val io = IO(new AnalogSyncDetectorIO)
   val fir = Module(new FIRCore("lp", Seq(baseFreqLimit), filterOrder))
 

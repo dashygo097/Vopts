@@ -12,6 +12,7 @@ class ButterflyIO extends Bundle {
 }
 
 class Butterfly extends Module {
+  override def desiredName = s"butterfly"
   val io = IO(new ButterflyIO)
   io.out1 := io.in1 + io.in2
   io.out2 := (io.in1 - io.in2) * io.wn

@@ -4,15 +4,11 @@ import chisel3._
 import chisel3.util._
 
 class AXILiteSlaveIF(dataWidth: Int, addrWidth: Int) extends Bundle {
-  val writeAddr   = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
-
-  val writeData   = Flipped(Decoupled(new AXILiteWriteData(dataWidth)))
-
-  val writeResp   = Decoupled(UInt(2.W))
-  
-  val readAddr    = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
-
-  val readData    = Decoupled(new AXILiteReadData(dataWidth))
+  val aw = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
+  val w  = Flipped(Decoupled(new AXILiteWriteData(dataWidth)))
+  val b  = Decoupled(new AXILiteWriteResponse)
+  val ar = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
+  val r  = Decoupled(new AXILiteReadData(dataWidth))
   
   override def clone = { new AXILiteSlaveIF(dataWidth, addrWidth).asInstanceOf[this.type] }
 }
@@ -51,28 +47,28 @@ class AXILiteExternalIF(dataWidth: Int, addrWidth: Int) extends Bundle {
   val RREADY  = Input(Bool())
 
   def connect(inst: AXILiteSlaveIF): Unit = {
-    inst.writeAddr.bits.addr := this.AWADDR
-    inst.writeAddr.bits.prot := this.AWPROT
-    inst.writeAddr.valid := this.AWVALID
-    this.AWREADY := inst.writeAddr.ready
+    inst.aw.bits.addr := this.AWADDR
+    inst.aw.bits.prot := this.AWPROT
+    inst.aw.valid := this.AWVALID
+    this.AWREADY := inst.aw.ready
 
-    inst.writeData.bits.data := this.WDATA
-    inst.writeData.bits.strb := this.WSTRB
-    inst.writeData.valid := this.WVALID
-    this.WREADY := inst.writeData.ready
+    inst.w.bits.data := this.WDATA
+    inst.w.bits.strb := this.WSTRB
+    inst.w.valid := this.WVALID
+    this.WREADY := inst.w.ready
 
-    this.BRESP := inst.writeResp.bits
-    this.BVALID := inst.writeResp.valid
-    inst.writeResp.ready := this.BREADY
+    this.BRESP := inst.b.bits.resp
+    this.BVALID := inst.b.valid
+    inst.b.ready := this.BREADY
 
-    inst.readAddr.bits.addr := this.ARADDR
-    inst.readAddr.bits.prot := this.ARPROT
-    inst.readAddr.valid := this.ARVALID
-    this.ARREADY := inst.readAddr.ready
+    inst.ar.bits.addr := this.ARADDR
+    inst.ar.bits.prot := this.ARPROT
+    inst.ar.valid := this.ARVALID
+    this.ARREADY := inst.ar.ready
 
-    this.RDATA := inst.readData.bits.data
-    this.RRESP := inst.readData.bits.resp
-    this.RVALID := inst.readData.valid
-    inst.readData.ready := this.RREADY
+    this.RDATA := inst.r.bits.data
+    this.RRESP := inst.r.bits.resp
+    this.RVALID := inst.r.valid
+    inst.r.ready := this.RREADY
   }
 }
