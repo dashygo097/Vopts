@@ -5,13 +5,7 @@ import utils._
 import chisel3._
 
 class AMCore(carrierFreq: Int) extends Module {
-  /*
-  AM Modulator Core
-
-  Description:
-    This module implements an Amplitude Modulation (AM) modulator.
-    NOTE: Input signal should be positive
-  */
+  override def desiredName = s"am_cf${carrierFreq}"
   val io = IO(new SISO(new FP)).suggestName("AM")
   val trig = Module(new LiteTrigCore(carrierFreq))
 

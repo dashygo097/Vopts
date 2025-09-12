@@ -42,6 +42,7 @@ class LogicBarrelShiftCore(width: Int) extends Module {
 }
 
 class ArithmeticBarrelShiftCore(width: Int) extends Module {
+  override def desiredName = s"barrelshift_arith_x${width}"
   val io = IO(new ArithmeticBarrelShiftIO(width)).suggestName("SHIFT")
   io.out := MuxLookup(io.lr, 0.U)(Seq(
     0.U -> (io.in << io.shamt),
@@ -51,6 +52,7 @@ class ArithmeticBarrelShiftCore(width: Int) extends Module {
 }
 
 class CircularShiftCore(width: Int) extends Module {
+  override def desiredName = s"barrelshift_circ_x${width}"
   val io = IO(new CircularShiftIO(width)).suggestName("SHIFT")
   io.out := MuxLookup(io.lr, 0.U)(Seq(
     0.U -> ((io.in << io.shamt) | (io.in >> (width.U - io.shamt))),
@@ -60,6 +62,7 @@ class CircularShiftCore(width: Int) extends Module {
 }
 
 class BarrelShiftCore(width: Int) extends Module {
+  override def desiredName = s"barrelshift_x${width}"
   val io = IO(new BarrelShiftIO(width)).suggestName("SHIFT")
 
   io.out := MuxLookup((io.lr << 1) | io.al, 0.U)(Seq(

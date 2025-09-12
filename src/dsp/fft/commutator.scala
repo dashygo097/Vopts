@@ -12,6 +12,7 @@ class CommutatorIO extends Bundle {
 }
 
 class Commutator extends Module {
+  override def desiredName = s"commutator"
   val io = IO(new CommutatorIO)
   io.out1 := Mux(io.sel, io.in2, io.in1)
   io.out2 := Mux(io.sel, io.in1, io.in2)

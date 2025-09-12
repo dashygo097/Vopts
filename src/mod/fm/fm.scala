@@ -7,6 +7,7 @@ import utils._
 import chisel3._
 
 class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
+  override def desiredName = s"fm_m${(mag * 1000).toInt}_cf${carrierFreq}_df${deltaFreq}"
   val io = IO(new SISO(new FP)).suggestName("FM")
   val trig = Module(new LiteTrigCore(carrierFreq))
 

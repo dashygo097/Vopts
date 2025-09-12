@@ -14,6 +14,7 @@ class LMSCoreIO extends Bundle {
 }
 
 class LMSCore(order: Int, cutoff: Seq[Double], lr: Double = 0.001) extends Module with Config {
+  override def desiredName = s"lms_o${order}_${cutoff.mkString("_")}"
   val pyPath = "src/dsp/filter/fir.py"
   val command = Seq("python3",  pyPath, "bandpass", sampleFreq.toString, order.toString, cutoff(0).toString, cutoff(1).toString)
 

@@ -9,6 +9,7 @@ class ComparatorIO[T <: Data](gen: T) extends Bundle {
 }
 
 class ComparatorCore[T <: Data](gen: T, threshold: AnyVal)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
+  override def desiredName: String = s"comparator_${gen.toString().toLowerCase()}"
   val io = IO(new ComparatorIO(gen)).suggestName("COMPARATOR")
 
   val thresholdValue = threshold match {

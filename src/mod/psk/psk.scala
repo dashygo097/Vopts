@@ -12,6 +12,7 @@ class BPSKIO extends Bundle {
 }
 
 class BPSKCore(carrierFreq: Int) extends Module {
+  override def desiredName = s"bpsk_cf${carrierFreq}"
   val io = IO(new BPSKIO).suggestName("BPSK")
   val cw = Module(new CWCore(1.0, carrierFreq, 0.0))
   val zero = FP(0.0)
@@ -25,6 +26,7 @@ class QPSKIO extends Bundle {
 }
 
 class QPSKCore(carrierFreq: Int) extends Module with Config {
+  override def desiredName = s"qpsk_cf${carrierFreq}"
   val io = IO(new QPSKIO).suggestName("QPSK")
   val trig = Module(new LiteTrigCore(carrierFreq))
 
@@ -49,6 +51,7 @@ class nPSKIO(dw: Int) extends Bundle {
 }
 
 class nPSKCore(carrierFreq: Int, dw: Int) extends Module with Config {
+  override def desiredName = s"psk_n${dw}_cf${carrierFreq}"
   val io = IO(new nPSKIO(dw)).suggestName("nPSK")
   val trig = Module(new LiteTrigCore(carrierFreq))
   

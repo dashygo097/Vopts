@@ -5,6 +5,7 @@ import chisel3._
 
 
 class AutoLinearInterpolatorCore[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
+  override def desiredName = s"interpolate_autolinear_${gen.toString.toLowerCase()}"
   val io = IO(new SISO(gen)).suggestName("INTERPOLATOR")
 
   val prev = Reg(gen)

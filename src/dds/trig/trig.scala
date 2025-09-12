@@ -13,7 +13,7 @@ class TrigIO extends Bundle with Config {
 }
 
 class TrigCore(baseFreq: Int) extends Module with Config {
-
+  override def desiredName = s"dds_trig_f${baseFreq}"
   val io = IO(new TrigIO).suggestName("DDS_TRI")
   val phase = RegInit(0.U(phaseWidth.W))
   val lutAddr = Wire(UInt(log2Ceil(lutWidth).W))

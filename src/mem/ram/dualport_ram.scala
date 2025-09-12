@@ -12,12 +12,13 @@ class DualPortByteRAMIO(size: Int) extends Bundle {
 
   val byteena_a = Input(UInt(4.W))
   val we = Input(Bool())
-  val wrClk = Input(Clock())
-  val rdClk = Input(Clock())
+  val wclk = Input(Clock())
+  val rclk = Input(Clock())
 }
 
 class DualPortByteRAMCore(size: Int) extends Module {
-  val io = IO(new DualPortByteRAMIO(size)).suggestName("DUALPORT_RAM")
+  override def desiredName = s"a_ram_dual_bytes_x${size}"
+  val io = IO(new DualPortByteRAMIO(size)).suggestName("RAM_DUAL")
 
   val mem = SyncReadMem(size, UInt(32.W))
   val tmpOut = RegInit(0.U(32.W))
@@ -32,9 +33,9 @@ class DualPortByteRAMCore(size: Int) extends Module {
   )
 
   when(io.we) {
-    tmpOut := mem.read(io.wrAddr, io.rdClk)
-    mem.write(io.wrAddr, tmpIn, io.wrClk)
+    tmpOut := mem.read(io.wrAddr, io.rclk)
+    mem.write(io.wrAddr, tmpIn, io.wclk)
   } .otherwise {
-    io.dataOut := mem.read(io.rdAddr, io.rdClk)
+    io.dataOut := mem.read(io.rdAddr, io.rclk)
   }
 }

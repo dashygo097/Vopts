@@ -7,6 +7,7 @@ import utils._
 import chisel3._
 
 class DeFMCore(carrierFreq: Int, deltaFreq: Int, filterOrder: Int = 64) extends Module with Config {
+  override def desiredName = s"defm_o${filterOrder}_cf${carrierFreq}_df${deltaFreq}"
   val io = IO(new SISO(new FP)).suggestName("DeFM")
   val bps = Module(new FIRCore("bp", Seq(carrierFreq - deltaFreq * 2, carrierFreq + deltaFreq * 2), filterOrder))
   val din = Wire(new FP)

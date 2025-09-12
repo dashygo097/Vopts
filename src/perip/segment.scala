@@ -4,6 +4,7 @@ import utils._
 import chisel3._
 
 class SegmentCore extends Module {
+  override def desiredName: String = "segment"
   val io = IO(new DSISO(UInt(4.W), UInt(7.W)))
   val segmentMap = VecInit(
     "b00111111".U, // 0
@@ -21,6 +22,7 @@ class SegmentCore extends Module {
 }
 
 class MultiSegmentCore(num: Int) extends Module {
+  override def desiredName: String = s"segment_x${num}"
   val io = IO(new DMIMO((UInt(4.W), num), (UInt(7.W), num)))
   val segmentMap = VecInit(
     "b00111111".U, // 0

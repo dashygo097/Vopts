@@ -13,7 +13,8 @@ class SyncRAMIO[T <: Data](gen: T, size: Int) extends Bundle {
 }
 
 class SyncRAMCore[T <: Data](gen: T, size: Int) extends Module {
-  val io = IO(new SyncRAMIO(gen, size)).suggestName("SYNC_RAM")
+  override def desiredName = s"s_ram_${gen.toString().toLowerCase()}_x${size}"
+  val io = IO(new SyncRAMIO(gen, size)).suggestName("S_RAM")
 
   val mem = SyncReadMem(size, gen)
   io.dataOut := DontCare

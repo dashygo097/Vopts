@@ -4,6 +4,7 @@ import utils._
 import chisel3._
 
 class DerivatorCore[T <: Data](gen: T)(implicit ev: Arithmetic[T]) extends Module {
+  override def desiredName = s"derivator_${gen.toString().toLowerCase()}"
   val io = IO(new SISO(gen)).suggestName("DERIVATOR")
   val prev = RegInit(Zero(gen))
 

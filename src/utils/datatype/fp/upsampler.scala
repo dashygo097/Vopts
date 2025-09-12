@@ -14,6 +14,7 @@ class ScaledUpSamplerIO(inDataWidth: Int, inBp: Int, ctrlWidth: Int) extends Bun
 }
 
 class UpSamplerCore(inDataWidth: Int, inBp: Int) extends Module with Config {
+  override def desiredName = s"fp_upsampler_${inDataWidth}w${inBp}b"
   val io = IO(new UpSamplerIO(inDataWidth, inBp))
   val converter = Module(new FPConverterCore(inDataWidth, inBp, dataWidth, binaryPoint))
   converter.io.in := io.in
@@ -21,6 +22,7 @@ class UpSamplerCore(inDataWidth: Int, inBp: Int) extends Module with Config {
 }
 
 class ScaledUpSamplerCore(inDataWidth: Int, inBp: Int, ctrlWidth: Int) extends Module with Config {
+  override def desiredName = s"fp_upsampler_s${ctrlWidth}_${inDataWidth}w${inBp}b"
   val io = IO(new ScaledUpSamplerIO(inDataWidth, inBp, ctrlWidth))
   val converter = Module(new FPConverterCore(inDataWidth, inBp, dataWidth, binaryPoint))
   converter.io.in := io.in * (io.ctrl + 1.U)

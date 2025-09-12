@@ -12,6 +12,7 @@ class AsyncQueueIO[T <: Data](gen: T) extends Bundle {
 }
 
 class AsyncQueueCore[T <: Data](gen: T, depth: Int) extends Module {
+  override def desiredName = s"a_queue_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new AsyncQueueIO(gen)).suggestName("A_QUEUE")
 
   val queue = RegInit(VecInit(Seq.fill(depth)(0.U.asTypeOf(gen))))

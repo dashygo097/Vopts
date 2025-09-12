@@ -11,6 +11,7 @@ class ASKIO extends Bundle {
 }
 
 class ASKCore(mag: Double, carrierFreq: Int) extends Module with Config {
+  override def desiredName = s"ask_m${(mag * 1000).toInt}_cf${carrierFreq}"
   val io = IO(new ASKIO).suggestName("ASK")
   val cw = Module(new CWCore(mag, carrierFreq, 0.0))
   val zero = FP(0.0)
