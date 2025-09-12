@@ -4,6 +4,8 @@ import chisel3._
 import chisel3.util._
 
 class AXILiteSlaveIF(dataWidth: Int, addrWidth: Int) extends Bundle {
+  require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
+
   val aw = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
   val w  = Flipped(Decoupled(new AXILiteWriteData(dataWidth)))
   val b  = Decoupled(new AXILiteWriteResponse)
