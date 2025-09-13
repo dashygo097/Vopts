@@ -6,6 +6,7 @@ import chisel3.util._
 import scala.math.BigInt
 
 class AXISlaveMMap(dataWidth: Int, addrWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
+  override def desiredName: String = s"axi_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
   val maxAddrValue = BigInt(1) << addrWidth
