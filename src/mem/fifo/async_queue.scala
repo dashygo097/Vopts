@@ -11,7 +11,7 @@ class AsyncQueueIO[T <: Data](gen: T) extends Bundle {
   val deq_clk = Input(Clock())
 }
 
-class AsyncQueueCore[T <: Data](gen: T, depth: Int) extends Module {
+class AsyncQueue[T <: Data](gen: T, depth: Int) extends Module {
   override def desiredName = s"a_queue_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new AsyncQueueIO(gen)).suggestName("A_QUEUE")
 

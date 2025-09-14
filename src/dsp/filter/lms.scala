@@ -4,7 +4,7 @@ import utils._
 import sys.process._
 import chisel3._
 
-class LMSCoreIO extends Bundle {
+class LMSFilterIO extends Bundle {
   val x = Input(new FP)
   val x_valid = Input(Bool())
   val y = Output(new FP)
@@ -13,7 +13,7 @@ class LMSCoreIO extends Bundle {
   val e_valid = Input(Bool())
 }
 
-class LMSCore(order: Int, cutoff: Seq[Double], lr: Double = 0.001) extends Module with Config {
+class LMSFilter(order: Int, cutoff: Seq[Double], lr: Double = 0.001) extends Module with Config {
   override def desiredName = s"lms_o${order}_${cutoff.mkString("_")}"
   val pyPath = "src/dsp/filter/fir.py"
   val command = Seq("python3",  pyPath, "bandpass", sampleFreq.toString, order.toString, cutoff(0).toString, cutoff(1).toString)
@@ -21,7 +21,7 @@ class LMSCore(order: Int, cutoff: Seq[Double], lr: Double = 0.001) extends Modul
   val result = command.!!.trim
   val taps = result.split(",").map(_.toDouble).toIndexedSeq
 
-  val io = IO(new LMSCoreIO).suggestName("LMS")
+  val io = IO(new LMSFilterIO).suggestName("LMS")
   val coeffs = RegInit(VecInit(taps.map(FP(_))))
   val xHistory = RegInit(VecInit(Seq.fill(order)(FP(0.0))))
   val mu = FP(lr)

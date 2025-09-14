@@ -1,7 +1,6 @@
 package mem.fifo
 
-import mem.register.RegFileCore
-
+import mem.register._
 import utils._
 import chisel3._
 import chisel3.util._
@@ -19,7 +18,7 @@ class AsyncFIFOCtrlIO[T <: Data](gen: T, depth: Int) extends Bundle {
 }
 
 
-class AsyncFIFOCtrlCore[T <: Data](gen: T, depth: Int) extends Module {
+class AsyncFIFOCtrl[T <: Data](gen: T, depth: Int) extends Module {
   override def desiredName = s"a_fifo_ctrl_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new AsyncFIFOCtrlIO(gen, depth)).suggestName("A_CTRL")
   
@@ -109,12 +108,12 @@ class AsyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
   val rclk = Input(Clock())
 }
 
-class AsyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
+class AsyncFIFO[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
   override def desiredName = s"a_fifo_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new AsyncFIFOIO(gen, depth)).suggestName("A_FIFO")
 
-  val control = Module(new AsyncFIFOCtrlCore(gen, depth))
-  val register = Module(new RegFileCore(gen, depth))
+  val control = Module(new AsyncFIFOCtrl(gen, depth))
+  val register = Module(new RegFile(gen, depth))
 
   control.io.wr := io.wr
   control.io.rd := io.rd

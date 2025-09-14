@@ -14,7 +14,7 @@ class R2MDCFFTIO extends Bundle with Config {
   val busy = Output(Bool())
 }
 
-class R2MDCFFTCore(fftSize: Int) extends Module with Config {
+class R2MDCFFT(fftSize: Int) extends Module with Config {
   override def desiredName = s"fft_radix2_mdc_n${fftSize}"
   val io = IO(new R2MDCFFTIO).suggestName("FFT")
 
@@ -76,7 +76,7 @@ object R2MDCFFT extends Config {
   var _fftSize: Int = defaultFFTSize
 
   def apply(in: FPComplex): (FPComplex, FPComplex) = {
-    val mdc = Module(new R2MDCFFTCore(_fftSize))
+    val mdc = Module(new R2MDCFFT(_fftSize))
     mdc.io.in := in
     mdc.io.in_valid := true.B
     (mdc.io.out1, mdc.io.out2)

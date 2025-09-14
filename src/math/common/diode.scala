@@ -3,7 +3,7 @@ package math
 import utils._
 import chisel3._
 
-class DiodeCore[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
+class Diode[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
   override def desiredName = s"diode_${gen.toString.toLowerCase()}"
   val io = IO(new SISO(gen)).suggestName("DIODE")
   val zero = gen.zero()
@@ -11,9 +11,9 @@ class DiodeCore[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmet
   io.out := Mux(io.in > zero, io.in, zero)
 }
 
-object DiodeCore {
+object Diode {
   def apply[T <: Data](in: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]): T = {
-    val diode = Module(new DiodeCore(in))
+    val diode = Module(new Diode(in))
     diode.io.in := in
     diode.io.out
   }

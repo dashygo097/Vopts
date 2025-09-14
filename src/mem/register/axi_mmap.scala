@@ -17,8 +17,8 @@ class AXISlaveMMap(dataWidth: Int, addrWidth: Int, mmap: Seq[RegisterFactory]) e
             s"Register initial value ${reg.initValue} out of range for dataWidth $dataWidth")
   }
 
-  val ext_axi = IO(new AXILiteExternalIF(dataWidth, addrWidth)).suggestName("S_AXI")
-  val axi = Wire(new AXILiteSlaveIF(dataWidth, addrWidth))
+  val ext_axi = IO(new AXILiteExternalIO(dataWidth, addrWidth)).suggestName("S_AXI")
+  val axi = Wire(new AXILiteSlaveIO(dataWidth, addrWidth))
   val addr_lsb = log2Ceil(dataWidth / 8)
   val opt_mem_addr_bits = log2Ceil(mmap.length)
 
@@ -129,4 +129,3 @@ class AXISlaveMMap(dataWidth: Int, addrWidth: Int, mmap: Seq[RegisterFactory]) e
 
   ext_axi.connect(axi)
 }
- 

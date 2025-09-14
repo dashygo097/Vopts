@@ -3,27 +3,23 @@ package com.axi
 import chisel3._
 import chisel3.util._
 
-class AXILiteSlaveIF(dataWidth: Int, addrWidth: Int) extends Bundle {
+class AXILiteSlaveIO(dataWidth: Int, addrWidth: Int) extends Bundle {
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
-
-  val aw = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
-  val w  = Flipped(Decoupled(new AXILiteWriteData(dataWidth)))
-  val b  = Decoupled(new AXILiteWriteResponse)
-  val ar = Flipped(Decoupled(new AXILiteAddress(addrWidth)))
-  val r  = Decoupled(new AXILiteReadData(dataWidth))
+  val aw = Flipped(Decoupled(new AXILiteAddrIO(addrWidth)))
+  val w  = Flipped(Decoupled(new AXILiteWriteIO(dataWidth)))
+  val b  = Decoupled(new AXILiteWriteRespIO)
+  val ar = Flipped(Decoupled(new AXILiteAddrIO(addrWidth)))
+  val r  = Decoupled(new AXILiteReadIO(dataWidth))
   
-  override def clone = { new AXILiteSlaveIF(dataWidth, addrWidth).asInstanceOf[this.type] }
+  override def clone = { new AXILiteSlaveIO(dataWidth, addrWidth).asInstanceOf[this.type] }
 }
 
-object AXILiteSlaveIF {
-  def apply(dataWidth: Int, addrWidth: Int): AXILiteSlaveIF = {
-    val axi = new AXILiteSlaveIF(dataWidth, addrWidth)
-    axi
-  }
+object AXILiteSlaveIO {
+  def apply(dataWidth: Int, addrWidth: Int): AXILiteSlaveIO = new AXILiteSlaveIO(dataWidth, addrWidth)
 }
 
 
-class AXILiteExternalIF(dataWidth: Int, addrWidth: Int) extends Bundle {
+class AXILiteExternalIO(dataWidth: Int, addrWidth: Int) extends Bundle {
   val AWADDR  = Input(UInt(addrWidth.W))
   val AWPROT  = Input(UInt(3.W))
   val AWVALID = Input(Bool())
@@ -48,7 +44,7 @@ class AXILiteExternalIF(dataWidth: Int, addrWidth: Int) extends Bundle {
   val RVALID  = Output(Bool())
   val RREADY  = Input(Bool())
 
-  def connect(inst: AXILiteSlaveIF): Unit = {
+  def connect(inst: AXILiteSlaveIO): Unit = {
     inst.aw.bits.addr := this.AWADDR
     inst.aw.bits.prot := this.AWPROT
     inst.aw.valid := this.AWVALID

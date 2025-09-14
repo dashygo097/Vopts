@@ -22,7 +22,7 @@ class DualReadRegFileIO[T <: Data](gen: T, size: Int) extends Bundle {
   val rdata2 = Output(gen)
 }
 
-class RegFileCore[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Module {
+class RegFile[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Module {
   override def desiredName = s"regfile_${gen.toString().toLowerCase()}_x${size}"
   val io = IO(new RegFileIO(gen, size)).suggestName("REGFILE")
   val regFile = RegInit(VecInit(Seq.fill(size)(gen.zero())))
@@ -32,7 +32,7 @@ class RegFileCore[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) exte
   io.rdata := regFile(io.raddr)
 }
 
-class DualReadRegFileCore[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Module {
+class DualReadRegFile[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Module {
   override def desiredName = s"regfile_dual_${gen.toString().toLowerCase()}_x${size}"
   val io = IO(new DualReadRegFileIO(gen, size)).suggestName("REGFILE_DUAL")
   val regFile = RegInit(VecInit(Seq.fill(size)(gen.zero())))

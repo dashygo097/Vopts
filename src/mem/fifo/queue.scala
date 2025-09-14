@@ -8,7 +8,7 @@ class SyncQueueIO[T <: Data](gen: T) extends Bundle {
   val deq = Decoupled(gen)
 }
 
-class SyncQueueCore[T <: Data](gen: T, depth: Int) extends Module {
+class SyncQueue[T <: Data](gen: T, depth: Int) extends Module {
   override def desiredName = s"s_queue_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new SyncQueueIO(gen)).suggestName("S_QUEUE")
 

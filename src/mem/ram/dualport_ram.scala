@@ -16,7 +16,7 @@ class DualPortByteRAMIO(size: Int) extends Bundle {
   val rclk = Input(Clock())
 }
 
-class DualPortByteRAMCore(size: Int) extends Module {
+class DualPortByteRAM(size: Int) extends Module {
   override def desiredName = s"a_ram_dual_bytes_x${size}"
   val io = IO(new DualPortByteRAMIO(size)).suggestName("RAM_DUAL")
 
