@@ -19,6 +19,7 @@ class AXISlaveMMap(dataWidth: Int, addrWidth: Int, mmap: Seq[RegisterFactory]) e
 
   val ext_axi = IO(new AXILiteExternalIO(dataWidth, addrWidth)).suggestName("S_AXI")
   val axi = Wire(new AXILiteSlaveIO(dataWidth, addrWidth))
+
   val addr_lsb = log2Ceil(dataWidth / 8)
   val opt_mem_addr_bits = log2Ceil(mmap.length)
 
