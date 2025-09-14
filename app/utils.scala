@@ -1,14 +1,13 @@
 package app
 
 import java.io.{BufferedWriter, File, FileWriter}
-
 import _root_.circt.stage.ChiselStage
 
 object VerilogEmitter {
-  def parse(gen: => chisel3.Module, filename: String, info: Boolean = false): Unit = {
+  def parse(gen: => chisel3.Module, filename: String, info: Boolean = false, options: Seq[String] = Seq()): Unit = {
     val code = ChiselStage.emitSystemVerilog(
       gen = gen,
-      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
+      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info") ++ options
     )
 
     val num_lines = code.split("\n").length
