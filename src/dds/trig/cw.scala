@@ -5,7 +5,7 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
+class CWDDS(mag : Double, freq: Int, pha: Double) extends Module with Config {
   override def desiredName = s"dds_cw_m${(mag * 1000).toInt}_f${freq}_p${(pha * 180 / Pi).toInt}"
   val io = IO(new SO(new FP)).suggestName("DDS_CW")
   val phase = RegInit(0.U(phaseWidth.W))
@@ -25,7 +25,7 @@ class CWCore(mag : Double, freq: Int, pha: Double) extends Module with Config {
   io.out := sine_rom(lutAddr) * mag
 }
 
- class MultiCWCore(mags: Seq[Double], freqs: Seq[Int], phas: Seq[Double]) extends Module with Config {
+ class MultiCWDDS(mags: Seq[Double], freqs: Seq[Int], phas: Seq[Double]) extends Module with Config {
   override def desiredName = s"dds_multi_cw_x${mags.length}"
   val nChannels = mags.length
   require(freqs.length == nChannels && phas.length == nChannels)

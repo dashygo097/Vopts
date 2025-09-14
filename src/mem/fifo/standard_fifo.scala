@@ -1,7 +1,6 @@
 package mem.fifo
 
-import mem.register.RegFileCore
-
+import mem.register._
 import utils._
 import chisel3._
 import chisel3.util._
@@ -15,7 +14,7 @@ class SyncFIFOCtrlIO[T <: Data](gen: T, depth: Int) extends Bundle {
   val full = Output(Bool())
 }
 
-class SyncFIFOCtrlCore[T <: Data](gen: T, depth: Int) extends Module {
+class SyncFIFOCtrl[T <: Data](gen: T, depth: Int) extends Module {
   override def desiredName = s"s_fifo_${gen.toString.toLowerCase()}_x${depth}"
   val io = IO(new SyncFIFOCtrlIO(gen, depth)).suggestName("S_CTRL")
 
@@ -78,10 +77,10 @@ class SyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
   val full = Output(Bool())
 }
 
-class SyncFIFOCore[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
+class SyncFIFO[T <: Data](gen: T, depth: Int)(implicit ev: Arithmetic[T]) extends Module {
   val io = IO(new SyncFIFOIO(gen, depth)).suggestName("S_FIFO")
-  val control = Module(new SyncFIFOCtrlCore(gen, depth))
-  val register = Module(new RegFileCore(gen, depth))
+  val control = Module(new SyncFIFOCtrl(gen, depth))
+  val register = Module(new RegFile(gen, depth))
 
   control.io.wr := io.wr
   control.io.rd := io.rd

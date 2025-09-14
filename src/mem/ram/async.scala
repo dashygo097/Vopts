@@ -14,7 +14,7 @@ class AsyncRAMIO[T <: Data](gen: T, size: Int) extends Bundle {
   val rclk = Input(Clock())
 }
 
-class AsyncRAMCore[T <: Data](gen: T, size: Int) extends Module {
+class AsyncRAM[T <: Data](gen: T, size: Int) extends Module {
   override def desiredName = s"a_ram_${gen.toString.toLowerCase()}_x${size}"
   val io = IO(new AsyncRAMIO(gen, size)).suggestName("A_RAM")
 

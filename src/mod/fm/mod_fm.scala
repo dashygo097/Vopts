@@ -1,10 +1,9 @@
 package mod.fm
 
-import dds.trig.TrigCore
-
-import scala.math.pow
+import dds.trig._
 import utils._
 import chisel3._
+import scala.math._
 
 class ModFMIO extends Bundle {
   val mod = Input(new FP)
@@ -12,10 +11,10 @@ class ModFMIO extends Bundle {
   val out = Output(new FP)
 }
 
-class ModFMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
+class ModFM(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   override def desiredName = s"fm_mod_m${(mag * 1000).toInt}_cf${carrierFreq}_df${deltaFreq}"
   val io = IO(new ModFMIO).suggestName("ModFM")
-  val sine = Module(new TrigCore(carrierFreq))
+  val sine = Module(new TrigDDS(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> binaryPoint)(phaseWidth - 1, 0).asUInt
@@ -27,13 +26,13 @@ class ModFMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module wi
   io.out := sine.io.out
 }
 
-object ModFMCore extends Config {
+object ModFM extends Config {
   var _mag = 1.0
   var _carrierFreq = defaultCarrierFreq
   var _deltaFreq = defaultFMDeltaFreq
 
   def apply(in: FP, ctrl: UInt): FP = {
-    val modfm = Module(new ModFMCore(_mag, _carrierFreq, _deltaFreq))
+    val modfm = Module(new ModFM(_mag, _carrierFreq, _deltaFreq))
     modfm.io.in := in
     modfm.io.mod := ctrl
     modfm.io.out

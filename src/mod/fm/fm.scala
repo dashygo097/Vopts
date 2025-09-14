@@ -1,15 +1,15 @@
 package mod.fm
 
-import dds.trig.LiteTrigCore
+import dds.trig._
 
 import scala.math._
 import utils._
 import chisel3._
 
-class FMCore(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
+class FM(mag: Double, carrierFreq: Int, deltaFreq: Int) extends Module with Config {
   override def desiredName = s"fm_m${(mag * 1000).toInt}_cf${carrierFreq}_df${deltaFreq}"
   val io = IO(new SISO(new FP)).suggestName("FM")
-  val trig = Module(new LiteTrigCore(carrierFreq))
+  val trig = Module(new LiteTrigDDS(carrierFreq))
 
   val deviationFactor = (pow(2.0, phaseWidth) / sampleFreq * deltaFreq).toInt
   val deviation = ((io.in.value * deviationFactor.S) >> binaryPoint)(phaseWidth - 1, 0).asUInt
@@ -26,7 +26,7 @@ object FM extends Config {
   var _deltaFreq: Int = defaultFMDeltaFreq
 
   def apply(in: FP): FP = {
-    val fm = Module(new FMCore(_mag, _carrierFreq, _deltaFreq))
+    val fm = Module(new FM(_mag, _carrierFreq, _deltaFreq))
     fm.io.in := in
     fm.io.out
   }

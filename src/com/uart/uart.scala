@@ -16,7 +16,7 @@ class UartRXIO extends Bundle {
   val error = Output(Bool())
 }
 
-class UartTXCore(baudRate: Int) extends Module with Config {
+class UartTX(baudRate: Int) extends Module with Config {
   val io = IO(new UartTXIO).suggestName("UART_TX")
   val baudTickDivider = clkFreq / baudRate
   
@@ -70,7 +70,7 @@ class UartTXCore(baudRate: Int) extends Module with Config {
   }
 }
 
-class UartRXCore(baudRate: Int) extends Module with Config {
+class UartRX(baudRate: Int) extends Module with Config {
   val io = IO(new UartRXIO).suggestName("UART_RX")
   val baudTickDivider = clkFreq / baudRate
   
@@ -124,14 +124,14 @@ class UartRXCore(baudRate: Int) extends Module with Config {
   }
 }
 
-class UartCore(baudRate: Int) extends Module with Config {
+class Uart(baudRate: Int) extends Module with Config {
   val io = IO(new Bundle {
     val tx = new UartTXIO
     val rx = new UartRXIO
   }).suggestName("UART")
   
-  val tx = Module(new UartTXCore(baudRate))
-  val rx = Module(new UartRXCore(baudRate))
+  val tx = Module(new UartTX(baudRate))
+  val rx = Module(new UartRX(baudRate))
   
   tx.io <> io.tx
   rx.io <> io.rx

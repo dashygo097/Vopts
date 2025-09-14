@@ -9,7 +9,7 @@ class ModPWMIO extends Bundle {
   val out = Output(Bool())
 }
 
-class ModPWMCore(freq: Int) extends Module with Config {
+class ModPWMDDS(freq: Int) extends Module with Config {
   override def desiredName: String = s"pwd_mod_f${freq}"
   val io = IO(new ModPWMIO).suggestName("DDS_ModPWM")
   val freqDivider = (clkFreq / freq).toInt

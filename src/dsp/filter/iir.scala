@@ -4,7 +4,7 @@ import scala.sys.process._
 import utils._
 import chisel3._
 
-class IIRCore(filterType: String, cutoff: Seq[Double], order: Int, groupSize: Int = 2) extends Module with Config {
+class IIRFilter(filterType: String, cutoff: Seq[Double], order: Int, groupSize: Int = 2) extends Module with Config {
   override def desiredName: String = s"IIRCore_${filterType}_o${order}_g${groupSize}_${cutoff.mkString("_")}"
   val pyPath = "src/dsp/filter/iir.py"
   val command = filterType match {

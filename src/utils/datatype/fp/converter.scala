@@ -9,7 +9,7 @@ class FPConverterIO(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int) extends Bu
   val out = Output(new FP(out_dw, out_bp))
 }
 
-class FPConverterCore(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int) extends Module {
+class FPConverter(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int) extends Module {
   override def desiredName = s"fp_converter_${in_dw}w${in_bp}b_to_${out_dw}w${out_bp}b"
   val io = IO(new FPConverterIO(in_dw, in_bp, out_dw, out_bp))
   val shiftAmt = out_bp - in_bp
