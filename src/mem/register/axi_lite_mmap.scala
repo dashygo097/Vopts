@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.BigInt
 
-class AXISlaveMMap(dataWidth: Int, addrWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
+class AXISlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
   override def desiredName: String = s"axi_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
@@ -17,8 +17,8 @@ class AXISlaveMMap(dataWidth: Int, addrWidth: Int, mmap: Seq[RegisterFactory]) e
             s"Register initial value ${reg.initValue} out of range for dataWidth $dataWidth")
   }
 
-  val ext_axi = IO(new AXILiteExternalIO(dataWidth, addrWidth)).suggestName("S_AXI")
-  val axi = Wire(new AXILiteSlaveIO(dataWidth, addrWidth))
+  val ext_axi = IO(new AXILiteExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
+  val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
   val addr_lsb = log2Ceil(dataWidth / 8)
   val opt_mem_addr_bits = log2Ceil(mmap.length)

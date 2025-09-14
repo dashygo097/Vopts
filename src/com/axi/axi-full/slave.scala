@@ -3,28 +3,33 @@ package com.axi
 import chisel3._
 import chisel3.util._
 
-class AXIFullSlaveIO(dataWidth: Int, addrWidth: Int) extends Bundle {
+class AXIFullSlaveIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
-  val aw = Flipped(Decoupled(new AXIFullAddrIO(addrWidth)))
-  val w  = Flipped(Decoupled(new AXIFullWriteIO(dataWidth)))
-  val b  = Decoupled(new AXIFullWriteRespIO())
-  val ar = Flipped(Decoupled(new AXIFullAddrIO(addrWidth)))
-  val r  = Decoupled(new AXIFullReadIO(dataWidth))
+  val aWidth = addrWidth
+  val dWidth = dataWidth
+  val iWidth = idWidth
+  val uWidth = userWidth
 
-  override def clone = { new AXIFullSlaveIO(addrWidth, dataWidth).asInstanceOf[this.type] }
+  val aw = Flipped(Decoupled(new AXIFullAddrIO(addrWidth, idWidth, userWidth)))
+  val w  = Flipped(Decoupled(new AXIFullWriteIO(dataWidth, idWidth, userWidth)))
+  val b  = Decoupled(new AXIFullWriteRespIO(idWidth, userWidth))
+  val ar = Flipped(Decoupled(new AXIFullAddrIO(addrWidth, idWidth, userWidth)))
+  val r  = Decoupled(new AXIFullReadIO(dataWidth, idWidth, userWidth))
+
+  override def clone = { new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth).asInstanceOf[this.type] }
 
 }
 
 object AXIFullSlaveIO {
-  def apply(dataWidth: Int, addrWidth: Int): AXIFullSlaveIO = new AXIFullSlaveIO(dataWidth, addrWidth)
+  def apply(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0): AXIFullSlaveIO = new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth)
 }
 
-class AXIFullSlaveExternalIO(dataWidth: Int, addrWidth: Int) extends Bundle {
+class AXIFullSlaveExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
   val AWADDR   = Input(UInt(addrWidth.W))
   val AWPROT   = Input(UInt(3.W))
   val AWVALID  = Input(Bool())
   val AWREADY  = Output(Bool())
-  val AWID     = Input(UInt(4.W))
+  val AWID     = Input(UInt(idWidth.W))
   val AWLEN    = Input(UInt(8.W))
   val AWSIZE   = Input(UInt(3.W))
   val AWBURST  = Input(UInt(2.W))
@@ -32,27 +37,27 @@ class AXIFullSlaveExternalIO(dataWidth: Int, addrWidth: Int) extends Bundle {
   val AWCACHE  = Input(UInt(4.W))
   val AWQOS    = Input(UInt(4.W))
   val AWREGION = Input(UInt(4.W))
-  val AWUSER   = Input(UInt(1.W))
+  val AWUSER   = Input(UInt(userWidth.W))
 
   val WDATA  = Input(UInt(dataWidth.W))
   val WSTRB  = Input(UInt((dataWidth / 8).W))
   val WVALID = Input(Bool())
   val WREADY = Output(Bool())
   val WLAST  = Input(Bool())
-  val WID    = Input(UInt(4.W))
-  val WUSER  = Input(UInt(1.W))
+  val WID    = Input(UInt(idWidth.W))
+  val WUSER  = Input(UInt(userWidth.W))
 
   val BREADY = Input(Bool())
   val BRESP  = Output(UInt(2.W))
   val BVALID = Output(Bool())
-  val BID    = Output(UInt(4.W))
-  val BUSER  = Output(UInt(1.W))
+  val BID    = Output(UInt(idWidth.W))
+  val BUSER  = Output(UInt(userWidth.W))
 
   val ARADDR   = Input(UInt(addrWidth.W))
   val ARPROT   = Input(UInt(3.W))
   val ARVALID  = Input(Bool())
   val ARREADY  = Output(Bool())
-  val ARID     = Input(UInt(4.W))
+  val ARID     = Input(UInt(idWidth.W))
   val ARLEN    = Input(UInt(8.W))
   val ARSIZE   = Input(UInt(3.W))
   val ARBURST  = Input(UInt(2.W))
@@ -60,17 +65,22 @@ class AXIFullSlaveExternalIO(dataWidth: Int, addrWidth: Int) extends Bundle {
   val ARCACHE  = Input(UInt(4.W))
   val ARQOS    = Input(UInt(4.W))
   val ARREGION = Input(UInt(4.W))
-  val ARUSER   = Input(UInt(1.W))
+  val ARUSER   = Input(UInt(userWidth.W))
 
   val RREADY = Input(Bool())
   val RDATA  = Output(UInt(dataWidth.W))
   val RRESP  = Output(UInt(2.W))
   val RVALID = Output(Bool())
   val RLAST  = Output(Bool())
-  val RID    = Output(UInt(4.W))
-  val RUSER  = Output(UInt(1.W))
+  val RID    = Output(UInt(idWidth.W))
+  val RUSER  = Output(UInt(userWidth.W))
 
   def connect(intf: AXIFullSlaveIO): Unit = {
+    require(intf.aWidth == addrWidth, "Address width must match")
+    require(intf.dWidth == dataWidth, "Data width must match")
+    require(intf.iWidth == idWidth, "ID width must match")
+    require(intf.uWidth == userWidth, "User width must match")
+
     intf.aw.bits.addr   := this.AWADDR
     intf.aw.bits.prot   := this.AWPROT
     intf.aw.valid       := this.AWVALID

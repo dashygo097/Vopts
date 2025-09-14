@@ -3,8 +3,11 @@ package com.axi
 import chisel3._
 import chisel3.util._
 
-class AXILiteMasterIO(dataWidth: Int, addrWidth: Int) extends Bundle {  
+class AXILiteMasterIO(addrWidth: Int, dataWidth: Int) extends Bundle {  
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
+  val aWidth = addrWidth
+  val dWidth = dataWidth
+
   val aw = Decoupled(new AXILiteAddrIO(addrWidth))
   val w  = Decoupled(new AXILiteWriteIO(dataWidth))
   val b  = Flipped(Decoupled(new AXILiteWriteRespIO))
@@ -15,10 +18,10 @@ class AXILiteMasterIO(dataWidth: Int, addrWidth: Int) extends Bundle {
 }
 
 object AXILiteMasterIO {
- def apply(dataWidth: Int, addrWidth: Int): AXILiteMasterIO = new AXILiteMasterIO(dataWidth, addrWidth)
+ def apply(addrWidth: Int, dataWidth: Int): AXILiteMasterIO = new AXILiteMasterIO(addrWidth, dataWidth)
 }
 
-class AXILiteMasterExternalIO(dataWidth: Int, addrWidth: Int) extends Bundle {
+class AXILiteMasterExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val AWADDR  = Output(UInt(addrWidth.W))
   val AWPROT  = Output(UInt(3.W))
   val AWVALID = Output(Bool())
@@ -44,6 +47,9 @@ class AXILiteMasterExternalIO(dataWidth: Int, addrWidth: Int) extends Bundle {
   val RREADY  = Output(Bool())
 
   def connect(intf: AXILiteMasterIO): Unit = {
+    require(intf.aWidth == addrWidth, "Address width mismatch")
+    require(intf.dWidth == dataWidth, "Data width mismatch")
+
     this.AWADDR  := intf.aw.bits.addr
     this.AWPROT  := intf.aw.bits.prot
     this.AWVALID := intf.aw.valid
