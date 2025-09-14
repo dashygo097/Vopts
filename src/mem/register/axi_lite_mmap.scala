@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.BigInt
 
-class AXISlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
+class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
   override def desiredName: String = s"axi_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
@@ -20,9 +20,11 @@ class AXISlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) e
   val ext_axi = IO(new AXILiteExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
+  // Parameters
   val addr_lsb = log2Ceil(dataWidth / 8)
   val opt_mem_addr_bits = log2Ceil(mmap.length)
 
+  // Signals
   val aw_en = RegInit(true.B)
   val axi_awready = RegInit(false.B)
   val axi_awaddr = RegInit(0.U(addrWidth.W))
@@ -66,7 +68,7 @@ class AXISlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) e
     axi_awaddr := axi.aw.bits.addr
     axi_awready := true.B
     aw_en := false.B
-  } .elsewhen(axi.b.ready && axi_bvalid) {
+  } .elsewhen (axi.b.ready && axi_bvalid) {
     axi_awready := false.B
     aw_en := true.B
   } .otherwise {
