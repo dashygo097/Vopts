@@ -35,7 +35,7 @@ class AXIFullSlaveRAM(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: I
   val axi_arlen = RegInit(0.U(8.W))
   val axi_arlen_cntr = RegInit(0.U(8.W))
   val axi_arv_arr_flag = RegInit(false.B)
-  val axi_rdata = RegInit(0.U(dataWidth.W))
+  val axi_rdata = Wire(UInt(dataWidth.W))
   val axi_rvalid = RegInit(false.B)
   val axi_rresp = RegInit(0.U(2.W))
   val axi_rlast = RegInit(false.B)
@@ -49,10 +49,9 @@ class AXIFullSlaveRAM(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: I
   val mem_we = Wire(Bool())
   val mem_re = Wire(Bool())
   val mem_addr = Wire(UInt(opt_mem_addr_bits.W))
-  val ram = RegInit(VecInit(Seq.fill(1 << opt_mem_addr_bits)(0.U(dataWidth.W))))
-
+  val data_out = Wire(UInt(dataWidth.W))
   val byte_in = Wire(Vec(dataWidth / 8, UInt(8.W)))
-  val byte_out = Wire(Vec(dataWidth / 8, UInt(8.W)))
+  val ram = RegInit(VecInit(Seq.fill(1 << opt_mem_addr_bits)(0.U(dataWidth.W))))
 
   // I/O Connections
   axi.aw.ready := axi_awready
@@ -76,6 +75,10 @@ class AXIFullSlaveRAM(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: I
 
   mem_we := axi_wready && axi.w.valid
   mem_re := axi_arv_arr_flag
+  data_out := ram(mem_addr)
+  for (i <- 0 until (dataWidth / 8)) {
+    byte_in(i) := axi.w.bits.data(8 * (i + 1) - 1, 8 * i)
+  }
   mem_addr := Mux(axi_arv_arr_flag, 
     axi_araddr(opt_mem_addr_bits + addr_lsb, addr_lsb),
     Mux(axi_awv_awr_flag, 
@@ -84,12 +87,7 @@ class AXIFullSlaveRAM(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: I
     )
   )
 
-  for (i <- 0 until (dataWidth / 8)) {
-    byte_in(i) := axi.w.bits.data(8 * (i + 1) - 1, 8 * i)
-  }
-  for (i <- 0 until (dataWidth / 8)) {
-    byte_out(i) := ram(mem_addr)(8 * (i + 1) - 1, 8 * i)
-  }
+
 
   // Address Write Channel
 
@@ -183,9 +181,11 @@ class AXIFullSlaveRAM(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: I
     }.reverse)
   }
 
-  when (mem_re && axi_rvalid) {
-    axi_rdata := Cat((0 until (dataWidth / 8)).map { i => byte_out(i) }.reverse)
-  } 
+  when (mem_re) {
+    data_out := ram(mem_addr)
+  }
+
+  axi_rdata := Mux(axi_rvalid, data_out, 0.U(dataWidth.W))
 
   ext_axi.connect(axi)
 }
