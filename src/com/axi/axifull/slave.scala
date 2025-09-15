@@ -106,7 +106,7 @@ class AXIFullSlaveExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userW
     this.BRESP   := intf.b.bits.resp
     this.BID     := intf.b.bits.id
     this.BUSER   := intf.b.bits.user
-    intf.b.valid := this.BVALID
+    this.BVALID  := intf.b.valid
     intf.b.ready := this.BREADY
 
     intf.ar.bits.addr   := this.ARADDR

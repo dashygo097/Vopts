@@ -5,8 +5,8 @@ import chisel3._
 import chisel3.util._
 import scala.math.BigInt
 
-class AXIFullSlaveBlockRAM(addrWidth: Int, dataWidth: Int, idWidth: Int,  userNumMem: Int, optMemAddrBits: Int = 0, userWidth: Int = 0) extends Module {
-  override def desiredName: String = s"axi_slave_mmap_${addrWidth}x${dataWidth}"
+class AXIFullSlaveRAM(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Module {
+  override def desiredName: String = s"axi_full_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
   val maxAddrValue = BigInt(1) << addrWidth
@@ -16,7 +16,7 @@ class AXIFullSlaveBlockRAM(addrWidth: Int, dataWidth: Int, idWidth: Int,  userNu
 
   // Parameters
   val addr_lsb = log2Ceil(dataWidth / 8)
-  val opt_mem_addr_bits = if (optMemAddrBits < addrWidth) optMemAddrBits else addrWidth
+  val opt_mem_addr_bits = 4
 
   // Signals
   val axi_awready = RegInit(false.B)
@@ -25,7 +25,6 @@ class AXIFullSlaveBlockRAM(addrWidth: Int, dataWidth: Int, idWidth: Int,  userNu
   val axi_awburst = RegInit(0.U(2.W))
   val axi_awlen = RegInit(0.U(8.W))
   val axi_awlen_cntr = RegInit(0.U(8.W))
-
   val axi_wready = RegInit(false.B)
   val axi_bvalid = RegInit(false.B)
   val axi_bresp = RegInit(0.U(2.W))
@@ -47,9 +46,13 @@ class AXIFullSlaveBlockRAM(addrWidth: Int, dataWidth: Int, idWidth: Int,  userNu
   val ar_wrap_en = Wire(Bool())
   val ar_wrap_size = Wire(UInt(addrWidth.W))
 
+  val mem_we = Wire(Bool())
+  val mem_re = Wire(Bool())
   val mem_addr = Wire(UInt(opt_mem_addr_bits.W))
-  val mem_select = Wire(UInt(userNumMem.W))
-  val mem_data_out = Wire(Vec(userNumMem, UInt(dataWidth.W)))
+  val ram = RegInit(VecInit(Seq.fill(1 << opt_mem_addr_bits)(0.U(dataWidth.W))))
+
+  val byte_in = Wire(Vec(dataWidth / 8, UInt(8.W)))
+  val byte_out = Wire(Vec(dataWidth / 8, UInt(8.W)))
 
   // I/O Connections
   axi.aw.ready := axi_awready
@@ -71,14 +74,22 @@ class AXIFullSlaveBlockRAM(addrWidth: Int, dataWidth: Int, idWidth: Int,  userNu
   aw_wrap_en := Mux((axi_awaddr & aw_wrap_size) === aw_wrap_size, true.B, false.B)
   ar_wrap_en := Mux((axi_awaddr & ar_wrap_size) === ar_wrap_size, true.B, false.B)
 
-  mem_select := axi_awaddr(addrWidth - 1, addrWidth - opt_mem_addr_bits)
+  mem_we := axi_wready && axi.w.valid
+  mem_re := axi_arv_arr_flag
   mem_addr := Mux(axi_arv_arr_flag, 
-    axi_araddr(opt_mem_addr_bits + addr_lsb - 1, addr_lsb),
+    axi_araddr(opt_mem_addr_bits + addr_lsb, addr_lsb),
     Mux(axi_awv_awr_flag, 
-      axi_awaddr(opt_mem_addr_bits + addr_lsb - 1, addr_lsb),
+      axi_awaddr(opt_mem_addr_bits + addr_lsb, addr_lsb),
       0.U
     )
   )
+
+  for (i <- 0 until (dataWidth / 8)) {
+    byte_in(i) := axi.w.bits.data(8 * (i + 1) - 1, 8 * i)
+  }
+  for (i <- 0 until (dataWidth / 8)) {
+    byte_out(i) := ram(mem_addr)(8 * (i + 1) - 1, 8 * i)
+  }
 
   // Address Write Channel
 
@@ -160,38 +171,21 @@ class AXIFullSlaveBlockRAM(addrWidth: Int, dataWidth: Int, idWidth: Int,  userNu
 
   when (axi_arv_arr_flag && !axi_rvalid) {
     axi_rvalid := true.B
-    axi_rresp := 0.U // 'OKAT' response
+    axi_rresp := 0.U // 'OKAY' response
   } .elsewhen (axi_rvalid && axi.r.ready) {
     axi_rvalid := false.B
   }
 
   // Implement Accessing User Memory region (Gen Block RAM(s))
-  for (i <- 0 until userNumMem) {
-    val mem_we = Wire(Bool())
-    val mem_re = Wire(Bool())
-
-    mem_we := axi_wready && axi.w.valid
-    mem_re := axi_arv_arr_flag
-
-    for (mem_byte_index <- 0 until dataWidth / 8) {
-      val data_in = Wire(UInt(8.W))
-      val data_out = Wire(UInt(8.W))
-    val byte_ram = SyncReadMem(1 << opt_mem_addr_bits, UInt(8.W))
-
-      data_in := axi.w.bits.data(mem_byte_index * 8 + 7, mem_byte_index * 8)
-      data_out := byte_ram.read(mem_addr, mem_re && (mem_select === i.U))
-      when (mem_we && (mem_select === i.U) && axi.w.bits.strb(mem_byte_index)) {
-        byte_ram.write(mem_addr, data_in)
-      }
-      when (mem_re && (mem_select === i.U)) {
-        mem_data_out(i) := Cat(data_out, mem_data_out(i)(dataWidth - 1, 8))
-      } 
-    }
+  when (mem_we) {
+    ram(mem_addr) := Cat((0 until (dataWidth / 8)).map { i =>
+      Mux(axi.w.bits.strb(i), byte_in(i), ram(mem_addr)(8 * (i + 1) - 1, 8 * i))
+    }.reverse)
   }
 
-  when (axi_rvalid) {
-    axi_rdata := mem_data_out(mem_select)
-  } .otherwise {
-    axi_rdata := 0.U
-  }
+  when (mem_re && axi_rvalid) {
+    axi_rdata := Cat((0 until (dataWidth / 8)).map { i => byte_out(i) }.reverse)
+  } 
+
+  ext_axi.connect(axi)
 }
