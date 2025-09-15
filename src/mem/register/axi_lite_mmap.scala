@@ -6,7 +6,7 @@ import chisel3.util._
 import scala.math.BigInt
 
 class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory], optMemAddrBits : Int = 0) extends Module {
-  override def desiredName: String = s"axi_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
+  override def desiredName: String = s"axi_lite_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
   val maxAddrValue = BigInt(1) << addrWidth
@@ -39,11 +39,10 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
 
   val slv_reg_we = Wire(Bool())
   val slv_reg_re = Wire(Bool())
-
-  val addr_map = mmap.map { reg => reg.addr }
   val slv_regs = mmap.map { reg => RegInit(reg.initValue.U(dataWidth.W)).suggestName(reg.name) }
+  val addr_map = mmap.map { reg => reg.addr }
 
-  val byteBanks = Wire(Vec((dataWidth / 8), UInt(8.W)))
+  val byte_banks = Wire(Vec((dataWidth / 8), UInt(8.W)))
 
   // I/O Connections
   axi.aw.ready := axi_awready
@@ -59,7 +58,7 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   slv_reg_re := axi_arready && axi.ar.valid && !axi_rvalid
 
   for (i <- 0 until (dataWidth / 8)) {
-    byteBanks(i) := axi.w.bits.data(8 * (i + 1) - 1, 8 * i)
+    byte_banks(i) := axi.w.bits.data(8 * (i + 1) - 1, 8 * i)
   }
 
   // Address Write Channel
@@ -80,18 +79,6 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
     axi_wready := true.B
   } .otherwise {
     axi_wready := false.B
-  }
-
-  // Register Memory Mapping Write Logic
-  when (slv_reg_we) {
-    val addr_reg = axi_awaddr(addr_lsb + opt_mem_addr_bits - 1, addr_lsb)
-    for (i <- 0 until mmap.length) {
-      when ((addr_map(i) >> addr_lsb).U(opt_mem_addr_bits.W) === addr_reg) {
-        slv_regs(i) := Cat((0 until (dataWidth / 8)).map { j =>
-          Mux(axi.w.bits.strb(j), byteBanks(j), slv_regs(i)(8 * (j + 1) - 1, 8 * j))
-        }.reverse)
-      }
-    }
   }
 
   // Write Response Channel
@@ -119,6 +106,17 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   } .otherwise {
     when (axi_rvalid && axi.r.ready) {
       axi_rvalid := false.B
+    }
+  }
+  // Register Memory Mapping Write Logic
+  when (slv_reg_we) {
+    val addr_reg = axi_awaddr(addr_lsb + opt_mem_addr_bits - 1, addr_lsb)
+    for (i <- 0 until mmap.length) {
+      when ((addr_map(i) >> addr_lsb).U(opt_mem_addr_bits.W) === addr_reg) {
+        slv_regs(i) := Cat((0 until (dataWidth / 8)).map { j =>
+          Mux(axi.w.bits.strb(j), byte_banks(j), slv_regs(i)(8 * (j + 1) - 1, 8 * j))
+        }.reverse)
+      }
     }
   }
 
