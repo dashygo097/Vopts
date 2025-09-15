@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.BigInt
 
-class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
+class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory], optMemAddrBits : Int = 0) extends Module {
   override def desiredName: String = s"axi_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
@@ -22,7 +22,7 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
 
   // Parameters
   val addr_lsb = log2Ceil(dataWidth / 8)
-  val opt_mem_addr_bits = log2Ceil(mmap.length)
+  val opt_mem_addr_bits = if (optMemAddrBits == 0) log2Ceil(mmap.length) else optMemAddrBits
 
   // Signals
   val aw_en = RegInit(true.B)
@@ -97,7 +97,7 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   // Write Response Channel
   when (axi_awready && axi.aw.valid && !axi_bvalid && axi_wready && axi.w.valid) {
     axi_bvalid := true.B
-    axi_bresp := 0.U // OKAY response
+    axi_bresp := 0.U // 'OKAY' response
   } .otherwise {
     when (axi.b.ready && axi_bvalid) {
       axi_bvalid := false.B
@@ -115,7 +115,7 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   // Data Read Channel
   when (axi_arready && axi.ar.valid && !axi_rvalid) {
     axi_rvalid := true.B
-    axi_rresp := 0.U // OKAY response
+    axi_rresp := 0.U // 'OKAY' response
   } .otherwise {
     when (axi_rvalid && axi.r.ready) {
       axi_rvalid := false.B
