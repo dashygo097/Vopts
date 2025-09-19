@@ -3,10 +3,10 @@ package mem.register
 import com.axi._
 import chisel3._
 import chisel3.util._
-import scala.math.BigInt
+import scala.math._
 
-class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory], optMemAddrBits : Int = 0) extends Module {
-  override def desiredName: String = s"axi_lite_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
+class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
+  override def desiredName: String = s"axilite_slave_mmap_${mmap.length}x${addrWidth}x${dataWidth}_r${mmap.length}"
   // AXI Lite Slave Interface
   val maxDataValue = BigInt(1) << dataWidth
   val maxAddrValue = BigInt(1) << addrWidth
@@ -22,7 +22,8 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
 
   // Parameters
   val addr_lsb = log2Ceil(dataWidth / 8)
-  val opt_mem_addr_bits = if (optMemAddrBits == 0) log2Ceil(mmap.length) else optMemAddrBits
+  val addr_bits_needed = log2Ceil(mmap.map(_.addr).max + 1)
+  val opt_mem_addr_bits = math.min(addr_bits_needed, addrWidth - addr_lsb)
 
   // Signals
   val aw_en = RegInit(true.B)
@@ -36,6 +37,11 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   val axi_rdata = RegInit(0.U(dataWidth.W))
   val axi_rvalid = RegInit(false.B)
   val axi_rresp = RegInit(0.U(2.W))
+
+  val write_addr_match = Wire(Bool())
+  val read_addr_match = Wire(Bool())
+  val write_addr_error = RegInit(false.B)
+  val read_addr_error = RegInit(false.B)
 
   val slv_reg_we = Wire(Bool())
   val slv_reg_re = Wire(Bool())
@@ -54,6 +60,14 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   axi.r.bits.resp := axi_rresp
   axi.r.valid := axi_rvalid
 
+  write_addr_match := addr_map.map { addr => 
+    axi_awaddr === addr.U(addrWidth.W)
+  }.reduce(_ || _)
+  
+  read_addr_match := addr_map.map { addr => 
+    axi_araddr === addr.U(addrWidth.W)
+  }.reduce(_ || _)
+
   slv_reg_we := axi_wready && axi.w.valid && axi_awready && axi.aw.valid
   slv_reg_re := axi_arready && axi.ar.valid && !axi_rvalid
 
@@ -67,9 +81,11 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
     axi_awaddr := axi.aw.bits.addr
     axi_awready := true.B
     aw_en := false.B
+    write_addr_error := !write_addr_match
   } .elsewhen (axi.b.ready && axi_bvalid) {
     axi_awready := false.B
     aw_en := true.B
+    write_addr_error := false.B
   } .otherwise {
     axi_awready := false.B
   }
@@ -84,7 +100,7 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   // Write Response Channel
   when (axi_awready && axi.aw.valid && !axi_bvalid && axi_wready && axi.w.valid) {
     axi_bvalid := true.B
-    axi_bresp := 0.U // 'OKAY' response
+    axi_bresp := Mux(write_addr_error, 2.U, 0.U) // 'SLVERR' if address error else 'OKAY'
   } .otherwise {
     when (axi.b.ready && axi_bvalid) {
       axi_bvalid := false.B
@@ -95,24 +111,26 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
   when (!axi_arready && axi.ar.valid) {
     axi_araddr := axi.ar.bits.addr
     axi_arready := true.B
+    read_addr_error := !read_addr_match
   } .otherwise {
     axi_arready := false.B
+    read_addr_error := false.B
   }
 
   // Data Read Channel
   when (axi_arready && axi.ar.valid && !axi_rvalid) {
     axi_rvalid := true.B
-    axi_rresp := 0.U // 'OKAY' response
+    axi_rresp := Mux(read_addr_error, 2.U, 0.U) // 'SLVERR' if address error else 'OKAY'
   } .otherwise {
     when (axi_rvalid && axi.r.ready) {
       axi_rvalid := false.B
     }
   }
   // Register Memory Mapping Write Logic
-  when (slv_reg_we) {
-    val addr_reg = axi_awaddr(addr_lsb + opt_mem_addr_bits - 1, addr_lsb)
+
+  when (slv_reg_we && write_addr_match) {
     for (i <- 0 until mmap.length) {
-      when ((addr_map(i) >> addr_lsb).U(opt_mem_addr_bits.W) === addr_reg) {
+      when (axi_awaddr === addr_map(i).U(addrWidth.W)) {
         slv_regs(i) := Cat((0 until (dataWidth / 8)).map { j =>
           Mux(axi.w.bits.strb(j), byte_banks(j), slv_regs(i)(8 * (j + 1) - 1, 8 * j))
         }.reverse)
@@ -120,12 +138,14 @@ class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory
     }
   }
 
-  // Register Memory Mapping Read Logic
   when (slv_reg_re) {
-    val addr_reg = axi_araddr(addr_lsb + opt_mem_addr_bits - 1, addr_lsb)
-    axi_rdata := MuxCase(0.U, mmap.zipWithIndex.map { case (reg, i) =>
-      ((addr_map(i) >> addr_lsb).U === addr_reg) -> slv_regs(i)
-    })
+    when (read_addr_match) {
+      axi_rdata := MuxCase(0.U, mmap.zipWithIndex.map { case (reg, i) =>
+        (axi_araddr === addr_map(i).U(addrWidth.W)) -> slv_regs(i)
+      })
+    } .otherwise {
+      axi_rdata := 0.U
+    }
   }
 
   ext_axi.connect(axi)
