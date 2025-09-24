@@ -5,7 +5,7 @@ TESTBENCH_DIR = $(BASE_DIR)/testbenchs
 TB_DIR = $(TESTBENCH_DIR)/tb
 COCOTB_DIR = $(TESTBENCH_DIR)/cocotb
 
-.PHONY: pre build run clean update tb tb-fzf cocotb cocotb-fzf stat-xc7 stat-xc7-fzf
+.PHONY: pre build run clean update localpublish tb tb-fzf cocotb cocotb-fzf stat-xc7 stat-xc7-fzf
 
 pre:
 	@mkdir -p $(BUILD_DIR)
@@ -30,6 +30,9 @@ update:
 	@sbt bloopInstall
 	@sbt update
 	@sbt reload
+
+localpublish:
+	@sbt publishLocal
 
 tb: pre
 	@bash $(SCRIPTS_DIR)/tb.sh

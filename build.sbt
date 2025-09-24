@@ -1,6 +1,7 @@
 ThisBuild / scalaVersion     := "2.13.16"
 ThisBuild / version          := "0.1.0"
 ThisBuild / organization     := "dashygo097"
+ThisBuild / publishTo := Some(Resolver.file("local-ivy", file(Path.userHome + "/.ivy2/local")))
 
 val chiselVersion = "6.7.0"
 
@@ -21,8 +22,6 @@ lazy val utils = (project in file("src/utils"))
       "org.chipsalliance" %% "chisel" % chiselVersion,
       "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "edu.berkeley.cs" %% "chiseltest" % "6.0.0" % Test,
-      "org.scalanlp" %% "breeze" % "2.1.0",
-      "org.scalanlp" %% "breeze-viz" % "2.1.0"
     ),
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full),
