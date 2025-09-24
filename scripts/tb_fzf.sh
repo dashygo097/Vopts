@@ -79,6 +79,7 @@ run_test() {
   verilator --quiet --cc --exe --build --binary --trace "$tb_file" -o "${tb_file%.*}" > "$LOG_DIR/tb.log" 2>&1
   show_status "success" "Compilation completed. Logs saved in $LOG_DIR"
   cd "$TB_DIR/obj_dir" || exit
+  "./${tb_file%.*}" 2>&1
   "./${tb_file%.*}" > "$LOG_DIR/simulation_run.log" 2>&1 
 
   show_status "info" "Using waveform viewer: gtkwave"
