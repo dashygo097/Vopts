@@ -23,7 +23,7 @@ show_header() {
   echo "     ██║   ███████╗███████║   ██║   ██████╔╝███████╗██║ ╚████║╚██████╗██║  ██║"
   echo "     ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝"
   echo -e "${NC}"
-  echo -e "${DIM}Testbench Automation Tool${NC}"
+  echo -e "${DIM}                Testbench Automation Tool${NC}"
   echo -e "${DIM}──────────────────────────────────────────────────────────${NC}"
   echo
 }
@@ -43,7 +43,7 @@ show_status() {
 
 select_testbench() {
   echo -e "${DIM}◇ Select a testbench: ${NC}" >&2
-  local tb_file=$(find "$TB_DIR" -type f \( -name "*.sv" -o -name "*.v" \) | fzf --height=30% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
+local tb_file=$(find "$TB_DIR" -type f \( -name "*.sv" -o -name "*.v" \) | sed "s|^$TB_DIR/||" | fzf --height=30% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
   
   if [ -z "$tb_file" ]; then
     echo -e "${RED}✖  No testbench selected. Skip.${NC}" >&2
@@ -57,7 +57,7 @@ select_testbench() {
 
 select_vcd() {
   echo -e "${DIM}◇ Select a VCD file: ${TB_DIR}/obj_dir${NC}" >&2
-  local vcd_file=$(find "$TB_DIR/obj_dir" -type f -name "*.vcd" | fzf --height=40% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
+  local vcd_file=$(find "$TB_DIR/obj_dir" -type f -name "*.vcd" | sed "s|^$TB_DIR/obj_dir||" | fzf --height=40% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
 
   if [ -z "$vcd_file" ]; then
     exit 1
@@ -67,6 +67,87 @@ select_vcd() {
 
   echo $(basename $vcd_file)
 }
+
+select_wave_viewer() {
+    local wave_viewer=""
+    local options=("Surfer" "GTKWave" "Custom")
+    local current_selection=0
+    
+    echo -e "${DIM}${BLUE}◇ Select WaveViewer ${NC}" >&2
+    echo -e "│${DIM} Use arrow keys to navigate, Enter to confirm${NC}" >&2
+    
+    local menu_lines=0
+    
+    display_menu() {
+        for i in "${!options[@]}"; do
+            if [ $i -eq "$current_selection" ]; then
+                echo -e "│ ${BOLD}${GREEN}❯ ${options[i]}${NC}${SPACE}" >&2
+            else
+                echo -e "│ ${DIM}${GRAY}${options[i]}${NC}${SPACE}" >&2
+            fi
+        done
+        menu_lines="${#options[@]}"
+    }
+    
+    display_menu
+    
+    echo -ne "\033[s" >&2
+    
+    while true; do
+        read -rsn1 key
+        
+        if [ "$key" = $'\x1b' ]; then
+            read -rsn1 -t 1 key2
+            if [ "$key2" = '[' ]; then
+                read -rsn1 key3
+                case "$key3" in
+                    'A')
+                        if [ "$current_selection" -gt 0 ]; then
+                            current_selection="$((current_selection - 1))"
+                            echo -ne "\033[u" >&2
+                            echo -ne "\033[${menu_lines}A\033[J" >&2
+                            display_menu
+                        fi
+                        ;;
+                    'B') 
+                        if [ "$current_selection" -lt "$((${#options[@]} - 1))" ]; then
+                            current_selection="$((current_selection + 1))"
+                            echo -ne "\033[u" >&2
+                            echo -ne "\033[${menu_lines}A\033[J" >&2
+                            display_menu
+                        fi
+                        ;;
+                esac
+            fi
+        elif [ "$key" = "" ]; then
+            break
+        fi
+    done
+    
+    echo -ne "\033[u\033[J" >&2 
+    
+    case "${options[current_selection]}" in
+        "None") 
+            wave_viewer=""
+            ;;
+        "Custom")
+            echo -n "Please enter a custom wave viewer command: " >&2
+            read custom_bt
+            wave_viewer="${custom_bt}"
+            echo -ne "\033[A\033[2K" >&2
+            ;;
+        *)
+            wave_viewer="${options[current_selection]}"
+            ;;
+    esac
+    
+    echo -e "${DIM}${BLUE}◆ Wave Viewer Selected!${NC}${SPACE}" >&2
+    display_menu
+    echo -e "\033[3A\033[3K${GREEN}✔ Wave Viewer: ${NC}${BOLD}$wave_viewer${NC}" >&2
+    
+    echo "$wave_viewer"
+}
+ 
 
 run_test() {
   show_header
@@ -79,7 +160,6 @@ run_test() {
   verilator --quiet --cc --exe --build --binary --trace "$tb_file" -o "${tb_file%.*}" > "$LOG_DIR/tb.log" 2>&1
   show_status "success" "Compilation completed. Logs saved in $LOG_DIR"
   cd "$TB_DIR/obj_dir" || exit
-  "./${tb_file%.*}" 2>&1
   "./${tb_file%.*}" > "$LOG_DIR/simulation_run.log" 2>&1 
 
   show_status "info" "Using waveform viewer: gtkwave"
@@ -89,7 +169,11 @@ run_test() {
     exit 1
   fi
 
-  gtkwave "$vcd_file" > "$LOG_DIR/gtkwave.log" 2>&1
+  show_status "info" "Select Waveform Viewer:"
+  wave_viewer="$(select_wave_viewer)"
+  eval "$wave_viewer $vcd_file" > "$LOG_DIR/${wave_viewer}.log" 2>&1
+  echo -n " "
+
   show_status "success" "Testbench run completed. Logs saved in $LOG_DIR"
 }
 
