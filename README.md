@@ -16,7 +16,7 @@
 
 ##### For regular autotest impled in verilog:
 
-- gtkwave (waveform visualization)
+- gtkwave / surfer (waveform visualization)
 - verilator (generating executable files for testbench)
 - fzf(optional)
 
