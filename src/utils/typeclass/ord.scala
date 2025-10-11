@@ -15,13 +15,13 @@ trait PartialOrdered[T <: Data] {
 
 object PartialOrderedSyntax {
   implicit class PartialOrderedOps[T <: Data](val x: T) extends AnyVal {
-    def <(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.lt(x, y)
-    def <=(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.le(x, y)
-    def >(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.gt(x, y)
-    def >=(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.ge(x, y)
+    def <(y: T)(implicit cmp: PartialOrdered[T]): Bool   = cmp.lt(x, y)
+    def <=(y: T)(implicit cmp: PartialOrdered[T]): Bool  = cmp.le(x, y)
+    def >(y: T)(implicit cmp: PartialOrdered[T]): Bool   = cmp.gt(x, y)
+    def >=(y: T)(implicit cmp: PartialOrdered[T]): Bool  = cmp.ge(x, y)
     def ===(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.eq(x, y)
     def =/=(y: T)(implicit cmp: PartialOrdered[T]): Bool = cmp.ne(x, y)
-    def min(y: T)(implicit cmp: PartialOrdered[T]): T = cmp.min(x, y)
-    def max(y: T)(implicit cmp: PartialOrdered[T]): T = cmp.max(x, y)
+    def min(y: T)(implicit cmp: PartialOrdered[T]): T    = cmp.min(x, y)
+    def max(y: T)(implicit cmp: PartialOrdered[T]): T    = cmp.max(x, y)
   }
 }

@@ -5,13 +5,16 @@ TESTBENCH_DIR = $(BASE_DIR)/testbenchs
 TB_DIR = $(TESTBENCH_DIR)/tb
 COCOTB_DIR = $(TESTBENCH_DIR)/cocotb
 
-.PHONY: pre build run clean update localpublish tb tb-fzf cocotb cocotb-fzf stat-xc7 stat-xc7-fzf
+.PHONY: pre format build run clean update localpublish tb tb-fzf cocotb cocotb-fzf stat-xc7 stat-xc7-fzf
 
 pre:
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(TESTBENCH_DIR)
 	@mkdir -p $(TB_DIR)
 	@mkdir -p $(COCOTB_DIR)
+
+format:
+	@scalafmt 
 
 build: pre 
 	@sbt compile
