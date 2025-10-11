@@ -11,49 +11,49 @@ class MO[T <: Data](gen: T, outs: Int) extends Bundle {
 }
 
 class SISO[T <: Data](gen: T) extends Bundle {
-  val in = Input(gen)
+  val in  = Input(gen)
   val out = Output(gen)
 }
 
 class DSISO[InT <: Data, OutT <: Data](inGen: InT, outGen: OutT) extends Bundle {
-  val in = Input(inGen)
+  val in  = Input(inGen)
   val out = Output(outGen)
 }
 
 class SIMO[T <: Data](gen: T, outs: Int) extends Bundle {
-  val in = Input(gen)
+  val in  = Input(gen)
   val out = Output(Vec(outs, gen))
 }
 
 class DSIMO[InT <: Data, OutT <: Data](inGen: InT, outs: (OutT, Int)) extends Bundle {
-  val in = Input(inGen)
+  val in  = Input(inGen)
   val out = Output(Vec(outs._2, outs._1))
 }
 
 class MISO[T <: Data](gen: T, ins: Int) extends Bundle {
-  val in = Input(Vec(ins, gen))
+  val in  = Input(Vec(ins, gen))
   val out = Output(gen)
 }
 
 class DMISO[InT <: Data, OutT <: Data](ins: (InT, Int), outGen: OutT) extends Bundle {
-  val in = Input(Vec(ins._2, ins._1))
+  val in  = Input(Vec(ins._2, ins._1))
   val out = Output(outGen)
 }
 
 class MIMO[T <: Data](gen: T, ins: Int, outs: Int) extends Bundle {
-  val in = Input(Vec(ins, gen))
+  val in  = Input(Vec(ins, gen))
   val out = Output(Vec(outs, gen))
 }
 
 class DMIMO[InT <: Data, OutT <: Data](ins: (InT, Int), outs: (OutT, Int)) extends Bundle {
-  val in = Input(Vec(ins._2, ins._1))
+  val in  = Input(Vec(ins._2, ins._1))
   val out = Output(Vec(outs._2, outs._1))
 }
 
 class CSRBusIO(busWidth: Int, addrWidth: Int) extends Bundle {
-  val addr = Input(UInt(addrWidth.W))
-  val dataIn = Output(UInt(busWidth.W))
+  val addr    = Input(UInt(addrWidth.W))
+  val dataIn  = Output(UInt(busWidth.W))
   val dataOut = Input(UInt(busWidth.W))
-  val we = Input(Bool())
-  val re = Input(Bool())
+  val we      = Input(Bool())
+  val re      = Input(Bool())
 }

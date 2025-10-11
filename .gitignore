@@ -1,3 +1,4 @@
+.scalafmt.conf
 .DS_Store
 .vscode/
 .bloop/

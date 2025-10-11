@@ -1,134 +1,119 @@
-package utils 
+package utils
 
 import scala.math.pow
 import chisel3._
 
-class FP(s_dataWidth: Int = 0, s_binaryPoint: Int = -1) extends Bundle with Config with FPOps {
-  var _dw: Int = if (s_dataWidth == 0) dataWidth else s_dataWidth
-  var _bp: Int = if (s_binaryPoint == -1) binaryPoint else s_binaryPoint
+class FP(dw: Int, bp: Int) extends Bundle with FPOps {
+  val value: SInt = SInt(dw.W)
 
-  val value: SInt = SInt(_dw.W)
-
-  def dw(): Int = _dw
-  def bp(): Int = _bp
-  def scale(): Int = pow(2, _bp).toInt
+  def dw(): Int    = dw
+  def bp(): Int    = bp
+  def scale(): Int = pow(2, bp).toInt
 
   def apply(idx: Int): Bool = {
-    require(idx >= 0 && idx < _dw, s"Index {$idx} out of bounds for dataWidth ${_dw}")
+    require(idx >= 0 && idx < dw, s"Index {$idx} out of bounds for dataWidth $dw")
     value(idx)
   }
 
+  def apply(high: Int, low: Int): UInt = {
+    require(high >= low && high < dw, s"Index {$high, $low} out of bounds for dataWidth $dw")
+    value(high, low)
+  }
+
   def update(idx: Int, b: Bool): Unit = {
-    require(idx >= 0 && idx < _dw, s"Index {$idx} out of bounds for dataWidth ${_dw}")
+    require(idx >= 0 && idx < dw, s"Index {$idx} out of bounds for dataWidth $dw")
     value(idx) := b
   }
 
-  def isCompatible(that: FP): Boolean = {
-    this.dataWidth == that.dataWidth && this.binaryPoint == that.binaryPoint
-  }
+  def isCompatible(that: FP): Boolean =
+    this.dw() == that.dw() && this.bp() == that.bp()
 
-  def requireCompatible(that: FP): Unit = {
-      require(isCompatible(that),
-        s"FP operations require matching formats: " +
-        s"FP(${this.dataWidth}, ${this.binaryPoint}) vs FP(${that.dataWidth}, ${that.binaryPoint})")
-    }
+  def requireCompatible(that: FP): Unit =
+    require(
+      isCompatible(that),
+      s"FP operations require matching formats: " +
+        s"FP(${this.dw()}, ${this.bp()}) vs FP(${that.dw()}, ${that.bp()})"
+    )
 
-  def newInstance(): FP = new FP(_dw, _bp)
+  def newInstance(): FP = new FP(dw, bp)
 
   def fromDouble(value: Double): FP = {
-    val fl = Wire(new FP(_dw, _bp))
-    fl.value := (value * scale()).toInt.S
-    fl
+    val fp = this.newInstance()
+    fp.value := (value * scale()).toInt.S
+    fp
   }
 
   def fromSInt(value: SInt): FP = {
-    val fl = Wire(new FP(_dw, _bp))
+    val fl = Wire(new FP(dw, bp))
     fl.value := value
     fl
   }
 
-  def mapDouble(x: Double): FP = {
+  def mapDouble(x: Double): FP =
     this.fromDouble(x)
-  }
 
   def mapSInt(x: SInt): FP = {
-    val fl = Wire(new FP(_dw, _bp))
-    fl.value := x << _bp
+    val fl = Wire(new FP(dw, bp))
+    fl.value := x << bp
     fl
   }
 }
 
-object FP extends Config {
-  def apply() : FP = {
-    new FP().fromSInt(0.S)
-  }
-  def apply(value: Double): FP = {
-    new FP().fromDouble(value)
-  }
-  def apply(value: SInt): FP = {
-    new FP().fromSInt(value)
-  }
+object FP {
+  def apply(dw: Int, bp: Int): FP                = new FP(dw, bp)
+  def apply(value: Int, dw: Int, bp: Int): FP    =
+    FP(dw, bp).fromDouble(value.toDouble)
+  def apply(value: Double, dw: Int, bp: Int): FP =
+    FP(dw, bp).fromDouble(value)
+  def apply(value: SInt, dw: Int, bp: Int): FP   =
+    FP(dw, bp).mapSInt(value)
 }
 
 trait FPOps {
   // NOTE: Note that +-* etc. for FP and FP only support same (dataWidth, bp)-typed Float.
   self: FP =>
- 
-  def +(that: FP): FP = {
+  def +(that: FP): FP     = {
     this.requireCompatible(that)
     val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value + that.value
     fl
   }
-  def +(that: Double): FP = this + FP(that)
-  def +(that: SInt): FP = this + FP(that)
-  def +(that: UInt): FP = this + FP(that.asSInt)
+  def +(that: Double): FP = this + FP(that, dw(), bp())
+  def +(that: SInt): FP   = this + FP(that, dw(), bp())
+  def +(that: UInt): FP   = this + FP(that.asSInt, dw(), bp())
 
-  def -(that: FP): FP = {
+  def -(that: FP): FP     = {
     this.requireCompatible(that)
     val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value - that.value
     fl
   }
-  def -(that: Double): FP = this - FP(that)
-  def -(that: SInt): FP = this - FP(that)
-  def -(that: UInt): FP = this - FP(that.asSInt)
+  def -(that: Double): FP = this - FP(that, dw(), bp())
+  def -(that: SInt): FP   = this - FP(that, dw(), bp())
+  def -(that: UInt): FP   = this - FP(that.asSInt, dw(), bp())
 
-  def *(that: FP): FP = {
+  def *(that: FP): FP     = {
     this.requireCompatible(that)
     val fl = this.newInstance().fromSInt(0.S)
-    if (this.dw() >= 16) {
-      val highxhigh = Reg(SInt(((dw() - bp()) * 2).W))
-      val highxlow = Reg(SInt(dw().W))
-      val lowxhigh = Reg(SInt(dw().W))
-      val lowxlow = Reg(SInt((bp() * 2).W))
-      highxhigh := RegNext((this.value(dw() - 1, bp()) * that.value(dw() - 1, bp())).asSInt)
-      lowxlow := RegNext((this.value(bp() - 1, 0) * that.value(bp() - 1, 0)).asSInt)
-      highxlow := RegNext(RegNext((this.value(dw() - 1, bp()) * that.value(bp() - 1, 0)).asSInt))
-      lowxhigh := RegNext(RegNext((this.value(bp() - 1, 0) * that.value(dw() - 1, bp())).asSInt))
-
-      fl.value := (highxhigh << bp()) + (highxlow + lowxhigh) + (lowxlow >> bp())
-    } else {
-      fl.value := (this.value * that.value) >> bp()
-    }
+    fl.value := (this.value * that.value) >> bp()
     fl
   }
-  def *(that: Double): FP = this * FP(that)
-  def *(that: SInt): FP = this * FP(that)
-  def *(that: UInt): FP = this * FP(that.asSInt)
+  def *(that: Double): FP = this * FP(that, dw(), bp())
+  def *(that: SInt): FP   = this * FP(that, dw(), bp())
+  def *(that: UInt): FP   = this * FP(that.asSInt, dw(), bp())
 
-  def /(that: FP): FP = {
+  def /(that: FP): FP     = {
     this.requireCompatible(that)
     val fl = this.newInstance().fromSInt(0.S)
     fl.value := (this.value << bp()) / that.value
     fl
   }
-  def /(that: Double): FP = this / FP(that)
-  def /(that: SInt): FP = this / FP(that)
-  def /(that: UInt): FP = this / FP(that.asSInt)
+  def /(that: Double): FP = this / FP(that, dw(), bp())
+  def /(that: SInt): FP   = this / FP(that, dw(), bp())
+  def /(that: UInt): FP   = this / FP(that.asSInt, dw(), bp())
 
   def shiftleft(that: UInt): FP = {
-  val fl = this.newInstance().fromSInt(0.S)
+    val fl = this.newInstance().fromSInt(0.S)
     fl.value := this.value << that
     fl
   }
@@ -139,42 +124,42 @@ trait FPOps {
     fl
   }
 
-  def <(that: FP): Bool = {
+  def <(that: FP): Bool     = {
     this.requireCompatible(that)
     this.value < that.value
   }
-  def <(that: Double): Bool = this < FP(that)
-  def <(that: SInt): Bool = this < FP(that)
-  def <(that: UInt): Bool = this < FP(that.asSInt)
+  def <(that: Double): Bool = this < FP(that, dw(), bp())
+  def <(that: SInt): Bool   = this < FP(that, dw(), bp())
+  def <(that: UInt): Bool   = this < FP(that.asSInt, dw(), bp())
 
-  def ===(that: FP): Bool = {
+  def ===(that: FP): Bool     = {
     this.requireCompatible(that)
     this.value === that.value
   }
-  def ===(that: Double): Bool = this === FP(that)
-  def ===(that: SInt): Bool = this === FP(that)
-  def ===(that: UInt): Bool = this === FP(that.asSInt)
+  def ===(that: Double): Bool = this === FP(that, dw(), bp())
+  def ===(that: SInt): Bool   = this === FP(that, dw(), bp())
+  def ===(that: UInt): Bool   = this === FP(that.asSInt, dw(), bp())
 
-  def =/=(that: FP): Bool = {
+  def =/=(that: FP): Bool     = {
     this.requireCompatible(that)
     !(this === that)
   }
-  def =/=(that: Double): Bool = !(this === FP(that))
-  def =/=(that: SInt): Bool = !(this === FP(that))
-  def =/=(that: UInt): Bool = !(this === FP(that.asSInt))
+  def =/=(that: Double): Bool = this =/= FP(that, dw(), bp())
+  def =/=(that: SInt): Bool   = this =/= FP(that, dw(), bp())
+  def =/=(that: UInt): Bool   = this =/= FP(that.asSInt, dw(), bp())
 
-  def <=(that: FP): Bool = this === that || this < that
-  def <=(that: Double): Bool = this < FP(that) || this === FP(that)
-  def <=(that: SInt): Bool = this < FP(that) || this === FP(that)
-  def <=(that: UInt): Bool = this < FP(that.asSInt) || this === FP(that.asSInt)
+  def <=(that: FP): Bool     = this === that || this < that
+  def <=(that: Double): Bool = this <= FP(that, dw(), bp())
+  def <=(that: SInt): Bool   = this <= FP(that, dw(), bp())
+  def <=(that: UInt): Bool   = this <= FP(that.asSInt, dw(), bp())
 
-  def >(that: FP): Bool = !(this <= that)
-  def >(that: Double): Bool = !(this <= FP(that))
-  def >(that: SInt): Bool = !(this <= FP(that))
-  def >(that: UInt): Bool = !(this <= FP(that.asSInt))
+  def >(that: FP): Bool     = !(this <= that)
+  def >(that: Double): Bool = !(this <= FP(that, dw(), bp()))
+  def >(that: SInt): Bool   = !(this <= FP(that, dw(), bp()))
+  def >(that: UInt): Bool   = !(this <= FP(that.asSInt, dw(), bp()))
 
-  def >=(that: FP): Bool = !(this < that)
-  def >=(that: Double): Bool = !(this < FP(that))
-  def >=(that: SInt): Bool = !(this < FP(that))
-  def >=(that: UInt): Bool = !(this < FP(that.asSInt))
+  def >=(that: FP): Bool     = !(this < that)
+  def >=(that: Double): Bool = !(this < FP(that, dw(), bp()))
+  def >=(that: SInt): Bool   = !(this < FP(that, dw(), bp()))
+  def >=(that: UInt): Bool   = !(this < FP(that.asSInt, dw(), bp()))
 }

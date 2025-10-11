@@ -4,31 +4,15 @@ import dds.trig._
 import utils._
 import chisel3._
 
-class AM(carrierFreq: Int) extends Module {
-  override def desiredName = s"am_cf${carrierFreq}"
-  val io = IO(new SISO(new FP)).suggestName("AM")
-  val trig = Module(new LiteTrigDDS(carrierFreq))
+class AM[T <: Data](gen: T)(carrierFreq: Long, phaseDelta: Int, lutWidth: Int, clkFreq: Long)(
+  implicit analog: Analog[T]
+) extends Module {
+  override def desiredName = s"am_cf$carrierFreq"
+  val io                   = IO(new SISO(gen)).suggestName("AM")
+  val trig                 = Module(new LiteTrigDDS(gen)(carrierFreq, phaseDelta, lutWidth, clkFreq))
 
-  trig.io.mag := io.in
+  trig.io.mag        := io.in
   trig.io.phaseDelta := 0.U
 
   io.out := trig.io.out
-}
-
-object AM extends Config {
-  var _carrierFreq: Int = defaultCarrierFreq
-
-  def apply(in: FP): FP = {
-    val amCore = Module(new AM(_carrierFreq))
-    amCore.io.in := in
-    amCore.io.out
-  }
-
-  def withCarrierFreq(carrierFreq: Int): Unit = {
-    _carrierFreq = carrierFreq
-  }
-
-  def withConfig(carrierFreq: Int): Unit = {
-    this.withCarrierFreq(carrierFreq)
-  }
 }

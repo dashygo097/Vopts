@@ -5,8 +5,8 @@ import chisel3._
 
 class Diode[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {
   override def desiredName = s"diode_${gen.toString.toLowerCase()}"
-  val io = IO(new SISO(gen)).suggestName("DIODE")
-  val zero = gen.zero()
+  val io                   = IO(new SISO(gen)).suggestName("DIODE")
+  val zero                 = gen.zero()
 
   io.out := Mux(io.in > zero, io.in, zero)
 }
@@ -18,4 +18,3 @@ object Diode {
     diode.io.out
   }
 }
-

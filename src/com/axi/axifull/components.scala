@@ -15,7 +15,7 @@ class AXIFullAddrIO(addrWidth: Int, idWidth: Int, userWidth: Int) extends Bundle
   val region = UInt(4.W)
   val user   = UInt(userWidth.W)
 
-  override def clone = { new AXIFullAddrIO(addrWidth, idWidth, userWidth).asInstanceOf[this.type] }
+  override def clone = new AXIFullAddrIO(addrWidth, idWidth, userWidth).asInstanceOf[this.type]
 }
 
 class AXIFullWriteIO(dataWidth: Int, idWidth: Int, userWidth: Int) extends Bundle {
@@ -25,7 +25,7 @@ class AXIFullWriteIO(dataWidth: Int, idWidth: Int, userWidth: Int) extends Bundl
   val id   = UInt(idWidth.W)
   val user = UInt(userWidth.W)
 
-  override def clone = { new AXIFullWriteIO(dataWidth, idWidth, userWidth).asInstanceOf[this.type] }
+  override def clone = new AXIFullWriteIO(dataWidth, idWidth, userWidth).asInstanceOf[this.type]
 }
 
 class AXIFullWriteRespIO(idWidth: Int, userWidth: Int) extends Bundle {
@@ -33,7 +33,7 @@ class AXIFullWriteRespIO(idWidth: Int, userWidth: Int) extends Bundle {
   val id   = UInt(idWidth.W)
   val user = UInt(userWidth.W)
 
-  override def clone = { new AXIFullWriteRespIO(idWidth, userWidth).asInstanceOf[this.type] }
+  override def clone = new AXIFullWriteRespIO(idWidth, userWidth).asInstanceOf[this.type]
 }
 
 class AXIFullReadIO(dataWidth: Int, idWidth: Int, userWidth: Int) extends Bundle {
@@ -43,7 +43,5 @@ class AXIFullReadIO(dataWidth: Int, idWidth: Int, userWidth: Int) extends Bundle
   val id   = UInt(idWidth.W)
   val user = UInt(userWidth.W)
 
-  override def clone = { new AXIFullReadIO(dataWidth, idWidth, userWidth).asInstanceOf[this.type] }
+  override def clone = new AXIFullReadIO(dataWidth, idWidth, userWidth).asInstanceOf[this.type]
 }
-
-

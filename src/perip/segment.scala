@@ -5,8 +5,8 @@ import chisel3._
 
 class Segment extends Module {
   override def desiredName: String = "segment"
-  val io = IO(new DSISO(UInt(4.W), UInt(7.W)))
-  val segmentMap = VecInit(
+  val io                           = IO(new DSISO(UInt(4.W), UInt(7.W)))
+  val segmentMap                   = VecInit(
     "b00111111".U, // 0
     "b00000110".U, // 1
     "b01011011".U, // 2
@@ -22,9 +22,9 @@ class Segment extends Module {
 }
 
 class MultiSegment(num: Int) extends Module {
-  override def desiredName: String = s"segment_x${num}"
-  val io = IO(new DMIMO((UInt(4.W), num), (UInt(7.W), num)))
-  val segmentMap = VecInit(
+  override def desiredName: String = s"segment_x$num"
+  val io                           = IO(new DMIMO((UInt(4.W), num), (UInt(7.W), num)))
+  val segmentMap                   = VecInit(
     "b00111111".U, // 0
     "b00000110".U, // 1
     "b01011011".U, // 2
@@ -37,7 +37,6 @@ class MultiSegment(num: Int) extends Module {
     "b01101111".U  // 9
   )
 
-  for (i <- 0 until num) {
+  for (i <- 0 until num)
     io.out(i) := segmentMap(io.in(i))
-  }
 }

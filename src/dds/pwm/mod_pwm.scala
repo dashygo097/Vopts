@@ -6,26 +6,24 @@ import chisel3.util._
 
 class ModPWMIO extends Bundle {
   val dutyCycle = Input(UInt(7.W))
-  val out = Output(Bool())
+  val out       = Output(Bool())
 }
 
-class ModPWMDDS(freq: Int) extends Module with Config {
-  override def desiredName: String = s"pwd_mod_f${freq}"
-  val io = IO(new ModPWMIO).suggestName("DDS_ModPWM")
-  val freqDivider = (clkFreq / freq).toInt
+class ModPWMDDS(freq: Long, clkFreq: Long) extends Module {
+  override def desiredName: String = s"pwd_mod_f$freq"
+  val io                           = IO(new ModPWMIO).suggestName("DDS_ModPWM")
+  val freqDivider                  = (clkFreq / freq).toInt
 
   val counter = RegInit(0.U(log2Ceil(freqDivider).W))
-  val duty = RegInit(0.U(log2Ceil(freqDivider).W + 7.W))
-  val pwmOut = RegInit(false.B)
+  val duty    = RegInit(0.U(log2Ceil(freqDivider).W + 7.W))
+  val pwmOut  = RegInit(false.B)
 
   duty := (freqDivider.asUInt * io.dutyCycle) / 100.U
-  print(duty)
-  print(freqDivider)
 
   counter := Mux(counter === (freqDivider - 1).U, 0.U, counter + 1.U)
   when(counter < duty) {
     pwmOut := true.B
-  } .otherwise {
+  }.otherwise {
     pwmOut := false.B
   }
 

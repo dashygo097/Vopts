@@ -3,7 +3,8 @@ package com.axi
 import chisel3._
 import chisel3.util._
 
-class AXIFullMasterIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth : Int = 0) extends Bundle {
+class AXIFullMasterIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0)
+    extends Bundle {
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
   val aWidth = addrWidth
   val dWidth = dataWidth
@@ -16,14 +17,17 @@ class AXIFullMasterIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth : 
   val ar = Decoupled(new AXIFullAddrIO(addrWidth, idWidth, userWidth))
   val r  = Flipped(Decoupled(new AXIFullReadIO(dataWidth, idWidth, userWidth)))
 
-  override def clone = { new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth).asInstanceOf[this.type] }
+  override def clone =
+    new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth).asInstanceOf[this.type]
 }
 
 object AXIFullMasterIO {
-  def apply(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0): AXIFullMasterIO = new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth)
+  def apply(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0): AXIFullMasterIO =
+    new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth)
 }
 
-class AXIFullMasterExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
+class AXIFullMasterExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0)
+    extends Bundle {
   val AWADDR   = Output(UInt(addrWidth.W))
   val AWPROT   = Output(UInt(3.W))
   val AWVALID  = Output(Bool())
@@ -131,5 +135,3 @@ class AXIFullMasterExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, user
     this.RREADY      := intf.r.ready
   }
 }
-
-
