@@ -9,7 +9,6 @@ build/
 target/
 obj_dir/
 
-testbenchs/
-
+sims/
 app/tests
 app/main
