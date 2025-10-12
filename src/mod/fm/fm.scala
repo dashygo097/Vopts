@@ -8,11 +8,11 @@ import chisel3._
 
 class FM[T <: Data](gen: T)(
   mag: Double,
-  carrierFreq: Long,
-  deltaFreq: Long,
+  carrierFreq: Int,
+  deltaFreq: Int,
   phaseWidth: Int,
   lutWidth: Int,
-  clkFreq: Long
+  clkFreq: Int
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"fm_m${(mag * 1000).toInt}_cf${carrierFreq}_df$deltaFreq"

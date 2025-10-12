@@ -8,7 +8,7 @@ class FIRFilter[T <: Data](gen: T)(
   filterType: String,
   cutoff: Seq[Double],
   order: Int,
-  clkFreq: Long,
+  clkFreq: Int,
   groupSize: Int = 2
 )(implicit analog: Analog[T])
     extends Module {

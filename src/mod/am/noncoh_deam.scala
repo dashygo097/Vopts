@@ -5,7 +5,7 @@ import dsp.filter._
 import utils._
 import chisel3._
 
-class EDDeAM[T <: Data](gen: T)(baseFreqLimit: Long, clkFreq: Long, filterOrder: Int = 64)(implicit
+class EDDeAM[T <: Data](gen: T)(baseFreqLimit: Int, clkFreq: Int, filterOrder: Int = 64)(implicit
   analog: Analog[T],
   ord: PartialOrdered[T]
 ) extends Module {
