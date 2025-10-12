@@ -19,6 +19,11 @@ class AXIFullSlaveRAM(
   val maxDataValue                 = BigInt(1) << dataWidth
   val maxAddrValue                 = BigInt(1) << addrWidth
 
+  require(
+    memSize > 0 && baseAddr >= 0 && (baseAddr + (memSize * dataWidth)) <= maxAddrValue,
+      s"RAM address out of range for addrWidth $addrWidth"
+    )
+
   val ext_axi =
     IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val axi     = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
@@ -109,7 +114,6 @@ class AXIFullSlaveRAM(
   )
 
   // Address Write Channel
-
   when(!axi_awready && axi.aw.valid && !axi_awv_awr_flag && !axi_arv_arr_flag) {
     axi_awready      := true.B
     axi_awv_awr_flag := true.B

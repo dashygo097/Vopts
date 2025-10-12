@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
-TB_DIR=$BASE_DIR/testbenchs/tb
+TB_DIR=$BASE_DIR/sims/tb
 
 RED='\033[1;31m'
 GREEN='\033[1;32m'
@@ -202,7 +202,7 @@ select_wave_viewer() {
 run_test() {
   show_header
   tb_file="$(select_testbench)"
-  LOG_DIR="$TB_DIR/logs/${tb_file%.*}"
+  LOG_DIR="$BASE_DIR/sims/logs/${tb_file%.*}"
   mkdir -p "$LOG_DIR"
 
   show_status "info" "Compile with Verilator: $tb_file"
