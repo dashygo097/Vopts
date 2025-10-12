@@ -3,7 +3,7 @@ package mem.register
 import com.axi._
 import chisel3._
 import chisel3.util._
-import scala.math._
+import scala.math.BigInt
 
 class AXILiteSlaveMMap(addrWidth: Int, dataWidth: Int, mmap: Seq[RegisterFactory]) extends Module {
   override def desiredName: String =
