@@ -105,7 +105,7 @@ run_stat() {
   show_header
   module_file="$(select_module)"
   top_module="$(fetch_top_module)"
-  LOG_DIR="$BUILD_DIR/logs/${top_module}"
+  LOG_DIR="$BASE_DIR/sims/logs/${top_module%.*}"
   mkdir -p "$LOG_DIR"
 
   cd "$BUILD_DIR" || exit 1
