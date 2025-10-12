@@ -1,6 +1,5 @@
 package dds.pwm
 
-import utils._
 import chisel3._
 import chisel3.util._
 
@@ -8,7 +7,7 @@ class PWMIO extends Bundle {
   val out = Output(Bool())
 }
 
-class PWMDDS(freq: Long, dutyCycle: Double, clkFreq: Long) extends Module {
+class PWMDDS(freq: Int, dutyCycle: Double, clkFreq: Int) extends Module {
   override def desiredName: String = s"pwd_f${freq}_d${(dutyCycle * 100).toInt}"
   val io                           = IO(new PWMIO).suggestName("DDS_PWM")
 

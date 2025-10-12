@@ -11,11 +11,11 @@ class FSKIO[T <: Data](gen: T) extends Bundle {
 }
 
 class FSK[T <: Data](gen: T)(
-  carrierFreq_0: Long,
-  carrierFreq_1: Long,
+  carrierFreq_0: Int,
+  carrierFreq_1: Int,
   phaseDelta: Int,
   lutWidth: Int,
-  clkFreq: Long
+  clkFreq: Int
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"fsk_cf0${carrierFreq_0}_cf1$carrierFreq_1"

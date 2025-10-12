@@ -1,6 +1,5 @@
 package dds.pwm
 
-import utils._
 import chisel3._
 import chisel3.util._
 
@@ -9,7 +8,7 @@ class ModPWMIO extends Bundle {
   val out       = Output(Bool())
 }
 
-class ModPWMDDS(freq: Long, clkFreq: Long) extends Module {
+class ModPWMDDS(freq: Int, clkFreq: Int) extends Module {
   override def desiredName: String = s"pwd_mod_f$freq"
   val io                           = IO(new ModPWMIO).suggestName("DDS_ModPWM")
   val freqDivider                  = (clkFreq / freq).toInt

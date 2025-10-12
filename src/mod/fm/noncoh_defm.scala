@@ -6,9 +6,9 @@ import utils._
 import chisel3._
 
 class DeFM[T <: Data](gen: T)(
-  carrierFreq: Long,
+  carrierFreq: Int,
   deltaFreq: Double,
-  clkFreq: Long,
+  clkFreq: Int,
   filterOrder: Int = 64
 )(implicit analog: Analog[T], ord: PartialOrdered[T])
     extends Module {

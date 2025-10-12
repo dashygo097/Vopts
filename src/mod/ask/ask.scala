@@ -11,10 +11,10 @@ class ASKIO[T <: Data](gen: T) extends Bundle {
 
 class ASK[T <: Data](gen: T)(
   mag: Double,
-  carrierFreq: Long,
+  carrierFreq: Int,
   phaseDelta: Int,
   lutWidth: Int,
-  clkFreq: Long
+  clkFreq: Int
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"ask_m${(mag * 1000).toInt}_cf$carrierFreq"

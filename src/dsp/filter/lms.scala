@@ -16,7 +16,7 @@ class LMSFilterIO[T <: Data](gen: T) extends Bundle {
 class LMSFilter[T <: Data](gen: T)(
   order: Int,
   cutoff: Seq[Double],
-  clkFreq: Long,
+  clkFreq: Int,
   lr: Double = 0.001
 )(implicit analog: Analog[T])
     extends Module {

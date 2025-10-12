@@ -14,7 +14,7 @@ class EnvelopDetectorIO[T <: Data](gen: T) extends Bundle {
 class EDDeASK[T <: Data](gen: T)(
   baseFreqLimit: Double,
   threshold: Double,
-  clkFreq: Long,
+  clkFreq: Int,
   filterOrder: Int = 64
 )(implicit analog: Analog[T], ord: PartialOrdered[T])
     extends Module {

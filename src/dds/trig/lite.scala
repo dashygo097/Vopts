@@ -11,7 +11,7 @@ class LiteTrigIO[T <: Data](gen: T)(phaseWidth: Int) extends Bundle {
   val out        = Output(gen)
 }
 
-class LiteTrigDDS[T <: Data](gen: T)(freq: Long, phaseWidth: Int, lutWidth: Int, clkFreq: Long)(
+class LiteTrigDDS[T <: Data](gen: T)(freq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(
   implicit analog: Analog[T]
 ) extends Module {
   override def desiredName = s"dds_lite_f$freq"

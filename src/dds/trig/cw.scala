@@ -7,11 +7,11 @@ import chisel3.util._
 
 class CWDDS[T <: Data](gen: T)(
   mag: Double,
-  freq: Long,
+  freq: Int,
   pha: Double,
   phaseWidth: Int,
   lutWidth: Int,
-  clkFreq: Long
+  clkFreq: Int
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"dds_cw_m${(mag * 1000).toInt}_f${freq}_p${(pha * 180 / Pi).toInt}"
@@ -35,11 +35,11 @@ class CWDDS[T <: Data](gen: T)(
 
 class MultiCWDDS[T <: Data](gen: T)(
   mags: Seq[Double],
-  freqs: Seq[Long],
+  freqs: Seq[Int],
   phas: Seq[Double],
   phaseWidth: Int,
   lutWidth: Int,
-  clkFreq: Long
+  clkFreq: Int
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"dds_multi_cw_x${mags.length}"

@@ -24,4 +24,3 @@ object PartialOrderedInstances {
     def max(x: FP, y: FP): FP  = Mux(x > y, x, y)
   }
 }
-
