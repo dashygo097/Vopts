@@ -23,13 +23,13 @@ run: pre
 	@sbt app/run
 
 clean:
+	@rm -rf $(SIM_DIR)/logs
 	@rm -rf $(TB_DIR)/obj_dir
-	@rm -rf $(TB_DIR)/logs
 	@rm -rf $(COCOTB_DIR)/logs
-	@sbt clean bloopInstall
-	@sbt clean
 
 update:
+	@sbt clean bloopInstall
+	@sbt clean
 	@sbt bloopInstall
 	@sbt update
 	@sbt reload
