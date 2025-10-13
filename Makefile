@@ -29,8 +29,6 @@ clean:
 
 update:
 	@sbt clean bloopInstall
-	@sbt clean
-	@sbt bloopInstall
 	@sbt update
 	@sbt reload
 
