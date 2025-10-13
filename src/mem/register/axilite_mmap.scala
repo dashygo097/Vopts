@@ -92,7 +92,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   // Write Response Channel
   when(axi_awready && axi.aw.valid && !axi_bvalid && axi_wready && axi.w.valid) {
     axi_bvalid := true.B
-    axi_bresp  := Mux(mmap_regs.io.read_resp, 2.U, 0.U) // 'SLVERR' if address error else 'OKAY'
+    axi_bresp  := Mux(mmap_regs.io.read_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
   }.otherwise {
     when(axi.b.ready && axi_bvalid) {
       axi_bvalid := false.B
@@ -110,7 +110,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   // Data Read Channel
   when(axi_arready && axi.ar.valid && !axi_rvalid) {
     axi_rvalid := true.B
-    axi_rresp  := Mux(mmap_regs.io.read_resp, 2.U, 0.U) // 'SLVERR' if address error else 'OKAY'
+    axi_rresp  := Mux(mmap_regs.io.read_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
   }.otherwise {
     when(axi_rvalid && axi.r.ready) {
       axi_rvalid := false.B

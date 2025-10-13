@@ -1,9 +1,9 @@
-package com.ram
+package mem.ram
 
 import chisel3._
 import chisel3.util._
 
-class MMapRAMIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+class MMapRegionIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   // Write Interface
   val write_en   = Input(Bool())
   val write_addr = Input(UInt(addrWidth.W))
@@ -18,7 +18,9 @@ class MMapRAMIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val read_resp = Output(Bool()) // true = OKAY, false = SLVERR
 }
 
-class RAMRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigInt = 0x0) extends Module {
+class MMapRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigInt = 0x0) extends Module {
+  override def desiredName: String =
+    s"ram_${addrWidth}x${dataWidth}_s${memSize}_b${baseAddr}"
   val maxAddrValue                 = BigInt(1) << addrWidth
   require(
     memSize > 0 && baseAddr >= 0 && (baseAddr + (memSize * dataWidth)) <= maxAddrValue,
@@ -30,7 +32,7 @@ class RAMRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigIn
   val opt_mem_addr_bits = log2Ceil(memSize.toInt)
 
   // I/O Interface
-  val io = IO(new MMapRAMIO(addrWidth, dataWidth)).suggestName("RAM")
+  val io = IO(new MMapRegionIO(addrWidth, dataWidth)).suggestName("RAM")
 
   // Signals
   val mem_addr = Wire(UInt(opt_mem_addr_bits.W))
@@ -63,6 +65,7 @@ class RAMRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigIn
     }.reverse)
   }
 
+  io.read_data := 0.U
   when(io.read_en && ar_valid) {
     io.read_data := ram(mem_addr)
   }
