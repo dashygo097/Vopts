@@ -14,7 +14,7 @@ pre:
 	@mkdir -p $(COCOTB_DIR)
 
 fmt:
-	@scalafmt 
+	@scalafmt
 
 build: pre 
 	@sbt compile

@@ -21,8 +21,8 @@ class AXIFullSlaveRAM(
 
   require(
     memSize > 0 && baseAddr >= 0 && (baseAddr + (memSize * dataWidth)) <= maxAddrValue,
-      s"RAM address out of range for addrWidth $addrWidth"
-    )
+    s"RAM address out of range for addrWidth $addrWidth"
+  )
 
   val ext_axi =
     IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
