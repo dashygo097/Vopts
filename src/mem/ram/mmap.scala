@@ -1,6 +1,7 @@
 package com.ram
 
 import chisel3._
+import chisel3.util._
 
 class MMapRAMIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   // Write Interface
@@ -23,4 +24,46 @@ class RAMRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigIn
     memSize > 0 && baseAddr >= 0 && (baseAddr + (memSize * dataWidth)) <= maxAddrValue,
     s"RAM address out of range for addrWidth $addrWidth"
   )
+
+  // Parameters
+  val addr_lsb = log2Ceil(dataWidth / 8)
+  val opt_mem_addr_bits = log2Ceil(memSize.toInt)
+
+  // I/O Interface
+  val io = IO(new MMapRAMIO(addrWidth, dataWidth)).suggestName("RAM")
+
+  // Signals
+  val mem_addr = Wire(UInt(opt_mem_addr_bits.W))
+  val byte_in = Wire(Vec(dataWidth / 8, UInt(8.W)))
+  val ar_offset_addr = Wire(UInt(addrWidth.W))
+  val aw_offset_addr = Wire(UInt(addrWidth.W))
+  val aw_valid = Wire(Bool())
+  val ar_valid = Wire(Bool())
+  val ram      = RegInit(VecInit(Seq.fill(memSize.toInt)(0.U(dataWidth.W))))
+
+  io.write_resp := aw_valid
+  io.read_resp  := ar_valid
+
+  aw_offset_addr := io.write_addr - baseAddr.U(addrWidth.W)
+  ar_offset_addr := io.read_addr - baseAddr.U(addrWidth.W)
+  aw_valid := (io.write_addr >= baseAddr.U) && (aw_offset_addr < ((1 << addr_lsb) * memSize.toInt).U)
+  ar_valid  := (io.read_addr >= baseAddr.U) && (ar_offset_addr < ((1 << addr_lsb) * memSize.toInt).U)
+
+  for (i <- 0 until (dataWidth / 8))
+    byte_in(i) := io.write_data(8 * (i + 1) - 1, 8 * i)
+  mem_addr     := Mux(
+    io.read_en,
+    ar_offset_addr(opt_mem_addr_bits + addr_lsb, addr_lsb),
+    Mux(io.write_en, aw_offset_addr(opt_mem_addr_bits + addr_lsb, addr_lsb), 0.U)
+  )
+
+  when(io.write_en && aw_valid) {
+    ram(mem_addr) := Cat((0 until (dataWidth / 8)).map { i =>
+      Mux(io.write_strb(i), byte_in(i), ram(mem_addr)(8 * (i + 1) - 1, 8 * i))
+    }.reverse)
+  }
+
+  when(io.read_en && ar_valid) {
+    io.read_data := ram(mem_addr)
+  }
 }
