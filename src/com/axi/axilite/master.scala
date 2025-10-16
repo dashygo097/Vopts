@@ -61,9 +61,9 @@ class AXILiteMasterExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
     this.WVALID  := intf.w.valid
     intf.w.ready := this.WREADY
 
-    intf.b.bits  := this.BRESP
-    intf.b.valid := this.BVALID
-    this.BREADY  := intf.b.ready
+    intf.b.bits.resp := this.BRESP
+    intf.b.valid     := this.BVALID
+    this.BREADY      := intf.b.ready
 
     this.ARADDR   := intf.ar.bits.addr
     this.ARPROT   := intf.ar.bits.prot
