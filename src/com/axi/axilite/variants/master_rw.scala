@@ -25,9 +25,6 @@ class AXILiteMasterRW(
   val read_ready = IO(Output(Bool())).suggestName("R_READY")
   val read_resp  = IO(Output(UInt(2.W))).suggestName("R_RESP")
 
-  // Parameters
-  val addr_lsb = log2Ceil(dataWidth / 8)
-
   // Signals
   val axi_awaddr      = RegInit(0.U(addrWidth.W))
   val axi_awvalid     = RegInit(false.B)
@@ -101,4 +98,4 @@ class AXILiteMasterRW(
 
 
   ext_axi.connect(axi)
-}                                     
+}
