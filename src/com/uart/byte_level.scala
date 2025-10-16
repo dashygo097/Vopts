@@ -3,20 +3,20 @@ package com.uart
 import chisel3._
 import chisel3.util._
 
-class UartTXIO extends Bundle {
+class ByteLevelUartTXIO extends Bundle {
   val txd     = Output(Bool())
   val channel = Flipped(Decoupled(UInt(8.W)))
   val busy    = Output(Bool())
 }
 
-class UartRXIO extends Bundle {
+class ByteLevelUartRXIO extends Bundle {
   val rxd     = Input(Bool())
   val channel = Decoupled(UInt(8.W))
   val error   = Output(Bool())
 }
 
-class UartTX(baudRate: Int, clkFreq: Long) extends Module {
-  val io              = IO(new UartTXIO).suggestName("UART_TX")
+class ByteLevelUartTX(baudRate: Int, clkFreq: Int) extends Module {
+  val io              = IO(new ByteLevelUartTXIO).suggestName("UART_TX")
   val baudTickDivider = clkFreq / baudRate
 
   val state = RegInit(UartState.IDLE)
@@ -69,8 +69,8 @@ class UartTX(baudRate: Int, clkFreq: Long) extends Module {
   }
 }
 
-class UartRX(baudRate: Int, clkFreq: Long) extends Module {
-  val io              = IO(new UartRXIO).suggestName("UART_RX")
+class ByteLevelUartRX(baudRate: Int, clkFreq: Int) extends Module {
+  val io              = IO(new ByteLevelUartRXIO).suggestName("UART_RX")
   val baudTickDivider = clkFreq / baudRate
 
   val state = RegInit(UartState.IDLE)
@@ -123,14 +123,14 @@ class UartRX(baudRate: Int, clkFreq: Long) extends Module {
   }
 }
 
-class Uart(baudRate: Int, clkFreq: Long) extends Module {
+class ByteLevelUart(baudRate: Int, clkFreq: Int) extends Module {
   val io = IO(new Bundle {
-    val tx = new UartTXIO
-    val rx = new UartRXIO
+    val tx = new ByteLevelUartTXIO
+    val rx = new ByteLevelUartRXIO
   }).suggestName("UART")
 
-  val tx = Module(new UartTX(baudRate, clkFreq))
-  val rx = Module(new UartRX(baudRate, clkFreq))
+  val tx = Module(new ByteLevelUartTX(baudRate, clkFreq))
+  val rx = Module(new ByteLevelUartRX(baudRate, clkFreq))
 
   tx.io <> io.tx
   rx.io <> io.rx

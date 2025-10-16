@@ -63,9 +63,8 @@ class MMapRegisters(
   write_addr_match := addr_map.map(_ === io.write_addr).reduce(_ || _)
   read_addr_match  := addr_map.map(_ === io.read_addr).reduce(_ || _)
 
-  for (i <- 0 until (dataWidth / 8)) {
+  for (i <- 0 until (dataWidth / 8))
     byte_banks(i) := io.write_data(8 * (i + 1) - 1, 8 * i)
-  }
 
   // Write Logic
   when(io.write_en && write_addr_match) {
@@ -79,7 +78,6 @@ class MMapRegisters(
         }.reverse)
       }
   }
-
 
   // Read Logic
   when(io.read_en && read_addr_match) {

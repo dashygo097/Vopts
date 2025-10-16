@@ -14,7 +14,7 @@ class AXIFullSlaveRAM(
 ) extends Module {
   override def desiredName: String =
     s"axifull_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}_s${memSize}_b${baseAddr}"
-  // AXI Lite Slave Interface
+  // AXI Full Slave Interface
   val ext_axi =
     IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val axi     = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
