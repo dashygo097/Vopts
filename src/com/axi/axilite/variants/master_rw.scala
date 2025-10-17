@@ -86,11 +86,11 @@ class AXILiteMasterRW(
   }
 
   // Read Data Channel
-  when(axi.r.valid && !axi_rready) {
+  when(read_en && axi.r.valid && !axi_rready) {
     read_data   := axi.r.bits.data
     axi_rready := true.B
   } .elsewhen(axi_rready) {
-    read_data := RegNext(read_data)
+    read_data := 0.U
     axi_rready := false.B
   } .otherwise {
     read_data := 0.U
