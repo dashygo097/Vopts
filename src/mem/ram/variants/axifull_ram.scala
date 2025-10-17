@@ -13,11 +13,11 @@ class AXIFullSlaveRAM(
   userWidth: Int = 0
 ) extends Module {
   override def desiredName: String =
-    s"axifull_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}_s${memSize}_b${baseAddr}"
+    s"axifull_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}_s${memSize}_b$baseAddr"
   // AXI Full Slave Interface
-  val ext_axi =
+  val ext_axi                      =
     IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
-  val axi     = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
+  val axi                          = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
   val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr))
 
@@ -76,16 +76,16 @@ class AXIFullSlaveRAM(
   aw_wrap_en   := Mux((axi_awaddr & aw_wrap_size) === aw_wrap_size, true.B, false.B)
   ar_wrap_en   := Mux((axi_awaddr & ar_wrap_size) === ar_wrap_size, true.B, false.B)
 
-  mmap_region.io.write_en := axi_wready && axi.w.valid
+  mmap_region.io.write_en   := axi_wready && axi.w.valid
   mmap_region.io.write_addr := axi_awaddr
   mmap_region.io.write_data := axi.w.bits.data
   mmap_region.io.write_strb := axi.w.bits.strb
-  aw_addr_valid := mmap_region.io.write_resp
+  aw_addr_valid             := mmap_region.io.write_resp
 
-  mmap_region.io.read_en  := axi_arv_arr_flag
+  mmap_region.io.read_en   := axi_arv_arr_flag
   mmap_region.io.read_addr := axi_araddr
-  ar_addr_valid := mmap_region.io.read_resp
-  axi_rdata := Mux(axi_rvalid && ar_addr_valid, mmap_region.io.read_data, 0.U(dataWidth.W))
+  ar_addr_valid            := mmap_region.io.read_resp
+  axi_rdata                := Mux(axi_rvalid && ar_addr_valid, mmap_region.io.read_data, 0.U(dataWidth.W))
 
   // Address Write Channel
   when(!axi_awready && axi.aw.valid && !axi_awv_awr_flag && !axi_arv_arr_flag) {
