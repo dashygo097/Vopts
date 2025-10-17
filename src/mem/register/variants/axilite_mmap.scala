@@ -57,7 +57,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   axi.r.valid     := axi_rvalid
 
   // MMap Connect to AXI interface
-  slv_reg_we              := axi_wready && axi.w.valid && axi_awready && axi.aw.valid
+  slv_reg_we              := axi_awready && axi.aw.valid && !axi_bvalid
   mmap_regs.io.write_en   := slv_reg_we
   mmap_regs.io.write_addr := axi_awaddr
   mmap_regs.io.write_data := axi.w.bits.data
@@ -66,7 +66,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   slv_reg_re             := axi_arready && axi.ar.valid && !axi_rvalid
   mmap_regs.io.read_en   := slv_reg_re
   mmap_regs.io.read_addr := axi_araddr
-  axi_rdata            := mmap_regs.io.read_data
+  axi_rdata              := mmap_regs.io.read_data
 
   // Address Write Channel
   when(!axi_awready && axi.aw.valid) {
@@ -78,10 +78,12 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   }
 
   // Data Write Channel
-  when(!axi_wready && axi.w.valid) {
+  when(!axi_wready && axi_awready && axi.aw.valid) {
     axi_wready := true.B
   }.otherwise {
-    axi_wready := false.B
+    when(axi_wready && axi.w.valid) {
+      axi_wready := false.B
+    }
   }
 
   // Write Response Channel
@@ -103,7 +105,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   }
 
   // Data Read Channel
-  when(axi_arready && axi.ar.valid && !axi_rvalid) {
+  when(!axi_rvalid && axi_arready && axi.ar.valid) {
     axi_rvalid := true.B
     axi_rresp  := Mux(mmap_regs.io.read_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
   }.otherwise {
