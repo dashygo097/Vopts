@@ -38,11 +38,12 @@ class ByteLevelUartCmdProcessor(baudRate: Int, clkFreq: Int) extends Module {
   val rx_state = RegInit(0.U(2.W))
   val rx_byte_cnt = RegInit(0.U(4.W))
   val rx_buffer = Reg(Vec(9, UInt(8.W)))
+  val cmd_addr = Reg(UInt(32.W))
   
   io.cmd_valid := false.B
   io.cmd_type := UartCmdType.WRITE
-  io.cmd_addr := 0.U
-  io.cmd_wdata := 0.U
+  io.cmd_addr := cmd_addr
+  io.cmd_wdata := 0.U 
   
   
   switch(rx_state) {
@@ -59,7 +60,7 @@ class ByteLevelUartCmdProcessor(baudRate: Int, clkFreq: Int) extends Module {
         when(rx_byte_cnt === 8.U) {
           io.cmd_valid := true.B
           io.cmd_type := Mux(rx_buffer(0) === 0.U, UartCmdType.WRITE, UartCmdType.READ)
-          io.cmd_addr := Cat(rx_buffer(4), rx_buffer(3), rx_buffer(2), rx_buffer(1))
+          cmd_addr := Cat(rx_buffer(4), rx_buffer(3), rx_buffer(2), rx_buffer(1))
           io.cmd_wdata := Cat(rx_buffer(8), rx_buffer(7), rx_buffer(6), rx_buffer(5))
           rx_state := 0.U
           rx_byte_cnt := 0.U
@@ -77,7 +78,7 @@ class ByteLevelUartCmdProcessor(baudRate: Int, clkFreq: Int) extends Module {
   
   io.resp_ready := false.B
   uart_tx.io.channel.valid := false.B
-  uart_tx.io.channel.bits := 0.U
+  uart_tx.io.channel.bits := 0.U 
   
   switch(tx_state) {
     is(0.U) { // IDLE

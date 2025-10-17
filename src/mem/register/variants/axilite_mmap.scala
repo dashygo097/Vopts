@@ -32,7 +32,6 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   val opt_mem_addr_bits = math.min(addr_bits_needed, addrWidth - addr_lsb)
 
   // Signals
-  val aw_en       = RegInit(true.B)
   val axi_awready = RegInit(false.B)
   val axi_awaddr  = RegInit(0.U(addrWidth.W))
   val axi_wready  = RegInit(false.B)
@@ -70,27 +69,23 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   axi_rdata            := mmap_regs.io.read_data
 
   // Address Write Channel
-  when(!axi_awready && axi.aw.valid && axi.w.valid && aw_en) {
+  when(!axi_awready && axi.aw.valid) {
     // Accepting
     axi_awaddr  := axi.aw.bits.addr
     axi_awready := true.B
-    aw_en       := false.B
-  }.elsewhen(axi.b.ready && axi_bvalid) {
-    axi_awready := false.B
-    aw_en       := true.B
   }.otherwise {
     axi_awready := false.B
   }
 
   // Data Write Channel
-  when(!axi_wready && axi.w.valid && axi.aw.valid && aw_en) {
+  when(!axi_wready && axi.w.valid) {
     axi_wready := true.B
   }.otherwise {
     axi_wready := false.B
   }
 
   // Write Response Channel
-  when(axi_awready && axi.aw.valid && !axi_bvalid && axi_wready && axi.w.valid) {
+  when(!axi_bvalid && axi_wready && axi.w.valid) {
     axi_bvalid := true.B
     axi_bresp  := Mux(mmap_regs.io.read_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
   }.otherwise {
