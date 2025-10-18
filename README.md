@@ -41,7 +41,7 @@ or
 
 ## Run Autotest
 
-Run test using **verilator**(Verilator 5.034 2025-02-24 rev UNKNOWN.REV) and **gtkwave**(GTKWave Analyzer v3.4.0 (w)1999-2022 BSI) through **tb.sh(or fzf version tb_fzf.sh).**
+Run test using **verilator** and **gtkwave / surfer** through **tb.sh(or fzf version tb_fzf.sh).**
 
 > ```bash
 > make tb # (make tb-fzf)
