@@ -86,7 +86,7 @@ run_stat() {
   show_status "info" "Generating .ys file: $module_file..."
   cat > "synth_${top_module}.ys" << EOF
 
-read_verilog ${module_file}
+read_verilog -sv ${module_file}
 hierarchy -check -top ${top_module}
 
 synth_xilinx -family xc7 -top ${top_module}
