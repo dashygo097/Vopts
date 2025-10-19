@@ -21,7 +21,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
     )
   }
 
-  val ext_axi = IO(new AXILiteExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
+  val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
   val mmap_regs = Module(new MMapRegisters(addrWidth, dataWidth, mmap))
