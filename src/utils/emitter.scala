@@ -1,4 +1,4 @@
-package app
+package utils
 
 import java.io.{ BufferedWriter, File, FileWriter }
 import _root_.circt.stage.ChiselStage

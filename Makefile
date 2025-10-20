@@ -33,6 +33,7 @@ update:
 	@sbt reload
 
 localpublish:
+	@sbt clean
 	@sbt publishLocal
 
 tb: pre

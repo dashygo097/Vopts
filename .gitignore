@@ -9,6 +9,5 @@ build/
 target/
 obj_dir/
 
+app/
 sims/
-app/tests
-app/main
