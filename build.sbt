@@ -1,7 +1,7 @@
 ThisBuild / scalaVersion := "2.13.16"
 ThisBuild / version      := "0.1.0"
 ThisBuild / organization := "dashygo097"
-ThisBuild / publishTo := Some(
+ThisBuild / publishTo    := Some(
   Resolver.file("local-ivy", file(Path.userHome + "/.ivy2/local"))
 )
 
@@ -21,7 +21,7 @@ lazy val utils = (project in file("src/utils"))
   .settings(
     name := "utils",
     libraryDependencies ++= Seq(
-      "org.chipsalliance" %% "chisel"     % chiselVersion,
+      "org.chipsalliance" %% "chisel" % chiselVersion,
     ),
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin(
@@ -135,4 +135,3 @@ lazy val app = (project in file("app"))
 
 lazy val root = (project in file("."))
   .aggregate(utils, dds, math, com, dsp, mem, perip, mod)
-
