@@ -4,11 +4,11 @@ import chisel3._
 import chisel3.util._
 
 class DualPortRegFileIO(numRegs: Int, dataWidth: Int) extends Bundle {
-  val rs1_addr = Input(UInt(log2Ceil(numRegs).W))
-  val rs2_addr = Input(UInt(log2Ceil(numRegs).W))
+  val rs1_addr   = Input(UInt(log2Ceil(numRegs).W))
+  val rs2_addr   = Input(UInt(log2Ceil(numRegs).W))
   val write_addr = Input(UInt(log2Ceil(numRegs).W))
   val write_data = Input(UInt(dataWidth.W))
-  val write_en = Input(Bool())
+  val write_en   = Input(Bool())
 
   val rs1_data = Output(UInt(dataWidth.W))
   val rs2_data = Output(UInt(dataWidth.W))
@@ -17,10 +17,11 @@ class DualPortRegFileIO(numRegs: Int, dataWidth: Int) extends Bundle {
   val rs2_fwd = Output(Bool())
 }
 
-class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq()) extends Module {
-  override def desiredName: String = s"dual_port_regfile_b${dataWidth}_r${numRegs}"
+class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq())
+    extends Module {
+  override def desiredName: String = s"dual_port_regfile_b${dataWidth}_r$numRegs"
 
-  val io = IO(new DualPortRegFileIO(numRegs, dataWidth)).suggestName("REGFILE")
+  val io     = IO(new DualPortRegFileIO(numRegs, dataWidth)).suggestName("REGFILE")
   val regMem = SyncReadMem(numRegs, UInt(dataWidth.W))
 
   val initMemory = VecInit(Seq.tabulate(numRegs) { addr =>
@@ -51,6 +52,14 @@ class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = S
   io.rs1_fwd := io.write_en && (io.rs1_addr === io.write_addr)
   io.rs2_fwd := io.write_en && (io.rs2_addr === io.write_addr)
 
-  io.rs1_data := Mux(io.rs1_fwd, io.write_data, Mux(readable(io.rs1_addr), rs1_raw, initMemory(io.rs1_addr)))
-  io.rs2_data := Mux(io.rs2_fwd, io.write_data, Mux(readable(io.rs2_addr), rs2_raw, initMemory(io.rs2_addr)))
+  io.rs1_data := Mux(
+    io.rs1_fwd,
+    io.write_data,
+    Mux(readable(io.rs1_addr), rs1_raw, initMemory(io.rs1_addr))
+  )
+  io.rs2_data := Mux(
+    io.rs2_fwd,
+    io.write_data,
+    Mux(readable(io.rs2_addr), rs2_raw, initMemory(io.rs2_addr))
+  )
 }
