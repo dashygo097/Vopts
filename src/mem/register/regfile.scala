@@ -20,7 +20,7 @@ class DualPortRegFileIO(numRegs: Int, dataWidth: Int) extends Bundle {
 class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq()) extends Module {
   override def desiredName: String = s"dual_port_regfile_b${dataWidth}_r${numRegs}"
 
-  val io = IO(new DualPortRegFileIO(numRegs, dataWidth))
+  val io = IO(new DualPortRegFileIO(numRegs, dataWidth)).suggestName("REGFILE")
   val regMem = SyncReadMem(numRegs, UInt(dataWidth.W))
 
   val initMemory = VecInit(Seq.tabulate(numRegs) { addr =>
