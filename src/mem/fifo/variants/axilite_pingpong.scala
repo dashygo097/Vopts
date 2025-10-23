@@ -5,22 +5,22 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class AXILiteSlaveSyncFIFO(
+class AXILiteSlavePingPongFIFO(
   addrWidth: Int,
   dataWidth: Int,
   depth: Int,
   baseAddr: BigInt = 0x0L
 ) extends Module {
-  override def desiredName: String = s"axilite_syncfifo_${addrWidth}x${dataWidth}_d${depth}"
+  override def desiredName: String = s"axilite_pingpong_${addrWidth}x${dataWidth}_d${depth}"
 
   val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
-  val sync_fifo = Module(new SyncFIFO(UInt(dataWidth.W), depth))
+  val pingpong = Module(new PingPongFIFO(UInt(dataWidth.W), depth))
 
   // Address decoding
-  val fifo_addr = (baseAddr + 0x00).U(addrWidth.W)
-  val fifo_status_addr = (baseAddr + 0x04).U(addrWidth.W)
+  val pingpong_addr = (baseAddr + 0x00).U(addrWidth.W)
+  val pingpong_status_addr = (baseAddr + 0x04).U(addrWidth.W)
 
   // AXI Lite Signals
   val axi_awready = RegInit(false.B)
@@ -44,20 +44,21 @@ class AXILiteSlaveSyncFIFO(
   axi.r.bits.resp := axi_rresp
   axi.r.valid := axi_rvalid
 
-  // FIFO Write Path (Write Address Channel)
-  val write_to_fifo = axi_awready && axi.aw.valid && (axi.aw.bits.addr === fifo_addr)
-  sync_fifo.io.enq.valid := write_to_fifo && axi.w.valid
-  sync_fifo.io.enq.bits := axi.w.bits.data
+  // Write Path
+  val write_valid = axi_awready && axi.aw.valid && (axi.aw.bits.addr === pingpong_addr)
+  pingpong.io.write_port.valid := write_valid && axi.w.valid
+  pingpong.io.write_port.bits := axi.w.bits.data
 
-  // FIFO Read Path (Read Address Channel)
-  val read_from_fifo = axi_arready && axi.ar.valid && (axi.ar.bits.addr === fifo_addr)
-  sync_fifo.io.deq.ready := read_from_fifo && axi.r.ready
+  // Read Path
+  val read_valid = axi_arready && axi.ar.valid && (axi.ar.bits.addr === pingpong_addr)
+  pingpong.io.read_port.ready := read_valid && axi.r.ready
 
-  // Multiplexed Read Data
-  when(axi.ar.bits.addr === fifo_addr) {
-    axi_rdata := sync_fifo.io.deq.bits
-  }.elsewhen(axi.ar.bits.addr === fifo_status_addr) {
-    axi_rdata := Cat(sync_fifo.io.empty, sync_fifo.io.full)
+  // Multiplex read data
+  when(axi.ar.bits.addr === pingpong_addr) {
+    axi_rdata := pingpong.io.read_port.bits
+  }.elsewhen(axi.ar.bits.addr === pingpong_status_addr) {
+    // Status: [1]=read_empty, [0]=write_full
+    axi_rdata := Cat(pingpong.io.read_buffer_empty, pingpong.io.write_buffer_full)
   }.otherwise {
     axi_rdata := 0.U
   }
@@ -82,7 +83,7 @@ class AXILiteSlaveSyncFIFO(
   // Write Response Channel
   when(!axi_bvalid && axi_wready && axi.w.valid) {
     axi_bvalid := true.B
-    axi_bresp := Mux(sync_fifo.io.full && write_to_fifo, 2.U, 0.U) // SLVERR if full
+    axi_bresp := Mux(pingpong.io.write_buffer_full, 2.U, 0.U)
   }.otherwise {
     when(axi.b.ready && axi_bvalid) {
       axi_bvalid := false.B
@@ -100,7 +101,7 @@ class AXILiteSlaveSyncFIFO(
   // Data Read Channel
   when(!axi_rvalid && axi_arready && axi.ar.valid) {
     axi_rvalid := true.B
-    axi_rresp := Mux(sync_fifo.io.empty && read_from_fifo, 2.U, 0.U) // SLVERR if empty
+    axi_rresp := Mux(pingpong.io.read_buffer_empty, 2.U, 0.U)
   }.otherwise {
     when(axi_rvalid && axi.r.ready) {
       axi_rvalid := false.B
@@ -110,6 +111,6 @@ class AXILiteSlaveSyncFIFO(
   ext_axi.connect(axi)
 }
 
-object TestAXILiteSlaveSyncFIFO extends App {
-  VerilogEmitter.parse(new AXILiteSlaveSyncFIFO(32, 32, 64, 0x30000), "axi_lite_slave_fifo.sv", info=true)
+object TestAXILiteSlavePingPong extends App {
+  VerilogEmitter.parse(new AXILiteSlavePingPongFIFO(32, 32, 16, 0x40000L), "axi_lite_slave_pingpong.sv", info=true)
 }

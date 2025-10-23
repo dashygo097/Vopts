@@ -13,7 +13,7 @@ class SyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
 
 class SyncFIFO[T <: Data](gen: T, depth: Int) extends Module {
 override def desiredName: String =
-    s"sync_fifo_x${depth}"
+    s"sync_fifo_${depth}x${gen.getWidth}"
   val io = IO(new SyncFIFOIO(gen, depth)).suggestName("S_FIFO")
 
   val queue = Module(new Queue(gen, depth, pipe = false, flow = false))
