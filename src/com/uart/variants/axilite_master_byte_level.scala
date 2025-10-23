@@ -1,5 +1,7 @@
 package com.uart
+
 import com.axi._
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -131,4 +133,8 @@ class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: In
   }
 
   ext_axi.connect(axi)
+}
+
+object TestAXILiteMasterByteLevelUartCmd extends App {
+  VerilogEmitter.parse(new AXILiteMasterByteLevelUartCmd(32, 32, 115200, 100000000), "axi_lite_master_uart_cmd_byte_level.sv", info=true)
 }

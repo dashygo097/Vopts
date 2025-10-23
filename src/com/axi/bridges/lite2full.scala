@@ -1,5 +1,6 @@
 package com.axi
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -149,3 +150,9 @@ object AXILite2FullBridge {
   ): AXILite2FullBridge =
     Module(new AXILite2FullBridge(addrWidth, dataWidth, idWidth, userWidth))
 }
+
+
+object TestAXILite2FullBridge extends App {
+  VerilogEmitter.parse(new AXILite2FullBridge(32, 32, 4, 1), "axi_lite_to_full_bridge.sv", info=true)
+}
+

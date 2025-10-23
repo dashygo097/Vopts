@@ -1,5 +1,6 @@
 package com.axi
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -160,3 +161,12 @@ object AXILiteInterconnect {
   ): AXILiteInterconnect =
     Module(new AXILiteInterconnect(addrWidth, dataWidth, addressMap))
 }
+
+
+object TestAXILiteInterconnect extends App {
+  VerilogEmitter.parse(new AXILiteInterconnect(32, 32, Seq(
+    (0x80000000L, 0x90000000L),
+    (0x90000000L, 0xA0000000L)
+  )), "axi_lite_interconnect.sv", info=true)
+}
+

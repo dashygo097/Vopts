@@ -13,7 +13,7 @@ class LMSFilterIO[T <: Data](gen: T) extends Bundle {
   val e_valid = Input(Bool())
 }
 
-class LMSFilter[T <: Data](gen: T)(
+class LMSFilter[T <: Data](gen: T, 
   order: Int,
   cutoff: Seq[Double],
   clkFreq: Int,

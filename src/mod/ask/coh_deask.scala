@@ -11,7 +11,7 @@ class EnvelopDetectorIO[T <: Data](gen: T) extends Bundle {
   val data = Output(Bool())
 }
 
-class EDDeASK[T <: Data](gen: T)(
+class EDDeASK[T <: Data](gen: T, 
   baseFreqLimit: Double,
   threshold: Double,
   clkFreq: Int,
@@ -21,8 +21,8 @@ class EDDeASK[T <: Data](gen: T)(
   override def desiredName =
     s"deask_ed_fl${baseFreqLimit}_o${filterOrder}_thres${(threshold * 1000).toInt}"
   val io                   = IO(new EnvelopDetectorIO(gen)).suggestName("DeASK_ED")
-  val fir                  = Module(new FIRFilter(gen)("lp", Seq(baseFreqLimit), filterOrder, clkFreq))
-  val comparator           = Module(new Comparator(gen)(threshold))
+  val fir                  = Module(new FIRFilter(gen, "lp", Seq(baseFreqLimit), filterOrder, clkFreq))
+  val comparator           = Module(new Comparator(gen, threshold))
 
   fir.io.in        := RegNext(Abs(io.in))
   comparator.io.in := RegNext(fir.io.out)
