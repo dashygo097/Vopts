@@ -1,5 +1,6 @@
 package com.axi
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -214,4 +215,11 @@ object AXIFullInterconnect {
     addressMap: Seq[(Long, Long)]
   ): AXIFullInterconnect =
     Module(new AXIFullInterconnect(addrWidth, dataWidth, idWidth, userWidth, addressMap))
+}
+
+object TestAXIFullInterconnect extends App {
+  VerilogEmitter.parse(new AXIFullInterconnect(32, 32, 4, 1, Seq(
+    (0x80000000L, 0x90000000L),
+    (0x90000000L, 0xA0000000L)
+  )), "axi_full_interconnect.sv", info=true)
 }

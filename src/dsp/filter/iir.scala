@@ -4,7 +4,7 @@ import scala.sys.process._
 import utils._
 import chisel3._
 
-class IIRFilter[T <: Data](gen: T)(
+class IIRFilter[T <: Data](gen: T, 
   filterType: String,
   cutoff: Seq[Double],
   order: Int,

@@ -8,7 +8,7 @@ class ComparatorIO[T <: Data](gen: T) extends Bundle {
   val out = Output(Bool())
 }
 
-class Comparator[T <: Data](gen: T)(threshold: AnyVal)(implicit
+class Comparator[T <: Data](gen: T, threshold: AnyVal)(implicit
   ord: PartialOrdered[T],
   ev: Arithmetic[T]
 ) extends Module {

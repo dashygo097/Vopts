@@ -9,7 +9,7 @@ class ASKIO[T <: Data](gen: T) extends Bundle {
   val out  = Output(gen)
 }
 
-class ASK[T <: Data](gen: T)(
+class ASK[T <: Data](gen: T, 
   mag: Double,
   carrierFreq: Int,
   phaseDelta: Int,
@@ -19,7 +19,7 @@ class ASK[T <: Data](gen: T)(
     extends Module {
   override def desiredName = s"ask_m${(mag * 1000).toInt}_cf$carrierFreq"
   val io                   = IO(new ASKIO(gen)).suggestName("ASK")
-  val cw                   = Module(new CWDDS(gen)(mag, carrierFreq, 0.0, phaseDelta, lutWidth, clkFreq))
+  val cw                   = Module(new CWDDS(gen, mag, carrierFreq, 0.0, phaseDelta, lutWidth, clkFreq))
   val zero                 = gen.fromDouble(0.0)
 
   io.out := Mux(io.data, cw.io.out, zero)

@@ -12,7 +12,7 @@ class AnalogSyncDetectorIO[T <: Data](gen: T) extends Bundle {
   val out     = Output(gen)
 }
 
-class SDDeAM[T <: Data](gen: T)(
+class SDDeAM[T <: Data](gen: T,
   carrierFreq: Int,
   baseFreqLimit: Double,
   phaseWidth: Int,
@@ -23,8 +23,8 @@ class SDDeAM[T <: Data](gen: T)(
     extends Module {
   override def desiredName = s"deam_sd_cf${carrierFreq}_fl${baseFreqLimit}_o$filterOrder"
   val io                   = IO(new SISO(gen)).suggestName("DeAM_SD")
-  val carrier_dds          = Module(new CWDDS(gen)(1.0, carrierFreq, 0.0, phaseWidth, lutWidth, clkFreq))
-  val fir                  = Module(new FIRFilter(gen)("lp", Seq(baseFreqLimit), filterOrder, clkFreq))
+  val carrier_dds          = Module(new CWDDS(gen, 1.0, carrierFreq, 0.0, phaseWidth, lutWidth, clkFreq))
+  val fir                  = Module(new FIRFilter(gen, "lp", Seq(baseFreqLimit), filterOrder, clkFreq))
 
   fir.io.in := RegNext(io.in * carrier_dds.io.out)
   io.out    := fir.io.out
@@ -35,7 +35,7 @@ class ASDDeAM[T <: Data](gen: T)(baseFreqLimit: Double, clkFreq: Int, filterOrde
 ) extends Module {
   override def desiredName = s"deam_asd_fl${baseFreqLimit}_o$filterOrder"
   val io                   = IO(new AnalogSyncDetectorIO(gen))
-  val fir                  = Module(new FIRFilter(gen)("lp", Seq(baseFreqLimit), filterOrder, clkFreq))
+  val fir                  = Module(new FIRFilter(gen, "lp", Seq(baseFreqLimit), filterOrder, clkFreq))
 
   fir.io.in := RegNext(io.carrier * io.in)
   io.out    := fir.io.out

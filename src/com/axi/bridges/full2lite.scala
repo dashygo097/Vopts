@@ -1,5 +1,6 @@
 package com.axi
 
+import utils._
 import chisel3._
 
 class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0)
@@ -157,3 +158,9 @@ object AXIFull2LiteBridge {
   ): AXIFull2LiteBridge =
     Module(new AXIFull2LiteBridge(addrWidth, dataWidth, idWidth, userWidth))
 }
+
+
+object TestAXIFull2LiteBridge extends App {
+  VerilogEmitter.parse(new AXIFull2LiteBridge(32, 32, 4, 1), "axi_full_to_lite_bridge.sv", info=true)
+}
+

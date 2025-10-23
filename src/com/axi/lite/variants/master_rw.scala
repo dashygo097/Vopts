@@ -1,5 +1,6 @@
 package com.axi
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -139,4 +140,9 @@ class AXILiteMasterRW(
   }
 
   ext_axi.connect(axi)
+}
+
+
+object TestAXILiteMasterRW extends App {
+  VerilogEmitter.parse(new AXILiteMasterRW(32, 32), "axi_lite_master_rw.sv", info=true)
 }

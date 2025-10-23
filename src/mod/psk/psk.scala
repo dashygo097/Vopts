@@ -15,7 +15,7 @@ class BPSK[T <: Data](gen: T)(carrierFreq: Int, phaseWidth: Int, lutWidth: Int, 
 ) extends Module {
   override def desiredName = s"bpsk_cf$carrierFreq"
   val io                   = IO(new BPSKIO(gen)).suggestName("BPSK")
-  val cw                   = Module(new CWDDS(gen)(1.0, carrierFreq, 0.0, phaseWidth, lutWidth, clkFreq))
+  val cw                   = Module(new CWDDS(gen, 1.0, carrierFreq, 0.0, phaseWidth, lutWidth, clkFreq))
   val zero                 = gen.fromDouble(0.0)
 
   io.out := Mux(io.data, cw.io.out, zero - cw.io.out)
@@ -26,12 +26,12 @@ class QPSKIO[T <: Data](gen: T) extends Bundle {
   val out  = Output(gen)
 }
 
-class QPSK[T <: Data](gen: T)(carrierFreq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(
+class QPSK[T <: Data](gen: T, carrierFreq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(
   implicit analog: Analog[T]
 ) extends Module {
   override def desiredName = s"qpsk_cf$carrierFreq"
   val io                   = IO(new QPSKIO(gen)).suggestName("QPSK")
-  val trig                 = Module(new LiteTrigDDS(gen)(carrierFreq, phaseWidth, lutWidth, clkFreq))
+  val trig                 = Module(new LiteTrigDDS(gen, carrierFreq, phaseWidth, lutWidth, clkFreq))
 
   val deltaPhase = (pow(2.0, phaseWidth) / pow(2.0, 2)).toInt.U
 
@@ -48,7 +48,7 @@ class QPSK[T <: Data](gen: T)(carrierFreq: Int, phaseWidth: Int, lutWidth: Int, 
   io.out := trig.io.out
 }
 
-class nPSKIO[T <: Data](gen: T)(dw: Int) extends Bundle {
+class nPSKIO[T <: Data](gen: T, dw: Int) extends Bundle {
   val data = Input(UInt(dw.W))
   val out  = Output(gen)
 }
@@ -62,8 +62,8 @@ class nPSK[T <: Data](gen: T)(
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"psk_n${dw}_cf$carrierFreq"
-  val io                   = IO(new nPSKIO(gen)(dw)).suggestName("nPSK")
-  val trig                 = Module(new LiteTrigDDS(gen)(carrierFreq, phaseWidth, lutWidth, clkFreq))
+  val io                   = IO(new nPSKIO(gen, dw)).suggestName("nPSK")
+  val trig                 = Module(new LiteTrigDDS(gen, carrierFreq, phaseWidth, lutWidth, clkFreq))
 
   val deltaPhase = (pow(2.0, phaseWidth) / pow(2.0, dw)).toInt.U
   val last_data  = RegInit(0.U(dw.W))

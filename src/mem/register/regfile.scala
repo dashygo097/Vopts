@@ -1,5 +1,6 @@
 package mem.register
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -62,4 +63,8 @@ class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = S
     io.write_data,
     Mux(readable(io.rs2_addr), rs2_raw, initMemory(io.rs2_addr))
   )
+}
+
+object TestDualPortRegFile extends App {
+  VerilogEmitter.parse(new DualPortRegFile(32, 32, Seq(Register("x0", 0x0, 0x0L, writable=false, readable=true), Register("x1", 0x1, 0x0L, writable=false, readable=false))), "dual_port_regfile.sv", info=true)
 }

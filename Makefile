@@ -5,7 +5,10 @@ SIM_DIR = $(BASE_DIR)/sims
 TB_DIR = $(SIM_DIR)/tb
 COCOTB_DIR = $(SIM_DIR)/cocotb
 
-.PHONY: pre fmt build run clean update localpublish tb tb-fzf cocotb cocotb-fzf stat-xc7 stat-xc7-fzf
+LIB ?= app
+FZF ?= false
+
+.PHONY: pre fmt build run clean update localpublish tb cocotb stat-xc7
 
 pre:
 	@mkdir -p $(BUILD_DIR)
@@ -20,7 +23,7 @@ build: pre
 	@sbt compile
 
 run: pre
-	@sbt app/run
+	@sbt $(LIB)/run
 
 clean:
 	@rm -rf $(SIM_DIR)/logs
@@ -37,10 +40,11 @@ localpublish:
 	@sbt publishLocal
 
 tb: pre
-	@bash $(SCRIPTS_DIR)/tb.sh
-
-tb-fzf: pre
-	@bash $(SCRIPTS_DIR)/tb_fzf.sh
+	@if [ "$(FZF)" = "true" ] ; then \
+		bash $(SCRIPTS_DIR)/tb_fzf.sh ; \
+	else \
+		bash $(SCRIPTS_DIR)/tb.sh ; \
+	fi
 
 cocotb: pre
 	@touch $(COCOTB_DIR)/cocotb.make
@@ -48,21 +52,16 @@ cocotb: pre
 	@echo "SIM = icarus" >> $(COCOTB_DIR)/cocotb.make
 	@echo "" >> $(COCOTB_DIR)/cocotb.make
 	@echo "include $(shell cocotb-config --makefiles)/Makefile.sim" >> $(COCOTB_DIR)/cocotb.make
-
-	@bash $(SCRIPTS_DIR)/cocotb.sh
-
-cocotb-fzf: pre
-	@touch $(COCOTB_DIR)/cocotb.make
-	@echo "TOPLEVEL = $(TB_DIR)/tb.v" > $(COCOTB_DIR)/cocotb.make
-	@echo "MODULE = tb" >> $(COCOTB_DIR)/cocotb.make
-	@echo "" >> $(COCOTB_DIR)/cocotb.make
-	@echo "include $(shell cocotb-config --makefiles)/Makefile.sim" >> $(COCOTB_DIR)/cocotb.make
-
-	@bash $(SCRIPTS_DIR)/cocotb_fzf.sh
+	@if [ "$(FZF)" = "true" ] ; then \
+		bash $(SCRIPTS_DIR)/cocotb_fzf.sh; \
+	else \
+		bash $(SCRIPTS_DIR)/cocotb.sh; \
+	fi
 
 stat-xc7: pre
-	@bash $(SCRIPTS_DIR)/stat_yosys_xc7.sh	
-
-stat-xc7-fzf: pre
-	@bash $(SCRIPTS_DIR)/stat_yosys_xc7_fzf.sh
+	@if [ "$(FZF)" = "true" ] ; then \
+		bash $(SCRIPTS_DIR)/stat_yosys_xc7_fzf.sh ; \
+	else \
+		bash $(SCRIPTS_DIR)/stat_yosys_xc7.sh ; \
+	fi
 

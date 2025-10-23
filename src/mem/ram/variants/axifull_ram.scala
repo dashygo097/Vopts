@@ -1,6 +1,7 @@
 package mem.ram
 
 import com.axi._
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -180,4 +181,8 @@ class AXIFullSlaveRAM(
   }
 
   ext_axi.connect(axi)
+}
+
+object TestAXIFullSlaveRAM extends App {
+  VerilogEmitter.parse(new AXIFullSlaveRAM(32, 32, 4, 1, 8, 0x20000), "axi_full_slave_ram.sv", info=true)
 }
