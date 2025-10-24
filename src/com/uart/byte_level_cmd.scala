@@ -2,12 +2,7 @@ package com.uart
 import chisel3._
 import chisel3.util._
 
-object UartCmdType extends ChiselEnum {
-  val WRITE = Value(0.U(1.W))
-  val READ  = Value(1.U(1.W))
-}
-
-class ByteLevelUartCmdProcessorIO extends Bundle {
+class UartCmdProcessorIO extends Bundle {
   val txd        = Output(Bool())
   val rxd        = Input(Bool())
   val cmd_valid  = Output(Bool())
@@ -19,12 +14,12 @@ class ByteLevelUartCmdProcessorIO extends Bundle {
   val resp_ready = Output(Bool())
 }
 
-class ByteLevelUartCmdProcessor(baudRate: Int, clkFreq: Int) extends Module {
-  override def desiredName: String = s"uart_cmd_byte_level_b${baudRate}_f$clkFreq"
-  val io                           = IO(new ByteLevelUartCmdProcessorIO).suggestName("UART_CMD")
+class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
+  override def desiredName: String = s"uart_level_b${option.baudRate}_f${clkFreq}"
+  val io                           = IO(new UartCmdProcessorIO).suggestName("UART_CMD")
 
-  val uart_tx = Module(new ByteLevelUartTX(baudRate, clkFreq))
-  val uart_rx = Module(new ByteLevelUartRX(baudRate, clkFreq))
+  val uart_tx = Module(new UartTX(option.baudRate, clkFreq))
+  val uart_rx = Module(new UartRX(option.baudRate, clkFreq))
 
   io.txd                   := uart_tx.io.txd
   uart_tx.io.channel.valid := false.B
@@ -67,7 +62,11 @@ class ByteLevelUartCmdProcessor(baudRate: Int, clkFreq: Int) extends Module {
 
         when(next_byte_cnt === 9.U) {
           cmd_valid_reg := true.B
-          cmd_type_reg  := Mux(rx_buffer(0) === 0.U, UartCmdType.WRITE, UartCmdType.READ)
+          cmd_type_reg  := MuxLookup(rx_buffer(0), UartCmdType.WRITE)(Seq(
+            0.U -> UartCmdType.WRITE,
+            1.U -> UartCmdType.READ,
+            2.U -> UartCmdType.MOVE
+          ))
           cmd_addr_reg  := Cat(rx_buffer(4), rx_buffer(3), rx_buffer(2), rx_buffer(1))
           cmd_wdata_reg := Cat(uart_rx.io.channel.bits, rx_buffer(7), rx_buffer(6), rx_buffer(5))
           rx_state      := 0.U

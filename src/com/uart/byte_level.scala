@@ -3,24 +3,27 @@ import chisel3._
 import chisel3.util._
 
 object UartState extends ChiselEnum {
-  val IDLE, START, DATA, STOP = Value
+  val IDLE = Value(0.U(2.W))
+  val START = Value(1.U(2.W))
+  val DATA = Value(2.U(2.W))
+  val STOP = Value(3.U(2.W))
 }
 
-class ByteLevelUartTXIO extends Bundle {
+class UartTXIO extends Bundle {
   val txd     = Output(Bool())
   val channel = Flipped(Decoupled(UInt(8.W)))
   val busy    = Output(Bool())
 }
 
-class ByteLevelUartRXIO extends Bundle {
+class UartRXIO extends Bundle {
   val rxd     = Input(Bool())
   val channel = Decoupled(UInt(8.W))
   val error   = Output(Bool())
 }
 
-class ByteLevelUartTX(baudRate: Int, clkFreq: Int) extends Module {
-  override def desiredName: String = s"uart_tx_byte_level_b${baudRate}_f$clkFreq"
-  val io                           = IO(new ByteLevelUartTXIO).suggestName("UART_TX")
+class UartTX(baudRate: Int, clkFreq: Int) extends Module {
+  override def desiredName: String = s"uart_tx_b${baudRate}_f$clkFreq"
+  val io                           = IO(new UartTXIO).suggestName("UART_TX")
   val baudTickDivider              = clkFreq / baudRate
 
   val state       = RegInit(UartState.IDLE)
@@ -73,9 +76,9 @@ class ByteLevelUartTX(baudRate: Int, clkFreq: Int) extends Module {
   }
 }
 
-class ByteLevelUartRX(baudRate: Int, clkFreq: Int) extends Module {
-  override def desiredName: String = s"uart_rx_byte_level_b${baudRate}_f$clkFreq"
-  val io                           = IO(new ByteLevelUartRXIO).suggestName("UART_RX")
+class UartRX(baudRate: Int, clkFreq: Int) extends Module {
+  override def desiredName: String = s"uart_rx_b${baudRate}_f$clkFreq"
+  val io                           = IO(new UartRXIO).suggestName("UART_RX")
   val baudTickDivider              = clkFreq / baudRate
 
   val state       = RegInit(UartState.IDLE)
@@ -133,15 +136,15 @@ class ByteLevelUartRX(baudRate: Int, clkFreq: Int) extends Module {
   }
 }
 
-class ByteLevelUart(baudRate: Int, clkFreq: Int) extends Module {
-  override def desiredName: String = s"uart_byte_level_b${baudRate}_f$clkFreq"
+class Uart(baudRate: Int, clkFreq: Int) extends Module {
+  override def desiredName: String = s"uart_b${baudRate}_f$clkFreq"
   val io                           = IO(new Bundle {
-    val tx = new ByteLevelUartTXIO
-    val rx = new ByteLevelUartRXIO
+    val tx = new UartTXIO
+    val rx = new UartRXIO
   }).suggestName("UART")
 
-  val tx = Module(new ByteLevelUartTX(baudRate, clkFreq))
-  val rx = Module(new ByteLevelUartRX(baudRate, clkFreq))
+  val tx = Module(new UartTX(baudRate, clkFreq))
+  val rx = Module(new UartRX(baudRate, clkFreq))
 
   tx.io <> io.tx
   rx.io <> io.rx

@@ -10,9 +10,9 @@ package object utils {
   implicit val sintArithmetic: Arithmetic[SInt] = ArithmeticInstances.sintArithmetic
   implicit val fpArithmetic: Arithmetic[FP]     = ArithmeticInstances.fpArithmetic
 
-  implicit def arithmeticSyntax[T <: Data](x: T): ArithmeticSyntax.ArithmeticOps[T] =
-    new ArithmeticSyntax.ArithmeticOps(x)
-
   implicit def partialOrderedSyntax[T <: Data](x: T): PartialOrderedSyntax.PartialOrderedOps[T] =
     new PartialOrderedSyntax.PartialOrderedOps(x)
+
+  implicit def arithmeticSyntax[T <: Data](x: T): ArithmeticSyntax.ArithmeticOps[T] =
+    new ArithmeticSyntax.ArithmeticOps(x)
 }
