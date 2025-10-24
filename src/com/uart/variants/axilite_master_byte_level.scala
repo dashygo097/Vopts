@@ -5,19 +5,21 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-object MasterByteLevelUartState extends ChiselEnum {
-  val sIdle      = Value(0.U)
-  val sWriteAddr = Value(1.U)
-  val sWriteData = Value(2.U)
-  val sWriteResp = Value(3.U)
-  val sReadAddr  = Value(4.U)
-  val sReadData  = Value(5.U)
+object MasterUartState extends ChiselEnum {
+  val IDLE      = Value(0.U(4.W))
+
+  val WRITE_ADDR = Value(1.U(4.W))
+  val WRITE_DATA = Value(2.U(4.W))
+  val WRITE_RESP = Value(3.U(4.W))
+
+  val READ_ADDR  = Value(4.U(4.W))
+  val READ_DATA  = Value(5.U(4.W))
 }
 
-class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: Int, clkFreq: Int)
+class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option: UartCmdOption)
     extends Module {
   override def desiredName: String =
-    s"axilite_master_uart_cmd_${addrWidth}x${dataWidth}_b${baudRate}_f$clkFreq"
+    s"axilite_master_uart_cmd_${addrWidth}x${dataWidth}_b${option.baudRate}_f${clkFreq}"
 
   // AXI Lite Master Interface
   val ext_axi   = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)).suggestName("M_AXI")
@@ -27,10 +29,10 @@ class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: In
   val cmd_valid = IO(Output(Bool())).suggestName("CMD_VALID")
   val cmd_type  = IO(Output(UartCmdType())).suggestName("CMD_TYPE")
 
-  val uart_cmd = Module(new ByteLevelUartCmdProcessor(baudRate, clkFreq))
+  val uart_cmd = Module(new UartCmdProcessor(clkFreq, option))
 
   // State machine for AXI transactions
-  val state = RegInit(MasterByteLevelUartState.sIdle)
+  val state = RegInit(MasterUartState.IDLE)
 
   // Registers for AXI signals
   val axi_awaddr  = RegInit(0.U(addrWidth.W))
@@ -71,7 +73,7 @@ class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: In
 
   // State Machine
   switch(state) {
-    is(MasterByteLevelUartState.sIdle) {
+    is(MasterUartState.IDLE) {
       when(uart_cmd.io.cmd_valid) {
         when(uart_cmd.io.cmd_type === UartCmdType.WRITE) {
           axi_awaddr  := uart_cmd.io.cmd_addr
@@ -80,16 +82,16 @@ class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: In
           axi_wvalid  := true.B
           aw_done     := false.B
           w_done      := false.B
-          state       := MasterByteLevelUartState.sWriteAddr
+          state       := MasterUartState.WRITE_ADDR
         }.elsewhen(uart_cmd.io.cmd_type === UartCmdType.READ) {
           axi_araddr  := uart_cmd.io.cmd_addr
           axi_arvalid := true.B
-          state       := MasterByteLevelUartState.sReadAddr
+          state       := MasterUartState.READ_ADDR
         }
       }
     }
 
-    is(MasterByteLevelUartState.sWriteAddr) {
+    is(MasterUartState.WRITE_ADDR) {
       when(axi.aw.ready && axi_awvalid) {
         axi_awvalid := false.B
         aw_done     := true.B
@@ -101,33 +103,33 @@ class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: In
 
       when(aw_done && w_done) {
         axi_bready := true.B
-        state      := MasterByteLevelUartState.sWriteResp
+        state      := MasterUartState.WRITE_RESP
       }
     }
 
-    is(MasterByteLevelUartState.sWriteResp) {
+    is(MasterUartState.WRITE_RESP) {
       when(axi.b.valid && axi_bready) {
         axi_bready             := false.B
         uart_cmd.io.resp_valid := true.B
         uart_cmd.io.resp_rdata := 0.U
-        state                  := MasterByteLevelUartState.sIdle
+        state                  := MasterUartState.IDLE
       }
     }
 
-    is(MasterByteLevelUartState.sReadAddr) {
+    is(MasterUartState.READ_ADDR) {
       when(axi.ar.ready && axi_arvalid) {
         axi_arvalid := false.B
         axi_rready  := true.B
-        state       := MasterByteLevelUartState.sReadData
+        state       := MasterUartState.READ_DATA
       }
     }
 
-    is(MasterByteLevelUartState.sReadData) {
+    is(MasterUartState.READ_DATA) {
       when(axi.r.valid && axi_rready) {
         axi_rready             := false.B
         uart_cmd.io.resp_valid := true.B
         uart_cmd.io.resp_rdata := axi.r.bits.data
-        state                  := MasterByteLevelUartState.sIdle
+        state                  := MasterUartState.IDLE
       }
     }
   }
@@ -135,6 +137,6 @@ class AXILiteMasterByteLevelUartCmd(addrWidth: Int, dataWidth: Int, baudRate: In
   ext_axi.connect(axi)
 }
 
-object TestAXILiteMasterByteLevelUartCmd extends App {
-  VerilogEmitter.parse(new AXILiteMasterByteLevelUartCmd(32, 32, 115200, 100000000), "axi_lite_master_uart_cmd_byte_level.sv", info=true)
+object TestAXILiteMasterUartCmd extends App {
+  VerilogEmitter.parse(new AXILiteMasterUartCmd(32, 32, 100000000, UartCmdOption(115200)), "axi_lite_master_uart_cmd.sv", info=true)
 }
