@@ -3,9 +3,7 @@ package math
 import utils._
 import chisel3._
 
-class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T])
-    extends Bundle
-    with VectorOps[T] {
+class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Bundle with VectorOps[T] {
   var _size = size
 
   val value = Vec(size, gen.cloneType)

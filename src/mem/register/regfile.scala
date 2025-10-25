@@ -18,8 +18,7 @@ class DualPortRegFileIO(numRegs: Int, dataWidth: Int) extends Bundle {
   val rs2_fwd = Output(Bool())
 }
 
-class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq())
-    extends Module {
+class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq()) extends Module {
   override def desiredName: String = s"dual_port_regfile_b${dataWidth}_r$numRegs"
 
   val io     = IO(new DualPortRegFileIO(numRegs, dataWidth)).suggestName("REGFILE")
@@ -66,5 +65,16 @@ class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = S
 }
 
 object TestDualPortRegFile extends App {
-  VerilogEmitter.parse(new DualPortRegFile(32, 32, Seq(Register("x0", 0x0, 0x0L, writable=false, readable=true), Register("x1", 0x1, 0x0L, writable=false, readable=false))), "dual_port_regfile.sv", info=true)
+  VerilogEmitter.parse(
+    new DualPortRegFile(
+      32,
+      32,
+      Seq(
+        Register("x0", 0x0, 0x0L, writable = false, readable = true),
+        Register("x1", 0x1, 0x0L, writable = false, readable = false)
+      )
+    ),
+    "dual_port_regfile.sv",
+    info = true
+  )
 }

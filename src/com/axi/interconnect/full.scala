@@ -218,8 +218,18 @@ object AXIFullInterconnect {
 }
 
 object TestAXIFullInterconnect extends App {
-  VerilogEmitter.parse(new AXIFullInterconnect(32, 32, 4, 1, Seq(
-    (0x80000000L, 0x90000000L),
-    (0x90000000L, 0xA0000000L)
-  )), "axi_full_interconnect.sv", info=true)
+  VerilogEmitter.parse(
+    new AXIFullInterconnect(
+      32,
+      32,
+      4,
+      1,
+      Seq(
+        (0x80000000L, 0x90000000L),
+        (0x90000000L, 0xa0000000L)
+      )
+    ),
+    "axi_full_interconnect.sv",
+    info = true
+  )
 }

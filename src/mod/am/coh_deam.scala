@@ -12,7 +12,8 @@ class AnalogSyncDetectorIO[T <: Data](gen: T) extends Bundle {
   val out     = Output(gen)
 }
 
-class SDDeAM[T <: Data](gen: T,
+class SDDeAM[T <: Data](
+  gen: T,
   carrierFreq: Int,
   baseFreqLimit: Double,
   phaseWidth: Int,
@@ -30,8 +31,8 @@ class SDDeAM[T <: Data](gen: T,
   io.out    := fir.io.out
 }
 
-class ASDDeAM[T <: Data](gen: T)(baseFreqLimit: Double, clkFreq: Int, filterOrder: Int = 64)(
-  implicit analog: Analog[T]
+class ASDDeAM[T <: Data](gen: T)(baseFreqLimit: Double, clkFreq: Int, filterOrder: Int = 64)(implicit
+  analog: Analog[T]
 ) extends Module {
   override def desiredName = s"deam_asd_fl${baseFreqLimit}_o$filterOrder"
   val io                   = IO(new AnalogSyncDetectorIO(gen))

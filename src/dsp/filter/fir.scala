@@ -4,7 +4,8 @@ import scala.sys.process._
 import utils._
 import chisel3._
 
-class FIRFilter[T <: Data](gen: T, 
+class FIRFilter[T <: Data](
+  gen: T,
   filterType: String,
   cutoff: Seq[Double],
   order: Int,

@@ -5,7 +5,8 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class CWDDS[T <: Data](gen: T, 
+class CWDDS[T <: Data](
+  gen: T,
   mag: Double,
   freq: Int,
   pha: Double,
@@ -33,7 +34,8 @@ class CWDDS[T <: Data](gen: T,
   io.out  := sine_rom(lutAddr) * gen.fromDouble(mag)
 }
 
-class MultiCWDDS[T <: Data](gen: T, 
+class MultiCWDDS[T <: Data](
+  gen: T,
   mags: Seq[Double],
   freqs: Seq[Int],
   phas: Seq[Double],

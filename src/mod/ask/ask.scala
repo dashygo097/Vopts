@@ -9,7 +9,8 @@ class ASKIO[T <: Data](gen: T) extends Bundle {
   val out  = Output(gen)
 }
 
-class ASK[T <: Data](gen: T, 
+class ASK[T <: Data](
+  gen: T,
   mag: Double,
   carrierFreq: Int,
   phaseDelta: Int,

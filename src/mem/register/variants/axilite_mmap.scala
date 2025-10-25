@@ -123,7 +123,11 @@ object TestAXILiteSlaveMMapDemo extends App {
     Register("slv_reg0", 0x10000L, 0x0L),
     Register("slv_reg1", 0x14000L, 0x0L),
     Register("slv_reg2", 0x18000L, 0x0L),
-    Register("slv_reg3", 0x1C000L, 0x0L)
-    )
-  VerilogEmitter.parse(new AXILiteSlaveMMapRegs(32, 32, mmap), "axi_lite_slave_mmap.sv", info=true)
+    Register("slv_reg3", 0x1c000L, 0x0L)
+  )
+  VerilogEmitter.parse(
+    new AXILiteSlaveMMapRegs(32, 32, mmap),
+    "axi_lite_slave_mmap.sv",
+    info = true
+  )
 }

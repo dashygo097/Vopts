@@ -10,8 +10,8 @@ class BPSKIO[T <: Data](gen: T) extends Bundle {
   val out  = Output(gen)
 }
 
-class BPSK[T <: Data](gen: T)(carrierFreq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(
-  implicit analog: Analog[T]
+class BPSK[T <: Data](gen: T)(carrierFreq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(implicit
+  analog: Analog[T]
 ) extends Module {
   override def desiredName = s"bpsk_cf$carrierFreq"
   val io                   = IO(new BPSKIO(gen)).suggestName("BPSK")
@@ -26,8 +26,8 @@ class QPSKIO[T <: Data](gen: T) extends Bundle {
   val out  = Output(gen)
 }
 
-class QPSK[T <: Data](gen: T, carrierFreq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(
-  implicit analog: Analog[T]
+class QPSK[T <: Data](gen: T, carrierFreq: Int, phaseWidth: Int, lutWidth: Int, clkFreq: Int)(implicit
+  analog: Analog[T]
 ) extends Module {
   override def desiredName = s"qpsk_cf$carrierFreq"
   val io                   = IO(new QPSKIO(gen)).suggestName("QPSK")

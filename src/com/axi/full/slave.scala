@@ -3,8 +3,7 @@ package com.axi
 import chisel3._
 import chisel3.util._
 
-class AXIFullSlaveIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0)
-    extends Bundle {
+class AXIFullSlaveIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
   val aWidth = addrWidth
   val dWidth = dataWidth
@@ -27,8 +26,7 @@ object AXIFullSlaveIO {
     new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth)
 }
 
-class AXIFullSlaveExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0)
-    extends Bundle {
+class AXIFullSlaveExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
   val AWADDR   = Input(UInt(addrWidth.W))
   val AWPROT   = Input(UInt(3.W))
   val AWVALID  = Input(Bool())

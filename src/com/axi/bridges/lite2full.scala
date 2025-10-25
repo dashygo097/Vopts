@@ -4,8 +4,7 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class AXILite2FullBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0)
-    extends Module {
+class AXILite2FullBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Module {
   override def desiredName: String =
     s"axi_lite2full_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
@@ -151,8 +150,10 @@ object AXILite2FullBridge {
     Module(new AXILite2FullBridge(addrWidth, dataWidth, idWidth, userWidth))
 }
 
-
 object TestAXILite2FullBridge extends App {
-  VerilogEmitter.parse(new AXILite2FullBridge(32, 32, 4, 1), "axi_lite_to_full_bridge.sv", info=true)
+  VerilogEmitter.parse(
+    new AXILite2FullBridge(32, 32, 4, 1),
+    "axi_lite_to_full_bridge.sv",
+    info = true
+  )
 }
-
