@@ -6,14 +6,22 @@ import chisel3._
 import chisel3.util._
 
 object MasterUartState extends ChiselEnum {
-  val IDLE      = Value(0.U(4.W))
+  val IDLE           = Value(0.U(4.W))
 
-  val WRITE_ADDR = Value(1.U(4.W))
-  val WRITE_DATA = Value(2.U(4.W))
-  val WRITE_RESP = Value(3.U(4.W))
+  // WRITE states
+  val WRITE_ADDR     = Value(1.U(4.W))
+  val WRITE_DATA     = Value(2.U(4.W))
+  val WRITE_RESP     = Value(3.U(4.W))
 
-  val READ_ADDR  = Value(4.U(4.W))
-  val READ_DATA  = Value(5.U(4.W))
+  // READ states
+  val READ_ADDR      = Value(4.U(4.W))
+  val READ_DATA      = Value(5.U(4.W))
+
+  // MOVE states (ALL CAPS)
+  val MOVE_READ_ADDR  = Value(6.U(4.W))
+  val MOVE_READ_DATA  = Value(7.U(4.W))
+  val MOVE_WRITE_ADDR = Value(8.U(4.W))
+  val MOVE_WRITE_RESP = Value(9.U(4.W))
 }
 
 class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option: UartCmdOption)
@@ -47,6 +55,11 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
   // Tracking registers for handshake completion
   val aw_done = RegInit(false.B)
   val w_done  = RegInit(false.B)
+
+  // MOVE helpers
+  val move_src_addr = RegInit(0.U(addrWidth.W))
+  val move_dst_addr = RegInit(0.U(addrWidth.W))
+  val move_data_buf = RegInit(0.U(dataWidth.W))
 
   // AXI Interface Connections
   axi.aw.bits.addr := axi_awaddr
@@ -87,6 +100,12 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
           axi_araddr  := uart_cmd.io.cmd_addr
           axi_arvalid := true.B
           state       := MasterUartState.READ_ADDR
+        }.elsewhen(uart_cmd.io.cmd_type === UartCmdType.MOVE) {
+          move_src_addr := uart_cmd.io.cmd_addr
+          move_dst_addr := uart_cmd.io.cmd_wdata
+          axi_araddr    := uart_cmd.io.cmd_addr
+          axi_arvalid   := true.B
+          state         := MasterUartState.MOVE_READ_ADDR
         }
       }
     }
@@ -132,11 +151,63 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
         state                  := MasterUartState.IDLE
       }
     }
+
+    // MOVE: READ phase
+    is(MasterUartState.MOVE_READ_ADDR) {
+      when(axi.ar.ready && axi_arvalid) {
+        axi_arvalid := false.B
+        axi_rready  := true.B
+        state       := MasterUartState.MOVE_READ_DATA
+      }
+    }
+
+    is(MasterUartState.MOVE_READ_DATA) {
+      when(axi.r.valid && axi_rready) {
+        axi_rready    := false.B
+        move_data_buf := axi.r.bits.data
+        axi_awaddr  := move_dst_addr
+        axi_wdata   := axi.r.bits.data
+        axi_awvalid := true.B
+        axi_wvalid  := true.B
+        aw_done     := false.B
+        w_done      := false.B
+        state       := MasterUartState.MOVE_WRITE_ADDR
+      }
+    }
+
+    // MOVE: WRITE phase
+    is(MasterUartState.MOVE_WRITE_ADDR) {
+      when(axi.aw.ready && axi_awvalid) {
+        axi_awvalid := false.B
+        aw_done     := true.B
+      }
+      when(axi.w.ready && axi_wvalid) {
+        axi_wvalid := false.B
+        w_done     := true.B
+      }
+      when(aw_done && w_done) {
+        axi_bready := true.B
+        state      := MasterUartState.MOVE_WRITE_RESP
+      }
+    }
+
+    is(MasterUartState.MOVE_WRITE_RESP) {
+      when(axi.b.valid && axi_bready) {
+        axi_bready             := false.B
+        uart_cmd.io.resp_valid := true.B
+        uart_cmd.io.resp_rdata := move_data_buf // return moved data; change to 0.U for ACK only
+        state                  := MasterUartState.IDLE
+      }
+    }
   }
 
   ext_axi.connect(axi)
 }
 
 object TestAXILiteMasterUartCmd extends App {
-  VerilogEmitter.parse(new AXILiteMasterUartCmd(32, 32, 100000000, UartCmdOption(115200)), "axi_lite_master_uart_cmd.sv", info=true)
+  VerilogEmitter.parse(
+    new AXILiteMasterUartCmd(32, 32, 100000000, UartCmdOption(115200)),
+    "axi_lite_master_uart_cmd.sv",
+    info = true
+  )
 }

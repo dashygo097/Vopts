@@ -6,7 +6,7 @@ case class UartCmdOption (
   baudRate: Int = 115200,
   read: Boolean = true,
   write: Boolean = true,
-  move: Boolean = false 
+  move: Boolean = true 
 )
 
 object UartCmdType extends ChiselEnum {
