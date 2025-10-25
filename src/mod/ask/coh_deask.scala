@@ -11,7 +11,8 @@ class EnvelopDetectorIO[T <: Data](gen: T) extends Bundle {
   val data = Output(Bool())
 }
 
-class EDDeASK[T <: Data](gen: T, 
+class EDDeASK[T <: Data](
+  gen: T,
   baseFreqLimit: Double,
   threshold: Double,
   clkFreq: Int,

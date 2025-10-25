@@ -5,12 +5,12 @@ import chisel3._
 import chisel3.util._
 
 object MasterRWState extends ChiselEnum {
-  val sIDLE       = Value(0.U)
-  val sWRITE_ADDR = Value(1.U)
-  val sWRITE_DATA = Value(2.U)
-  val sWRITE_RESP = Value(3.U)
-  val sREAD_ADDR  = Value(4.U)
-  val sREAD_DATA  = Value(5.U)
+  val IDLE       = Value(0.U(3.W))
+  val WRITE_ADDR = Value(1.U(3.W))
+  val WRITE_DATA = Value(2.U(3.W))
+  val WRITE_RESP = Value(3.U(3.W))
+  val READ_ADDR  = Value(4.U(3.W))
+  val READ_DATA  = Value(5.U(3.W))
 }
 
 class AXILiteMasterRW(
@@ -40,7 +40,7 @@ class AXILiteMasterRW(
   val busy = IO(Output(Bool())).suggestName("BUSY")
 
   // FSM state definitions
-  val state = RegInit(MasterRWState.sIDLE)
+  val state = RegInit(MasterRWState.IDLE)
 
   // Internal registers for AXI signals
   val axi_awaddr  = RegInit(0.U(addrWidth.W))
@@ -71,11 +71,11 @@ class AXILiteMasterRW(
   write_resp := 0.U
   read_resp  := 0.U
   read_data  := axi.r.bits.data
-  busy       := (state =/= MasterRWState.sIDLE)
+  busy       := (state =/= MasterRWState.IDLE)
 
   // State Machine Logic
   switch(state) {
-    is(MasterRWState.sIDLE) {
+    is(MasterRWState.IDLE) {
       axi_awvalid := false.B
       axi_wvalid  := false.B
       axi_bready  := false.B
@@ -83,37 +83,37 @@ class AXILiteMasterRW(
       axi_rready  := false.B
 
       when(write_en) {
-        state       := MasterRWState.sWRITE_ADDR
+        state       := MasterRWState.WRITE_ADDR
         axi_awaddr  := write_addr
         axi_wdata   := write_data
         axi_awvalid := true.B
       }.elsewhen(read_en) {
-        state       := MasterRWState.sREAD_ADDR
+        state       := MasterRWState.READ_ADDR
         axi_araddr  := read_addr
         axi_arvalid := true.B
       }
     }
 
     // --- WRITE STATES ---
-    is(MasterRWState.sWRITE_ADDR) {
+    is(MasterRWState.WRITE_ADDR) {
       when(axi.aw.ready) {
-        state       := MasterRWState.sWRITE_DATA
+        state       := MasterRWState.WRITE_DATA
         axi_awvalid := false.B
         axi_wvalid  := true.B
       }
     }
 
-    is(MasterRWState.sWRITE_DATA) {
+    is(MasterRWState.WRITE_DATA) {
       when(axi.w.ready) {
-        state      := MasterRWState.sWRITE_RESP
+        state      := MasterRWState.WRITE_RESP
         axi_wvalid := false.B
         axi_bready := true.B
       }
     }
 
-    is(MasterRWState.sWRITE_RESP) {
+    is(MasterRWState.WRITE_RESP) {
       when(axi.b.valid) {
-        state      := MasterRWState.sIDLE
+        state      := MasterRWState.IDLE
         axi_bready := false.B
         write_done := true.B
         write_resp := axi.b.bits.resp
@@ -121,17 +121,17 @@ class AXILiteMasterRW(
     }
 
     // --- READ STATES ---
-    is(MasterRWState.sREAD_ADDR) {
+    is(MasterRWState.READ_ADDR) {
       when(axi.ar.ready) {
-        state       := MasterRWState.sREAD_DATA
+        state       := MasterRWState.READ_DATA
         axi_arvalid := false.B
         axi_rready  := true.B
       }
     }
 
-    is(MasterRWState.sREAD_DATA) {
+    is(MasterRWState.READ_DATA) {
       when(axi.r.valid) {
-        state      := MasterRWState.sIDLE
+        state      := MasterRWState.IDLE
         axi_rready := false.B
         read_done  := true.B
         read_resp  := axi.r.bits.resp
@@ -142,7 +142,6 @@ class AXILiteMasterRW(
   ext_axi.connect(axi)
 }
 
-
 object TestAXILiteMasterRW extends App {
-  VerilogEmitter.parse(new AXILiteMasterRW(32, 32), "axi_lite_master_rw.sv", info=true)
+  VerilogEmitter.parse(new AXILiteMasterRW(32, 32), "axi_lite_master_rw.sv", info = true)
 }

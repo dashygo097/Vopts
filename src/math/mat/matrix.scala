@@ -3,9 +3,7 @@ package math
 import utils._
 import chisel3._
 
-class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T])
-    extends Bundle
-    with MatrixOps[T] {
+class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T]) extends Bundle with MatrixOps[T] {
   var _row = row
   var _col = col
 
@@ -41,9 +39,7 @@ class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T])
   def fromSeq(seq: Seq[Seq[T]]): Matrix[T] = {
     require(
       seq.length == _row && seq.forall(_.length == _col),
-      s"Matrix size mismatch: expected ${_row}x${_col}, got ${seq.length}x${
-          if (seq.nonEmpty) seq.head.length else 0
-        }"
+      s"Matrix size mismatch: expected ${_row}x${_col}, got ${seq.length}x${if (seq.nonEmpty) seq.head.length else 0}"
     )
     for (r <- 0 until _row)
       value(r) := seq(r).map(_.asTypeOf(gen)).toVector
@@ -142,9 +138,7 @@ object mat2x2 {
   def apply[T <: Data](seq: Seq[Seq[T]])(implicit ev: Arithmetic[T]): Matrix[T]       = {
     require(
       seq.length == 2 && seq.forall(_.length == 2),
-      s"mat2x2 requires exactly 2x2 elements, got ${seq.length}x${
-          if (seq.nonEmpty) seq.head.length else 0
-        }"
+      s"mat2x2 requires exactly 2x2 elements, got ${seq.length}x${if (seq.nonEmpty) seq.head.length else 0}"
     )
     new Matrix(seq.head.head, 2, 2).fromSeq(seq)
   }
@@ -188,9 +182,7 @@ object mat3x3 {
   def apply[T <: Data](seq: Seq[Seq[T]])(implicit ev: Arithmetic[T]): Matrix[T]                = {
     require(
       seq.length == 3 && seq.forall(_.length == 3),
-      s"mat3x3 requires exactly 3x3 elements, got ${seq.length}x${
-          if (seq.nonEmpty) seq.head.length else 0
-        }"
+      s"mat3x3 requires exactly 3x3 elements, got ${seq.length}x${if (seq.nonEmpty) seq.head.length else 0}"
     )
     new Matrix(seq.head.head, 3, 3).fromSeq(seq)
   }
@@ -265,9 +257,7 @@ object mat4x4 {
   def apply[T <: Data](seq: Seq[Seq[T]])(implicit ev: Arithmetic[T]): Matrix[T] = {
     require(
       seq.length == 4 && seq.forall(_.length == 4),
-      s"mat4x4 requires exactly 4x4 elements, got ${seq.length}x${
-          if (seq.nonEmpty) seq.head.length else 0
-        }"
+      s"mat4x4 requires exactly 4x4 elements, got ${seq.length}x${if (seq.nonEmpty) seq.head.length else 0}"
     )
     new Matrix(seq.head.head, 4, 4).fromSeq(seq)
   }

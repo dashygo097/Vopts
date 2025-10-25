@@ -162,11 +162,17 @@ object AXILiteInterconnect {
     Module(new AXILiteInterconnect(addrWidth, dataWidth, addressMap))
 }
 
-
 object TestAXILiteInterconnect extends App {
-  VerilogEmitter.parse(new AXILiteInterconnect(32, 32, Seq(
-    (0x80000000L, 0x90000000L),
-    (0x90000000L, 0xA0000000L)
-  )), "axi_lite_interconnect.sv", info=true)
+  VerilogEmitter.parse(
+    new AXILiteInterconnect(
+      32,
+      32,
+      Seq(
+        (0x80000000L, 0x90000000L),
+        (0x90000000L, 0xa0000000L)
+      )
+    ),
+    "axi_lite_interconnect.sv",
+    info = true
+  )
 }
-

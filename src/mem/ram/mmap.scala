@@ -18,8 +18,7 @@ class MMapRegionIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val read_resp = Output(Bool()) // true = OKAY, false = SLVERR
 }
 
-class MMapRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigInt = 0x0)
-    extends Module {
+class MMapRegion(addrWidth: Int, dataWidth: Int, memSize: BigInt, baseAddr: BigInt = 0x0) extends Module {
   override def desiredName: String =
     s"ram_${addrWidth}x${dataWidth}_s${memSize}_b$baseAddr"
   val maxAddrValue                 = BigInt(1) << addrWidth

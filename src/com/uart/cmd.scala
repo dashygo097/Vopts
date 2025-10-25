@@ -15,7 +15,7 @@ class UartCmdProcessorIO extends Bundle {
 }
 
 class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
-  override def desiredName: String = s"uart_level_b${option.baudRate}_f${clkFreq}"
+  override def desiredName: String = s"uart_level_b${option.baudRate}_f$clkFreq"
   val io                           = IO(new UartCmdProcessorIO).suggestName("UART_CMD")
 
   val uart_tx = Module(new UartTX(option.baudRate, clkFreq))
@@ -62,11 +62,13 @@ class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
 
         when(next_byte_cnt === 9.U) {
           cmd_valid_reg := true.B
-          cmd_type_reg  := MuxLookup(rx_buffer(0), UartCmdType.WRITE)(Seq(
-            0.U -> UartCmdType.WRITE,
-            1.U -> UartCmdType.READ,
-            2.U -> UartCmdType.MOVE
-          ))
+          cmd_type_reg  := MuxLookup(rx_buffer(0), UartCmdType.WRITE)(
+            Seq(
+              0.U -> UartCmdType.WRITE,
+              1.U -> UartCmdType.READ,
+              2.U -> UartCmdType.MOVE
+            )
+          )
           cmd_addr_reg  := Cat(rx_buffer(4), rx_buffer(3), rx_buffer(2), rx_buffer(1))
           cmd_wdata_reg := Cat(uart_rx.io.channel.bits, rx_buffer(7), rx_buffer(6), rx_buffer(5))
           rx_state      := 0.U

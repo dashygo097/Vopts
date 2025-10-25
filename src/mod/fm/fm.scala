@@ -6,7 +6,8 @@ import scala.math._
 import utils._
 import chisel3._
 
-class FM[T <: Data](gen: T, 
+class FM[T <: Data](
+  gen: T,
   mag: Double,
   carrierFreq: Int,
   deltaFreq: Int,

@@ -6,16 +6,16 @@ import chisel3._
 import chisel3.util._
 
 object MasterUartState extends ChiselEnum {
-  val IDLE           = Value(0.U(4.W))
+  val IDLE = Value(0.U(4.W))
 
   // WRITE states
-  val WRITE_ADDR     = Value(1.U(4.W))
-  val WRITE_DATA     = Value(2.U(4.W))
-  val WRITE_RESP     = Value(3.U(4.W))
+  val WRITE_ADDR = Value(1.U(4.W))
+  val WRITE_DATA = Value(2.U(4.W))
+  val WRITE_RESP = Value(3.U(4.W))
 
   // READ states
-  val READ_ADDR      = Value(4.U(4.W))
-  val READ_DATA      = Value(5.U(4.W))
+  val READ_ADDR = Value(4.U(4.W))
+  val READ_DATA = Value(5.U(4.W))
 
   // MOVE states (ALL CAPS)
   val MOVE_READ_ADDR  = Value(6.U(4.W))
@@ -24,10 +24,9 @@ object MasterUartState extends ChiselEnum {
   val MOVE_WRITE_RESP = Value(9.U(4.W))
 }
 
-class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option: UartCmdOption)
-    extends Module {
+class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option: UartCmdOption) extends Module {
   override def desiredName: String =
-    s"axilite_master_uart_cmd_${addrWidth}x${dataWidth}_b${option.baudRate}_f${clkFreq}"
+    s"axilite_master_uart_cmd_${addrWidth}x${dataWidth}_b${option.baudRate}_f$clkFreq"
 
   // AXI Lite Master Interface
   val ext_axi   = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)).suggestName("M_AXI")
@@ -165,13 +164,13 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
       when(axi.r.valid && axi_rready) {
         axi_rready    := false.B
         move_data_buf := axi.r.bits.data
-        axi_awaddr  := move_dst_addr
-        axi_wdata   := axi.r.bits.data
-        axi_awvalid := true.B
-        axi_wvalid  := true.B
-        aw_done     := false.B
-        w_done      := false.B
-        state       := MasterUartState.MOVE_WRITE_ADDR
+        axi_awaddr    := move_dst_addr
+        axi_wdata     := axi.r.bits.data
+        axi_awvalid   := true.B
+        axi_wvalid    := true.B
+        aw_done       := false.B
+        w_done        := false.B
+        state         := MasterUartState.MOVE_WRITE_ADDR
       }
     }
 

@@ -5,7 +5,8 @@ import math._
 import utils._
 import chisel3._
 
-class DeFM[T <: Data](gen: T, 
+class DeFM[T <: Data](
+  gen: T,
   carrierFreq: Int,
   deltaFreq: Double,
   clkFreq: Int,
@@ -15,7 +16,8 @@ class DeFM[T <: Data](gen: T,
   override def desiredName = s"defm_o${filterOrder}_cf${carrierFreq}_df$deltaFreq"
   val io                   = IO(new SISO(gen)).suggestName("DeFM")
   val bps                  = Module(
-    new FIRFilter(gen, 
+    new FIRFilter(
+      gen,
       "bp",
       Seq(carrierFreq - deltaFreq * 2, carrierFreq + deltaFreq * 2),
       filterOrder,
