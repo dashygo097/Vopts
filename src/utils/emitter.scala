@@ -7,7 +7,7 @@ object VerilogEmitter {
   def parse(
     gen: => chisel3.Module,
     filename: String,
-    info: Boolean = false,
+    info: Boolean = true,
     options: Seq[String] = Seq()
   ): Unit = {
     val code = ChiselStage.emitSystemVerilog(
