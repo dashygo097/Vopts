@@ -22,6 +22,15 @@ class FPConverter(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int) extends Modu
   io.out := new FP(out_dw, out_bp).fromSInt(shifted)
 }
 
-object FPConverter extends App {
-  VerilogEmitter.parse(new FPConverter(32, 16, 16, 8), "123.sv")
+object FPConverter {
+  def apply(out_dw: Int, out_bp: Int)(in: FP): FP = {
+    val converter = Module(new FPConverter(in.dw(), in.bp(), out_dw, out_bp))
+    converter.io.in := in
+    converter.io.out
+  }
+  def apply(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int)(in: FP): FP = {
+    val converter = Module(new FPConverter(in_dw, in_bp, out_dw, out_bp))
+    converter.io.in := in
+    converter.io.out
+  }
 }

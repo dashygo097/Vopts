@@ -19,6 +19,8 @@ class Butterfly(dw: Int, bp: Int) extends Module {
 }
 
 object Butterfly {
+  def apply(dw: Int, bp: Int): Butterfly                                           =
+    Module(new Butterfly(dw, bp))
   def apply(in1: FPComplex, in2: FPComplex, wn: FPComplex): (FPComplex, FPComplex) = {
     in1.requireCompatible(in2)
     in1.requireCompatible(wn)

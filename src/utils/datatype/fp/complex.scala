@@ -5,7 +5,7 @@ import chisel3._
 
 class FPComplex(dw: Int, bp: Int) extends Bundle {
   val real = SInt(dw.W)
-  val imag = SInt(bp.W)
+  val imag = SInt(dw.W)
 
   def dw(): Int = dw
   def bp(): Int = bp
@@ -59,9 +59,7 @@ class FPComplex(dw: Int, bp: Int) extends Bundle {
 object FPComplex {
   def apply(dw: Int, bp: Int): FPComplex                             =
     new FPComplex(dw, bp)
-  def apply(c: FPComplex): FPComplex                                 =
-    new FPComplex(c.dw(), c.bp())
-  def apply(real: Double, imag: Double, dw: Int, bp: Int): FPComplex = {
+  def apply(dw: Int, bp: Int, real: Double, imag: Double): FPComplex = {
     val c = new FPComplex(dw, bp)
     c.fromDouble(real, imag)
   }
