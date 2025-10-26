@@ -66,3 +66,33 @@ class MultiCWDDS[T <: Data](
     io.out(ch) := sine_rom(addr) * gen.fromDouble(mags(ch))
   }
 }
+
+object CWDDS {
+  def apply[T <: Data](
+    gen: T,
+    mag: Double,
+    freq: Int,
+    pha: Double,
+    phaseWidth: Int,
+    lutWidth: Int,
+    clkFreq: Int
+  )(implicit analog: Analog[T]): T = {
+    val dds = Module(new CWDDS(gen, mag, freq, pha, phaseWidth, lutWidth, clkFreq))
+    dds.io.out
+  }
+}
+
+object MultiCWDDS {
+  def apply[T <: Data](
+    gen: T,
+    mags: Seq[Double],
+    freqs: Seq[Int],
+    phas: Seq[Double],
+    phaseWidth: Int,
+    lutWidth: Int,
+    clkFreq: Int
+  )(implicit analog: Analog[T]): Seq[T] = {
+    val dds = Module(new MultiCWDDS(gen, mags, freqs, phas, phaseWidth, lutWidth, clkFreq))
+    dds.io.out
+  }
+}

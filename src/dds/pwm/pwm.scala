@@ -25,3 +25,10 @@ class PWMDDS(freq: Int, dutyCycle: Double, clkFreq: Int) extends Module {
 
   io.out := pwmOut
 }
+
+object PWMDDS {
+  def apply(freq: Int, dutyCycle: Double, clkFreq: Int): Bool = {
+    val pwm = Module(new PWMDDS(freq, dutyCycle, clkFreq))
+    pwm.io.out
+  }
+}

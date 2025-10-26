@@ -32,7 +32,7 @@ class R2MDCFFT(fftLength: Int, dw: Int, bp: Int) extends Module {
       val angle = 2 * Pi * i / fftLength
       val real  = cos(angle)
       val imag  = sin(angle)
-      FPComplex(real, imag, dw, bp)
+      FPComplex(dw, bp, real, imag)
     }
     rom
   }
@@ -42,7 +42,7 @@ class R2MDCFFT(fftLength: Int, dw: Int, bp: Int) extends Module {
     tw(i)
   }
 
-  val out_buffers = VecInit(Seq.fill(num_stages)(VecInit(Seq.fill(2)(FPComplex(0.0, 0.0, dw, bp)))))
+  val out_buffers = VecInit(Seq.fill(num_stages)(VecInit(Seq.fill(2)(FPComplex(dw, bp, 0.0, 0.0)))))
 
   out_buffers(0)(0) := io.in
   out_buffers(0)(1) := io.in
