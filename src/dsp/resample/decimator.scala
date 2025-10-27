@@ -1,4 +1,4 @@
-package math.resample
+package dsp.resample
 
 import utils._
 import chisel3._

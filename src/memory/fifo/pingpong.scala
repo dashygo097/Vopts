@@ -15,7 +15,7 @@ class PingPongFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
 class PingPongFIFO[T <: Data](gen: T, depth: Int) extends Module {
   override def desiredName: String =
     s"pingpong_${depth}x${gen.getWidth}"
-  val io                           = IO(new PingPongFIFOIO(gen, depth))
+  val io                           = IO(new PingPongFIFOIO(gen, depth)).suggestName("PINGPONG")
 
   // Two memory banks
   val mem_ping = SyncReadMem(depth, gen)

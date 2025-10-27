@@ -81,7 +81,7 @@ lazy val dsp = (project in file("src/dsp"))
     ),
   )
 
-lazy val mem = (project in file("src/mem"))
+lazy val mem = (project in file("src/memory"))
   .dependsOn(utils, com)
   .settings(
     name := "mem",
@@ -107,7 +107,7 @@ lazy val perip = (project in file("src/perip"))
     ),
   )
 
-lazy val mod = (project in file("src/mod"))
+lazy val mod = (project in file("src/modulation"))
   .dependsOn(utils, dds, dsp, math)
   .settings(
     name := "mod",
