@@ -23,7 +23,7 @@ class FPConverter(in_dw: Int, in_bp: Int, out_dw: Int, out_bp: Int) extends Modu
 }
 
 object FPConverter {
-  def apply(out_dw: Int, out_bp: Int)(in: FP): FP = {
+  def apply(out_dw: Int, out_bp: Int)(in: FP): FP                         = {
     val converter = Module(new FPConverter(in.dw(), in.bp(), out_dw, out_bp))
     converter.io.in := in
     converter.io.out
