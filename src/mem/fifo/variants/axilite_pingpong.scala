@@ -1,6 +1,6 @@
 package mem.fifo
 
-import com.axi._
+import com.amba._
 import utils._
 import chisel3._
 import chisel3.util._

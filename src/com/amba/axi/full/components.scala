@@ -1,4 +1,4 @@
-package com.axi
+package com.amba
 
 import chisel3._
 
