@@ -14,9 +14,17 @@ class AXILiteInterconnect(
 
   require(addressMap.length > 0, "Address map must have at least one slave")
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
+  for (i <- 0 until addressMap.length)
+    require(addressMap(i)._1 < addressMap(i)._2, s"Invalid address range for slave $i")
 
-  val slave   = IO(AXILiteSlaveIO(addrWidth, dataWidth))
-  val masters = Seq.fill(addressMap.length)(IO(AXILiteMasterIO(addrWidth, dataWidth)))
+  val ext_slave = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
+  val slave     = Wire(AXILiteSlaveIO(addrWidth, dataWidth))
+
+  val ext_masters = Seq.fill(addressMap.length)(IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)))
+  val masters     = Seq.fill(addressMap.length)(Wire(AXILiteMasterIO(addrWidth, dataWidth)))
+
+  for (i <- 0 until addressMap.length)
+    ext_masters(i).suggestName(s"M_AXI_$i")
 
   def decodeAddress(addr: UInt): UInt = {
     val slaveSelect = Wire(UInt(log2Ceil(addressMap.length).W))
@@ -30,12 +38,6 @@ class AXILiteInterconnect(
       }
     }
     slaveSelect
-  }
-
-  slave.suggestName("S_AXI")
-  for (i <- 0 until addressMap.length) {
-    masters(i).suggestName(s"M${i}_AXI")
-    require(addressMap(i)._1 < addressMap(i)._2, s"Invalid address range for slave $i")
   }
 
   // Write Address Channel
@@ -99,57 +101,14 @@ class AXILiteInterconnect(
     }
   )
 
-  def connect(intf: AXILiteMasterExternalIO): Unit = {
-    slave.aw.bits.addr := intf.AWADDR
-    slave.aw.bits.prot := intf.AWPROT
-    slave.aw.valid     := intf.AWVALID
-    intf.AWREADY       := slave.aw.ready
-    slave.w.bits.data  := intf.WDATA
-    slave.w.bits.strb  := intf.WSTRB
-    slave.w.valid      := intf.WVALID
-    intf.WREADY        := slave.w.ready
-    intf.BRESP         := slave.b.bits.resp
-    intf.BVALID        := slave.b.valid
-    slave.b.ready      := intf.BREADY
-    slave.ar.bits.addr := intf.ARADDR
-    slave.ar.bits.prot := intf.ARPROT
-    slave.ar.valid     := intf.ARVALID
-    intf.ARREADY       := slave.ar.ready
-    intf.RDATA         := slave.r.bits.data
-    intf.RRESP         := slave.r.bits.resp
-    intf.RVALID        := slave.r.valid
-    slave.r.ready      := intf.RREADY
-  }
+  ext_slave.connect(slave)
+  for (i <- 0 until addressMap.length)
+    ext_masters(i).connect(masters(i))
 
-  def connect(intf: AXILiteMasterIO): Unit =
-    slave <> intf
-
+  def connect(intf: AXILiteMasterExternalIO): Unit          = intf <> ext_slave
   def connect(intf: AXILiteSlaveExternalIO, idx: Int): Unit = {
     require(idx >= 0 && idx < masters.length, "Invalid master index")
-    intf.AWADDR              := masters(idx).aw.bits.addr
-    intf.AWPROT              := masters(idx).aw.bits.prot
-    intf.AWVALID             := masters(idx).aw.valid
-    masters(idx).aw.ready    := intf.AWREADY
-    intf.WDATA               := masters(idx).w.bits.data
-    intf.WSTRB               := masters(idx).w.bits.strb
-    intf.WVALID              := masters(idx).w.valid
-    masters(idx).w.ready     := intf.WREADY
-    masters(idx).b.bits.resp := intf.BRESP
-    masters(idx).b.valid     := intf.BVALID
-    intf.BREADY              := masters(idx).b.ready
-    intf.ARADDR              := masters(idx).ar.bits.addr
-    intf.ARPROT              := masters(idx).ar.bits.prot
-    intf.ARVALID             := masters(idx).ar.valid
-    masters(idx).ar.ready    := intf.ARREADY
-    masters(idx).r.bits.data := intf.RDATA
-    masters(idx).r.bits.resp := intf.RRESP
-    masters(idx).r.valid     := intf.RVALID
-    intf.RREADY              := masters(idx).r.ready
-  }
-
-  def connect(intf: AXILiteSlaveIO, idx: Int): Unit = {
-    require(idx >= 0 && idx < masters.length, "Invalid master index")
-    masters(idx) <> intf
+    intf <> ext_masters(idx)
   }
 }
 

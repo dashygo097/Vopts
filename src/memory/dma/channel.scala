@@ -165,8 +165,8 @@ class DMAChannel(addrWidth: Int, dataWidth: Int) extends Module {
       }
 
       when(io.ready) {
-        state := DMAState.IDLE
-        interruptReg := false.B 
+        state        := DMAState.IDLE
+        interruptReg := false.B
       }
     }
   }

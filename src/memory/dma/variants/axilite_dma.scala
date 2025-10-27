@@ -105,7 +105,7 @@ class AXILiteSlaveDMA(
   when(soft_reset_pulse) {
     done_sticky  := false.B
     error_sticky := false.B
-    ready_pulse := true.B
+    ready_pulse  := true.B
   }
 
   // AXI-Lite CSR slave
@@ -155,9 +155,9 @@ class AXILiteSlaveDMA(
     when(axi_awaddr === CTRL_ADDR) {
       when(axi_ctrl.w.bits.data(0)) {
         ready_pulse := true.B; done_sticky := false.B // start W1P
-      } 
-      when(axi_ctrl.w.bits.data(1)){
-        soft_reset_pulse := true.B  // soft reset W1P
+      }
+      when(axi_ctrl.w.bits.data(1)) {
+        soft_reset_pulse := true.B // soft reset W1P
       }
       reg_enable     := axi_ctrl.w.bits.data(2)
       reg_int_enable := axi_ctrl.w.bits.data(3)
@@ -321,8 +321,10 @@ class AXILiteSlaveDMA(
   }
 
   interrupt := dma.io.interrupt && reg_int_enable
-
   ext_axi_mem.connect(axi_mem)
+
+  def connect(intf: AXIFullSlaveExternalIO): Unit =
+    intf <> ext_axi_mem
 }
 
 object TestAXILiteSlaveDMA extends App {
