@@ -1,4 +1,4 @@
-package dps.resample 
+package dps.resample
 
 import utils._
 import chisel3._
