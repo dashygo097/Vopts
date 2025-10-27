@@ -8,8 +8,11 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
     s"axi_full2lite_no_burst_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
 
-  val slave  = IO(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
-  val master = IO(new AXILiteMasterIO(addrWidth, dataWidth)).suggestName("M_AXI")
+  val ext_slave = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
+  val slave     = Wire(AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
+
+  val ext_master = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)).suggestName("M_AXI")
+  val master     = Wire(AXILiteMasterIO(addrWidth, dataWidth))
 
   // Unsupported feature detection registers
   val unsupportedWrite      = WireDefault(false.B)
@@ -71,81 +74,11 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
   slave.r.valid     := master.r.valid || (slave.ar.valid && unsupportedRead)
   master.r.ready    := slave.r.ready && !unsupportedRead
 
-  def connect(intf: AXIFullMasterExternalIO): Unit = {
-    slave.aw.bits.addr   := intf.AWADDR
-    slave.aw.bits.prot   := intf.AWPROT
-    slave.aw.bits.len    := intf.AWLEN
-    slave.aw.bits.size   := intf.AWSIZE
-    slave.aw.bits.burst  := intf.AWBURST
-    slave.aw.bits.lock   := intf.AWLOCK
-    slave.aw.bits.cache  := intf.AWCACHE
-    slave.aw.bits.qos    := intf.AWQOS
-    slave.aw.bits.region := intf.AWREGION
-    slave.aw.bits.id     := intf.AWID
-    slave.aw.bits.user   := intf.AWUSER
-    slave.aw.valid       := intf.AWVALID
-    intf.AWREADY         := slave.aw.ready
-    slave.w.bits.data    := intf.WDATA
-    slave.w.bits.strb    := intf.WSTRB
-    slave.w.bits.last    := intf.WLAST
-    slave.w.bits.id      := intf.WID
-    slave.w.bits.user    := intf.WUSER
-    slave.w.valid        := intf.WVALID
-    intf.WREADY          := slave.w.ready
-    intf.BRESP           := slave.b.bits.resp
-    intf.BID             := slave.b.bits.id
-    intf.BUSER           := slave.b.bits.user
-    intf.BVALID          := slave.b.valid
-    slave.b.ready        := intf.BREADY
-    slave.ar.bits.addr   := intf.ARADDR
-    slave.ar.bits.prot   := intf.ARPROT
-    slave.ar.bits.len    := intf.ARLEN
-    slave.ar.bits.size   := intf.ARSIZE
-    slave.ar.bits.burst  := intf.ARBURST
-    slave.ar.bits.lock   := intf.ARLOCK
-    slave.ar.bits.cache  := intf.ARCACHE
-    slave.ar.bits.qos    := intf.ARQOS
-    slave.ar.bits.region := intf.ARREGION
-    slave.ar.bits.id     := intf.ARID
-    slave.ar.bits.user   := intf.ARUSER
-    slave.ar.valid       := intf.ARVALID
-    intf.ARREADY         := slave.ar.ready
-    intf.RDATA           := slave.r.bits.data
-    intf.RRESP           := slave.r.bits.resp
-    intf.RLAST           := slave.r.bits.last
-    intf.RID             := slave.r.bits.id
-    intf.RUSER           := slave.r.bits.user
-    intf.RVALID          := slave.r.valid
-    slave.r.ready        := intf.RREADY
-  }
+  ext_slave.connect(slave)
+  ext_master.connect(master)
 
-  def connect(intf: AXIFullMasterIO): Unit =
-    slave <> intf
-
-  def connect(intf: AXILiteSlaveExternalIO): Unit = {
-    intf.AWADDR        := master.aw.bits.addr
-    intf.AWPROT        := master.aw.bits.prot
-    intf.AWVALID       := master.aw.valid
-    master.aw.ready    := intf.AWREADY
-    intf.WDATA         := master.w.bits.data
-    intf.WSTRB         := master.w.bits.strb
-    intf.WVALID        := master.w.valid
-    master.w.ready     := intf.WREADY
-    master.b.bits.resp := intf.BRESP
-    intf.BVALID        := master.b.valid
-    master.b.ready     := intf.BREADY
-    intf.ARADDR        := master.ar.bits.addr
-    intf.ARPROT        := master.ar.bits.prot
-    intf.ARVALID       := master.ar.valid
-    master.ar.ready    := intf.ARREADY
-    master.r.bits.data := intf.RDATA
-    master.r.bits.resp := intf.RRESP
-    intf.RVALID        := master.r.valid
-    master.r.ready     := intf.RREADY
-  }
-
-  def connect(intf: AXILiteMasterIO): Unit =
-    master <> intf
+  def connect(intf: AXIFullMasterExternalIO): Unit = intf <> ext_slave
+  def connect(intf: AXILiteSlaveExternalIO): Unit  = intf <> ext_master
 }
 
 object AXIFull2LiteBridgeNoBurst {
