@@ -10,13 +10,13 @@ object AXIBurstType {
   val WRAP  = 2.U(2.W)
 }
 
-object FullRWState extends ChiselEnum {
-  val sIDLE       = Value(0.U(3.W))
-  val sWRITE_ADDR = Value(1.U(3.W))
-  val sWRITE_DATA = Value(2.U(3.W))
-  val sWRITE_RESP = Value(3.U(3.W))
-  val sREAD_ADDR  = Value(4.U(3.W))
-  val sREAD_DATA  = Value(5.U(3.W))
+object MasterFullRWState extends ChiselEnum {
+  val IDLE       = Value(0.U(3.W))
+  val WRITE_ADDR = Value(1.U(3.W))
+  val WRITE_DATA = Value(2.U(3.W))
+  val WRITE_RESP = Value(3.U(3.W))
+  val READ_ADDR  = Value(4.U(3.W))
+  val READ_DATA  = Value(5.U(3.W))
 }
 
 class AXIFullMasterRW(
@@ -63,7 +63,7 @@ class AXIFullMasterRW(
   val zeroUser = 0.U(userWidth.W)
 
   // State / regs
-  val state = RegInit(FullRWState.sIDLE)
+  val state = RegInit(MasterFullRWState.IDLE)
 
   // Address/control regs for AW/AR
   val aw_addr_r  = RegInit(0.U(addrWidth.W))
@@ -91,7 +91,7 @@ class AXIFullMasterRW(
   read_done  := false.B
   write_resp := 0.U
   read_resp  := 0.U
-  busy       := (state =/= FullRWState.sIDLE)
+  busy       := (state =/= MasterFullRWState.IDLE)
 
   // Small queues for decoupling user and AXI
   val wq = Module(new Queue(UInt(dataWidth.W), entries = 8)) // adjust depth as needed
@@ -148,7 +148,7 @@ class AXIFullMasterRW(
 
   // FSM
   switch(state) {
-    is(FullRWState.sIDLE) {
+    is(MasterFullRWState.IDLE) {
       // defaults
       aw_valid_r := false.B
       ar_valid_r := false.B
@@ -165,7 +165,7 @@ class AXIFullMasterRW(
         aw_len_r   := (wLen0 - 1.U)(7, 0)
         aw_burst_r := write_burst
         aw_valid_r := true.B
-        state      := FullRWState.sWRITE_ADDR
+        state      := MasterFullRWState.WRITE_ADDR
 
       }.elsewhen(read_en) {
         val rLen0 = Mux(read_len === 0.U, 1.U, read_len)
@@ -173,58 +173,58 @@ class AXIFullMasterRW(
         ar_len_r   := (rLen0 - 1.U)(7, 0)
         ar_burst_r := read_burst
         ar_valid_r := true.B
-        state      := FullRWState.sREAD_ADDR
+        state      := MasterFullRWState.READ_ADDR
       }
     }
 
     // WRITE
-    is(FullRWState.sWRITE_ADDR) {
+    is(MasterFullRWState.WRITE_ADDR) {
       when(axi.aw.ready && aw_valid_r) {
         aw_valid_r := false.B
         w_active   := true.B
         w_count    := 0.U
-        state      := FullRWState.sWRITE_DATA
+        state      := MasterFullRWState.WRITE_DATA
       }
     }
 
-    is(FullRWState.sWRITE_DATA) {
+    is(MasterFullRWState.WRITE_DATA) {
       when(axi.w.valid && axi.w.ready) {
         when(w_last) {
           w_active  := false.B
           b_ready_r := true.B
-          state     := FullRWState.sWRITE_RESP
+          state     := MasterFullRWState.WRITE_RESP
         }.otherwise {
           w_count := w_count + 1.U
         }
       }
     }
 
-    is(FullRWState.sWRITE_RESP) {
+    is(MasterFullRWState.WRITE_RESP) {
       when(axi.b.valid && b_ready_r) {
         b_ready_r  := false.B
         write_done := true.B
         write_resp := axi.b.bits.resp
-        state      := FullRWState.sIDLE
+        state      := MasterFullRWState.IDLE
       }
     }
 
     // READ
-    is(FullRWState.sREAD_ADDR) {
+    is(MasterFullRWState.READ_ADDR) {
       when(axi.ar.ready && ar_valid_r) {
         ar_valid_r := false.B
         r_active   := true.B
         r_count    := 0.U
-        state      := FullRWState.sREAD_DATA
+        state      := MasterFullRWState.READ_DATA
       }
     }
 
-    is(FullRWState.sREAD_DATA) {
+    is(MasterFullRWState.READ_DATA) {
       when(axi.r.valid && axi.r.ready) {
         when(axi.r.bits.last) {
           r_active  := false.B
           read_done := true.B
           read_resp := axi.r.bits.resp
-          state     := FullRWState.sIDLE
+          state     := MasterFullRWState.IDLE
         }.otherwise {
           r_count := r_count + 1.U
         }

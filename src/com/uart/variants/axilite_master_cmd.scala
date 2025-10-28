@@ -5,7 +5,7 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-object MasterUartState extends ChiselEnum {
+object MasterUartCmdState extends ChiselEnum {
   val IDLE = Value(0.U(4.W))
 
   // WRITE states
@@ -39,7 +39,7 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
   val uart_cmd = Module(new UartCmdProcessor(clkFreq, option))
 
   // State machine for AXI transactions
-  val state = RegInit(MasterUartState.IDLE)
+  val state = RegInit(MasterUartCmdState.IDLE)
 
   // Registers for AXI signals
   val axi_awaddr  = RegInit(0.U(addrWidth.W))
@@ -85,7 +85,7 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
 
   // State Machine
   switch(state) {
-    is(MasterUartState.IDLE) {
+    is(MasterUartCmdState.IDLE) {
       when(uart_cmd.io.cmd_valid) {
         when(uart_cmd.io.cmd_type === UartCmdType.WRITE) {
           axi_awaddr  := uart_cmd.io.cmd_addr
@@ -94,22 +94,22 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
           axi_wvalid  := true.B
           aw_done     := false.B
           w_done      := false.B
-          state       := MasterUartState.WRITE_ADDR
+          state       := MasterUartCmdState.WRITE_ADDR
         }.elsewhen(uart_cmd.io.cmd_type === UartCmdType.READ) {
           axi_araddr  := uart_cmd.io.cmd_addr
           axi_arvalid := true.B
-          state       := MasterUartState.READ_ADDR
+          state       := MasterUartCmdState.READ_ADDR
         }.elsewhen(uart_cmd.io.cmd_type === UartCmdType.MOVE) {
           move_src_addr := uart_cmd.io.cmd_addr
           move_dst_addr := uart_cmd.io.cmd_wdata
           axi_araddr    := uart_cmd.io.cmd_addr
           axi_arvalid   := true.B
-          state         := MasterUartState.MOVE_READ_ADDR
+          state         := MasterUartCmdState.MOVE_READ_ADDR
         }
       }
     }
 
-    is(MasterUartState.WRITE_ADDR) {
+    is(MasterUartCmdState.WRITE_ADDR) {
       when(axi.aw.ready && axi_awvalid) {
         axi_awvalid := false.B
         aw_done     := true.B
@@ -121,46 +121,46 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
 
       when(aw_done && w_done) {
         axi_bready := true.B
-        state      := MasterUartState.WRITE_RESP
+        state      := MasterUartCmdState.WRITE_RESP
       }
     }
 
-    is(MasterUartState.WRITE_RESP) {
+    is(MasterUartCmdState.WRITE_RESP) {
       when(axi.b.valid && axi_bready) {
         axi_bready             := false.B
         uart_cmd.io.resp_valid := true.B
         uart_cmd.io.resp_rdata := 0.U
-        state                  := MasterUartState.IDLE
+        state                  := MasterUartCmdState.IDLE
       }
     }
 
-    is(MasterUartState.READ_ADDR) {
+    is(MasterUartCmdState.READ_ADDR) {
       when(axi.ar.ready && axi_arvalid) {
         axi_arvalid := false.B
         axi_rready  := true.B
-        state       := MasterUartState.READ_DATA
+        state       := MasterUartCmdState.READ_DATA
       }
     }
 
-    is(MasterUartState.READ_DATA) {
+    is(MasterUartCmdState.READ_DATA) {
       when(axi.r.valid && axi_rready) {
         axi_rready             := false.B
         uart_cmd.io.resp_valid := true.B
         uart_cmd.io.resp_rdata := axi.r.bits.data
-        state                  := MasterUartState.IDLE
+        state                  := MasterUartCmdState.IDLE
       }
     }
 
     // MOVE: READ phase
-    is(MasterUartState.MOVE_READ_ADDR) {
+    is(MasterUartCmdState.MOVE_READ_ADDR) {
       when(axi.ar.ready && axi_arvalid) {
         axi_arvalid := false.B
         axi_rready  := true.B
-        state       := MasterUartState.MOVE_READ_DATA
+        state       := MasterUartCmdState.MOVE_READ_DATA
       }
     }
 
-    is(MasterUartState.MOVE_READ_DATA) {
+    is(MasterUartCmdState.MOVE_READ_DATA) {
       when(axi.r.valid && axi_rready) {
         axi_rready    := false.B
         move_data_buf := axi.r.bits.data
@@ -170,12 +170,12 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
         axi_wvalid    := true.B
         aw_done       := false.B
         w_done        := false.B
-        state         := MasterUartState.MOVE_WRITE_ADDR
+        state         := MasterUartCmdState.MOVE_WRITE_ADDR
       }
     }
 
     // MOVE: WRITE phase
-    is(MasterUartState.MOVE_WRITE_ADDR) {
+    is(MasterUartCmdState.MOVE_WRITE_ADDR) {
       when(axi.aw.ready && axi_awvalid) {
         axi_awvalid := false.B
         aw_done     := true.B
@@ -186,16 +186,16 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
       }
       when(aw_done && w_done) {
         axi_bready := true.B
-        state      := MasterUartState.MOVE_WRITE_RESP
+        state      := MasterUartCmdState.MOVE_WRITE_RESP
       }
     }
 
-    is(MasterUartState.MOVE_WRITE_RESP) {
+    is(MasterUartCmdState.MOVE_WRITE_RESP) {
       when(axi.b.valid && axi_bready) {
         axi_bready             := false.B
         uart_cmd.io.resp_valid := true.B
         uart_cmd.io.resp_rdata := move_data_buf // return moved data; change to 0.U for ACK only
-        state                  := MasterUartState.IDLE
+        state                  := MasterUartCmdState.IDLE
       }
     }
   }
