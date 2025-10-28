@@ -1,0 +1,37 @@
+package net.eth
+
+import chisel3._
+import chisel3.util._
+
+class RGMIIEthernet extends Module {
+  val io = IO(new Bundle {
+    val rgmii = new RGMIIInterface
+    val tx = Flipped(Decoupled(new Bundle {
+      val data = UInt(8.W)
+      val last = Bool()
+      val error = Bool()
+    }))
+    val rx = Decoupled(new Bundle {
+      val data = UInt(8.W)
+      val last = Bool()
+      val error = Bool()
+    })
+    val clk125m = Input(Clock())
+  })
+
+  val tx = Module(new RGMIIEthernetTX)
+  val rx = Module(new RGMIIEthernetRX)
+
+  tx.io.clk125m := io.clk125m
+  tx.io.frame <> io.tx
+  io.rgmii.tx_clk := tx.io.rgmii.tx_clk
+  io.rgmii.tx_en := tx.io.rgmii.tx_en
+  io.rgmii.txd := tx.io.rgmii.txd
+  io.rgmii.tx_er := tx.io.rgmii.tx_er
+
+  rx.io.rgmii.rx_clk := io.rgmii.rx_clk
+  rx.io.rgmii.rx_dv := io.rgmii.rx_dv
+  rx.io.rgmii.rxd := io.rgmii.rxd
+  rx.io.rgmii.rx_er := io.rgmii.rx_er
+  io.rx <> rx.io.frame
+}

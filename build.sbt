@@ -107,6 +107,19 @@ lazy val perip = (project in file("src/perip"))
     ),
   )
 
+lazy val net = (project in file("src/network"))
+  .dependsOn(utils, com, mem)
+  .settings(
+    name := "net",
+    libraryDependencies ++= Seq(
+      "org.chipsalliance" %% "chisel" % chiselVersion,
+    ),
+    Compile / unmanagedSourceDirectories += baseDirectory.value,
+    addCompilerPlugin(
+      "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
+    ),
+  )
+
 lazy val mod = (project in file("src/modulation"))
   .dependsOn(utils, dds, dsp, math)
   .settings(
@@ -120,8 +133,9 @@ lazy val mod = (project in file("src/modulation"))
     ),
   )
 
+
 lazy val app = (project in file("app"))
-  .dependsOn(utils, perip, dds, dsp, mem, com, mod, math)
+  .dependsOn(utils, perip, dds, dsp, mem, com, mod, net, math)
   .settings(
     name := "app",
     libraryDependencies ++= Seq(
@@ -134,4 +148,4 @@ lazy val app = (project in file("app"))
   )
 
 lazy val root = (project in file("."))
-  .aggregate(utils, dds, math, com, dsp, mem, perip, mod)
+  .aggregate(utils, dds, math, com, dsp, mem, perip, mod, net)

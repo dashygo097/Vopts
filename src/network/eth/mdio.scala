@@ -1,4 +1,4 @@
-package com.eth
+package net.eth
 
 import chisel3._
 
