@@ -57,7 +57,7 @@ class AXILiteSlaveSyncFIFO(
   when(axi.ar.bits.addr === FIFO_ADDR) {
     axi_rdata := sync_fifo.io.deq.bits
   }.elsewhen(axi.ar.bits.addr === FIFO_STATUS_ADDR) {
-    axi_rdata := Cat(sync_fifo.io.empty, sync_fifo.io.full)
+    axi_rdata := Cat(sync_fifo.io.empty, sync_fifo.io.full) // [1]: empty, [0]: full
   }.otherwise {
     axi_rdata := 0.U
   }

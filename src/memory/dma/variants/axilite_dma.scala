@@ -195,7 +195,7 @@ class AXILiteSlaveDMA(
     when(axi_araddr === CTRL_ADDR) {
       axi_rdata := Cat(0.U(28.W), reg_int_enable, reg_enable, 0.U(1.W), 0.U(1.W)) // RO view; start/reset show 0
     }.elsewhen(axi_araddr === STATUS_ADDR) {
-      axi_rdata := Cat(0.U(29.W), error_sticky, done_sticky, dma.io.busy)
+      axi_rdata := Cat(0.U(29.W), error_sticky, done_sticky, dma.io.busy) // [2] error, [1] done, [0] busy
     }.elsewhen(axi_araddr === SRC_ADDR) {
       axi_rdata := reg_src_addr(31, 0)
     }.elsewhen(axi_araddr === DST_ADDR) {
