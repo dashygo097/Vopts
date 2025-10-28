@@ -133,7 +133,6 @@ lazy val mod = (project in file("src/modulation"))
     ),
   )
 
-
 lazy val app = (project in file("app"))
   .dependsOn(utils, perip, dds, dsp, mem, com, mod, net, math)
   .settings(
