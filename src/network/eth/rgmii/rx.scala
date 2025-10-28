@@ -4,22 +4,24 @@ import chisel3._
 import chisel3.util._
 
 object RGMIIEthernetRXState extends ChiselEnum {
-  val IDLE = Value(0.U(2.W))
+  val IDLE     = Value(0.U(2.W))
   val PREAMBLE = Value(1.U(2.W))
-  val DATA = Value(2.U(2.W))
+  val DATA     = Value(2.U(2.W))
 }
 
 class RGMIIEthernetRX extends Module {
+  override def desiredName: String = "eth_rgmii_rx"
+
   val io = IO(new Bundle {
     val rgmii = new Bundle {
       val rx_clk = Input(Clock())
-      val rx_dv = Input(Bool())
-      val rxd = Input(UInt(4.W))
-      val rx_er = Input(Bool())
+      val rx_dv  = Input(Bool())
+      val rxd    = Input(UInt(4.W))
+      val rx_er  = Input(Bool())
     }
     val frame = Decoupled(new Bundle {
-      val data = UInt(8.W)
-      val last = Bool()
+      val data  = UInt(8.W)
+      val last  = Bool()
       val error = Bool()
     })
   })
@@ -27,114 +29,109 @@ class RGMIIEthernetRX extends Module {
   // State machine
   val state = RegInit(RGMIIEthernetRXState.IDLE)
 
-  // DDR input capture
-  val rxdLower = RegInit(0.U(4.W))
-  val rxdUpper = RegInit(0.U(4.W))
-  val rxDvReg = RegInit(false.B)
-  val rxErReg = RegInit(false.B)
-  val clockPhase = RegInit(false.B)
+  // Nibble assembly (false = waiting for lower, true = have lower, waiting for upper)
+  val nibblePhase = RegInit(false.B)
+  val lowerNibble = RegInit(0.U(4.W))
 
-  // Data assembly
-  val dataAssembled = Wire(UInt(8.W))
-  dataAssembled := Cat(rxdUpper, rxdLower)
-  
-  val dataBuffer = RegInit(0.U(8.W))
+  // Assembled byte
+  val assembledByte = Wire(UInt(8.W))
+  assembledByte := Cat(io.rgmii.rxd, lowerNibble)
+
+  // Output registers
   val dataValidReg = RegInit(false.B)
-  val dataLastReg = RegInit(false.B)
-  val dataErrorReg = RegInit(false.B)
+  val dataReg      = RegInit(0.U(8.W))
+  val lastReg      = RegInit(false.B)
+  val errorReg     = RegInit(false.B)
 
-  // CRC validation
+  io.frame.valid      := dataValidReg
+  io.frame.bits.data  := dataReg
+  io.frame.bits.last  := lastReg
+  io.frame.bits.error := errorReg
+
+  // Preamble detection
+  val preambleCount = RegInit(0.U(4.W))
+
+  // CRC validation (simplified - not checking CRC for now)
   val crcModule = Module(new CRC32)
-  crcModule.io.data := dataAssembled
-  crcModule.io.valid := state === RGMIIEthernetRXState.DATA && clockPhase
+  crcModule.io.data  := assembledByte
+  crcModule.io.valid := state === RGMIIEthernetRXState.DATA && nibblePhase && io.rgmii.rx_dv
   crcModule.io.reset := state === RGMIIEthernetRXState.IDLE
 
-  val receivedCrc = RegInit(0.U(32.W))
-  val crcByteCount = RegInit(0.U(2.W))
-
-  // Counters
-  val preambleCount = RegInit(0.U(4.W))
+  // Frame byte counter
   val byteCount = RegInit(0.U(16.W))
 
-  // Output assignment
-  io.frame.bits.data := dataBuffer
-  io.frame.bits.last := dataLastReg
-  io.frame.bits.error := dataErrorReg
-  io.frame.valid := dataValidReg
-
-  // Clock phase tracking
-  clockPhase := ~clockPhase
-
-  // Capture inputs on both edges (simplified - actual RGMII uses DDR)
-  when(clockPhase) {
-    rxdLower := io.rgmii.rxd
-  }.otherwise {
-    rxdUpper := io.rgmii.rxd
+  // Default: clear valid when data is accepted
+  when(io.frame.fire) {
+    dataValidReg := false.B
   }
-  rxDvReg := io.rgmii.rx_dv
-  rxErReg := io.rgmii.rx_er
 
   switch(state) {
     is(RGMIIEthernetRXState.IDLE) {
-      dataValidReg := false.B
+      nibblePhase   := false.B
       preambleCount := 0.U
-      byteCount := 0.U
-      
-      when(rxDvReg && clockPhase) {
-        when(dataAssembled === 0x55.U) {
-          state := RGMIIEthernetRXState.PREAMBLE
-          preambleCount := 1.U
+      lastReg       := false.B
+      byteCount     := 0.U
+
+      when(io.rgmii.rx_dv && io.rgmii.rxd === 0x5.U) {
+        state       := RGMIIEthernetRXState.PREAMBLE
+        lowerNibble := io.rgmii.rxd
+        nibblePhase := true.B
+      }
+    }
+
+    is(RGMIIEthernetRXState.PREAMBLE) {
+      when(!io.rgmii.rx_dv) {
+        state := RGMIIEthernetRXState.IDLE
+
+      }.elsewhen(!nibblePhase) {
+        lowerNibble := io.rgmii.rxd
+        nibblePhase := true.B
+
+      }.otherwise {
+        when(assembledByte === 0x55.U) {
+          nibblePhase   := false.B
+          preambleCount := preambleCount + 1.U
+
+          when(preambleCount > 8.U) {
+            state := RGMIIEthernetRXState.IDLE
+          }
+
+        }.elsewhen(assembledByte === 0xd5.U && preambleCount >= 6.U) {
+          state       := RGMIIEthernetRXState.DATA
+          nibblePhase := false.B
+          byteCount   := 0.U
+
+        }.otherwise {
+          state := RGMIIEthernetRXState.IDLE
         }
       }
     }
 
-    is( RGMIIEthernetRXState.PREAMBLE) {
-      when(!rxDvReg) {
-        state := RGMIIEthernetRXState.IDLE
-      }.elsewhen(clockPhase) {
-        when(dataAssembled === 0xD5.U) {
-          // Start of Frame Delimiter
-          state := RGMIIEthernetRXState.DATA
-          byteCount := 0.U
-          crcByteCount := 0.U
-        }.elsewhen(dataAssembled =/= 0x55.U) {
-          state := RGMIIEthernetRXState.IDLE // Invalid preamble
-        }.otherwise {
-          preambleCount := preambleCount + 1.U
-          when(preambleCount > 8.U) {
-            state := RGMIIEthernetRXState.IDLE // Too long preamble
+    is(RGMIIEthernetRXState.DATA) {
+      when(!io.rgmii.rx_dv) {
+        when(byteCount > 0.U) {
+          when(!dataValidReg) {
+            dataValidReg := true.B
+            dataReg      := assembledByte
+            lastReg      := true.B
+            errorReg     := io.rgmii.rx_er
           }
         }
-      }
-    }
-
-    is( RGMIIEthernetRXState.DATA) {
-      when(!rxDvReg) {
-        // End of frame
-        dataLastReg := true.B
-        dataValidReg := false.B
-        
-        // Check CRC
-        val crcValid = crcModule.io.crc === receivedCrc
-        dataErrorReg := !crcValid || rxErReg
-        
         state := RGMIIEthernetRXState.IDLE
-      }.elsewhen(clockPhase) {
-        dataBuffer := dataAssembled
-        dataValidReg := true.B
-        dataLastReg := false.B
-        dataErrorReg := rxErReg
-        byteCount := byteCount + 1.U
-        
-        // Capture last 4 bytes as CRC
-        when(crcByteCount < 4.U) {
-          receivedCrc := Cat(dataAssembled, receivedCrc(31, 8))
-          crcByteCount := crcByteCount + 1.U
-        }
+
+      }.elsewhen(!nibblePhase) {
+        lowerNibble := io.rgmii.rxd
+        nibblePhase := true.B
+
       }.otherwise {
-        when(io.frame.ready) {
-          dataValidReg := false.B
+        when(!dataValidReg) {
+          dataReg      := assembledByte
+          dataValidReg := true.B
+          lastReg      := false.B
+          errorReg     := io.rgmii.rx_er
+          byteCount    := byteCount + 1.U
         }
+        nibblePhase := false.B
       }
     }
   }
