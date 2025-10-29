@@ -3,7 +3,7 @@ package net.eth
 import chisel3._
 import chisel3.util._
 
-object RGMIIEthernetTXState extends ChiselEnum {
+object RGMIIEthernetTxState extends ChiselEnum {
   val IDLE     = Value(0.U(3.W))
   val PREAMBLE = Value(1.U(3.W))
   val DATA     = Value(2.U(3.W))
@@ -11,7 +11,7 @@ object RGMIIEthernetTXState extends ChiselEnum {
   val IFG      = Value(4.U(3.W))
 }
 
-class RGMIIEthernetTX extends Module with EthernetFrameParams {
+class RGMIIEthernetTx extends Module with EthernetFrameParams {
   override def desiredName: String = "eth_rgmii_tx"
 
   val io = IO(new Bundle {
@@ -21,16 +21,12 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
       val txd    = Output(UInt(4.W))
       val tx_er  = Output(Bool())
     }
-    val frame   = Flipped(Decoupled(new Bundle {
-      val data  = UInt(8.W)
-      val last  = Bool()
-      val error = Bool()
-    }))
+    val frame   = Flipped(Decoupled(new EthernetFrameIO))
     val clk125m = Input(Clock())
   })
 
   // State machine
-  val state = RegInit(RGMIIEthernetTXState.IDLE)
+  val state = RegInit(RGMIIEthernetTxState.IDLE)
 
   // Counters
   val preambleCounter = RegInit(0.U(4.W))
@@ -49,9 +45,9 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
   val crcModule = Module(new CRC32)
   val crcReg    = RegInit(0.U(32.W))
 
-  crcModule.io.reset := state === RGMIIEthernetTXState.IDLE
+  crcModule.io.reset := state === RGMIIEthernetTxState.IDLE
   crcModule.io.data  := io.frame.bits.data
-  crcModule.io.valid := io.frame.fire && state === RGMIIEthernetTXState.DATA
+  crcModule.io.valid := io.frame.fire && state === RGMIIEthernetTxState.DATA
 
   // Output registers
   val txEnReg = RegInit(false.B)
@@ -68,7 +64,7 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
   io.frame.ready := false.B
 
   switch(state) {
-    is(RGMIIEthernetTXState.IDLE) {
+    is(RGMIIEthernetTxState.IDLE) {
       txEnReg         := false.B
       txdReg          := 0.U
       txErReg         := false.B
@@ -76,11 +72,11 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
       preambleCounter := 0.U
 
       when(io.frame.valid) {
-        state := RGMIIEthernetTXState.PREAMBLE
+        state := RGMIIEthernetTxState.PREAMBLE
       }
     }
 
-    is(RGMIIEthernetTXState.PREAMBLE) {
+    is(RGMIIEthernetTxState.PREAMBLE) {
       txEnReg := true.B
       txErReg := false.B
 
@@ -102,7 +98,7 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
         preambleCounter := preambleCounter + 1.U
 
         when(preambleCounter === 7.U) {
-          state := RGMIIEthernetTXState.DATA
+          state := RGMIIEthernetTxState.DATA
           when(io.frame.valid) {
             dataReg        := io.frame.bits.data
             lastReg        := io.frame.bits.last
@@ -113,7 +109,7 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
       }
     }
 
-    is(RGMIIEthernetTXState.DATA) {
+    is(RGMIIEthernetTxState.DATA) {
       txEnReg := true.B
       txErReg := errorReg
 
@@ -126,7 +122,7 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
         nibblePhase := false.B
 
         when(lastReg) {
-          state        := RGMIIEthernetTXState.CRC
+          state        := RGMIIEthernetTxState.CRC
           crcReg       := crcModule.io.crc
           crcByteIndex := 0.U
         }.otherwise {
@@ -140,7 +136,7 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
       }
     }
 
-    is(RGMIIEthernetTXState.CRC) {
+    is(RGMIIEthernetTxState.CRC) {
       txEnReg := true.B
       txErReg := false.B
 
@@ -163,20 +159,20 @@ class RGMIIEthernetTX extends Module with EthernetFrameParams {
         crcByteIndex := crcByteIndex + 1.U
 
         when(crcByteIndex === 3.U) {
-          state      := RGMIIEthernetTXState.IFG
+          state      := RGMIIEthernetTxState.IFG
           ifgCounter := 0.U
         }
       }
     }
 
-    is(RGMIIEthernetTXState.IFG) {
+    is(RGMIIEthernetTxState.IFG) {
       txEnReg := false.B
       txdReg  := 0.U
       txErReg := false.B
 
       ifgCounter := ifgCounter + 1.U
       when(ifgCounter === 23.U) {
-        state := RGMIIEthernetTXState.IDLE
+        state := RGMIIEthernetTxState.IDLE
       }
     }
   }

@@ -1,7 +1,6 @@
 package net.eth
 
 import chisel3._
-import chisel3.util._
 
 trait EthernetFrameParams {
   val PREAMBLE        = 0x55555555555555d5L
@@ -13,17 +12,7 @@ trait EthernetFrameParams {
 }
 
 class EthernetFrameIO extends Bundle {
-  val tdata  = UInt(8.W)
-  val tvalid = Bool()
-  val tready = Bool()
-  val tlast  = Bool()
-  val tuser  = Bool() // Error indicator
-}
-
-class EthernetTxFrameIO extends Bundle {
-  val frame = Flipped(Decoupled(new EthernetFrameIO))
-}
-
-class EthernetRxFrameIO extends Bundle {
-  val frame = Decoupled(new EthernetFrameIO)
+  val data  = UInt(8.W)
+  val last  = Bool()
+  val error = Bool()
 }
