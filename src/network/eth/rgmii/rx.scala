@@ -3,13 +3,13 @@ package net.eth
 import chisel3._
 import chisel3.util._
 
-object RGMIIEthernetRXState extends ChiselEnum {
+object RGMIIEthernetRxState extends ChiselEnum {
   val IDLE     = Value(0.U(2.W))
   val PREAMBLE = Value(1.U(2.W))
   val DATA     = Value(2.U(2.W))
 }
 
-class RGMIIEthernetRX extends Module {
+class RGMIIEthernetRx extends Module {
   override def desiredName: String = "eth_rgmii_rx"
 
   val io = IO(new Bundle {
@@ -19,15 +19,11 @@ class RGMIIEthernetRX extends Module {
       val rxd    = Input(UInt(4.W))
       val rx_er  = Input(Bool())
     }
-    val frame = Decoupled(new Bundle {
-      val data  = UInt(8.W)
-      val last  = Bool()
-      val error = Bool()
-    })
+    val frame = Decoupled(new EthernetFrameIO)
   })
 
   // State machine
-  val state = RegInit(RGMIIEthernetRXState.IDLE)
+  val state = RegInit(RGMIIEthernetRxState.IDLE)
 
   // Nibble assembly (false = waiting for lower, true = have lower, waiting for upper)
   val nibblePhase = RegInit(false.B)
@@ -54,8 +50,8 @@ class RGMIIEthernetRX extends Module {
   // CRC validation (simplified - not checking CRC for now)
   val crcModule = Module(new CRC32)
   crcModule.io.data  := assembledByte
-  crcModule.io.valid := state === RGMIIEthernetRXState.DATA && nibblePhase && io.rgmii.rx_dv
-  crcModule.io.reset := state === RGMIIEthernetRXState.IDLE
+  crcModule.io.valid := state === RGMIIEthernetRxState.DATA && nibblePhase && io.rgmii.rx_dv
+  crcModule.io.reset := state === RGMIIEthernetRxState.IDLE
 
   // Frame byte counter
   val byteCount = RegInit(0.U(16.W))
@@ -66,22 +62,22 @@ class RGMIIEthernetRX extends Module {
   }
 
   switch(state) {
-    is(RGMIIEthernetRXState.IDLE) {
+    is(RGMIIEthernetRxState.IDLE) {
       nibblePhase   := false.B
       preambleCount := 0.U
       lastReg       := false.B
       byteCount     := 0.U
 
       when(io.rgmii.rx_dv && io.rgmii.rxd === 0x5.U) {
-        state       := RGMIIEthernetRXState.PREAMBLE
+        state       := RGMIIEthernetRxState.PREAMBLE
         lowerNibble := io.rgmii.rxd
         nibblePhase := true.B
       }
     }
 
-    is(RGMIIEthernetRXState.PREAMBLE) {
+    is(RGMIIEthernetRxState.PREAMBLE) {
       when(!io.rgmii.rx_dv) {
-        state := RGMIIEthernetRXState.IDLE
+        state := RGMIIEthernetRxState.IDLE
 
       }.elsewhen(!nibblePhase) {
         lowerNibble := io.rgmii.rxd
@@ -93,21 +89,21 @@ class RGMIIEthernetRX extends Module {
           preambleCount := preambleCount + 1.U
 
           when(preambleCount > 8.U) {
-            state := RGMIIEthernetRXState.IDLE
+            state := RGMIIEthernetRxState.IDLE
           }
 
         }.elsewhen(assembledByte === 0xd5.U && preambleCount >= 6.U) {
-          state       := RGMIIEthernetRXState.DATA
+          state       := RGMIIEthernetRxState.DATA
           nibblePhase := false.B
           byteCount   := 0.U
 
         }.otherwise {
-          state := RGMIIEthernetRXState.IDLE
+          state := RGMIIEthernetRxState.IDLE
         }
       }
     }
 
-    is(RGMIIEthernetRXState.DATA) {
+    is(RGMIIEthernetRxState.DATA) {
       when(!io.rgmii.rx_dv) {
         when(byteCount > 0.U) {
           when(!dataValidReg) {
@@ -117,7 +113,7 @@ class RGMIIEthernetRX extends Module {
             errorReg     := io.rgmii.rx_er
           }
         }
-        state := RGMIIEthernetRXState.IDLE
+        state := RGMIIEthernetRxState.IDLE
 
       }.elsewhen(!nibblePhase) {
         lowerNibble := io.rgmii.rxd

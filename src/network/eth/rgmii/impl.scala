@@ -9,21 +9,13 @@ class RGMIIEthernet extends Module {
     s"eth_rgmii"
   val io                           = IO(new Bundle {
     val rgmii   = new RGMIIInterface
-    val tx      = Flipped(Decoupled(new Bundle {
-      val data  = UInt(8.W)
-      val last  = Bool()
-      val error = Bool()
-    }))
-    val rx      = Decoupled(new Bundle {
-      val data  = UInt(8.W)
-      val last  = Bool()
-      val error = Bool()
-    })
+    val tx      = Flipped(Decoupled(new EthernetFrameIO))
+    val rx      = Decoupled(new EthernetFrameIO)
     val clk125m = Input(Clock())
   })
 
-  val tx = Module(new RGMIIEthernetTX)
-  val rx = Module(new RGMIIEthernetRX)
+  val tx = Module(new RGMIIEthernetTx)
+  val rx = Module(new RGMIIEthernetRx)
 
   tx.io.clk125m   := io.clk125m
   tx.io.frame <> io.tx
