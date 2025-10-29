@@ -8,7 +8,7 @@ class AXILiteSlaveRAM(
   addrWidth: Int,
   dataWidth: Int,
   memSize: BigInt,
-  baseAddr: BigInt = 0x0,
+  baseAddr: BigInt
 ) extends Module {
   override def desiredName: String =
     s"axilite_slave_ram_${addrWidth}x${dataWidth}_s${memSize}_b$baseAddr"

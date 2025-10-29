@@ -6,9 +6,13 @@ import chisel3.util._
 
 object MasterLiteRWState extends ChiselEnum {
   val IDLE       = Value(0.U(3.W))
+
+  // Write States
   val WRITE_ADDR = Value(1.U(3.W))
   val WRITE_DATA = Value(2.U(3.W))
   val WRITE_RESP = Value(3.U(3.W))
+
+  // Read States
   val READ_ADDR  = Value(4.U(3.W))
   val READ_DATA  = Value(5.U(3.W))
 }

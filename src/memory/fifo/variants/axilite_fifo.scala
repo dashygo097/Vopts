@@ -9,7 +9,7 @@ class AXILiteSlaveSyncFIFO(
   addrWidth: Int,
   dataWidth: Int,
   depth: Int,
-  baseAddr: BigInt = 0x0L
+  baseAddr: BigInt
 ) extends Module {
   override def desiredName: String = s"axilite_syncfifo_${addrWidth}x${dataWidth}_d$depth"
 
