@@ -9,21 +9,21 @@ object UartState extends ChiselEnum {
   val STOP  = Value(3.U(2.W))
 }
 
-class UartTXIO extends Bundle {
+class UartTxIO extends Bundle {
   val txd     = Output(Bool())
   val channel = Flipped(Decoupled(UInt(8.W)))
   val busy    = Output(Bool())
 }
 
-class UartRXIO extends Bundle {
+class UartRxIO extends Bundle {
   val rxd     = Input(Bool())
   val channel = Decoupled(UInt(8.W))
   val error   = Output(Bool())
 }
 
-class UartTX(baudRate: Int, clkFreq: Int) extends Module {
+class UartTx(baudRate: Int, clkFreq: Int) extends Module {
   override def desiredName: String = s"uart_tx_b${baudRate}_f$clkFreq"
-  val io                           = IO(new UartTXIO).suggestName("UART_TX")
+  val io                           = IO(new UartTxIO).suggestName("UART_Tx")
   val baudTickDivider              = clkFreq / baudRate
 
   val state       = RegInit(UartState.IDLE)
@@ -76,9 +76,9 @@ class UartTX(baudRate: Int, clkFreq: Int) extends Module {
   }
 }
 
-class UartRX(baudRate: Int, clkFreq: Int) extends Module {
+class UartRx(baudRate: Int, clkFreq: Int) extends Module {
   override def desiredName: String = s"uart_rx_b${baudRate}_f$clkFreq"
-  val io                           = IO(new UartRXIO).suggestName("UART_RX")
+  val io                           = IO(new UartRxIO).suggestName("UART_Rx")
   val baudTickDivider              = clkFreq / baudRate
 
   val state       = RegInit(UartState.IDLE)
@@ -139,12 +139,12 @@ class UartRX(baudRate: Int, clkFreq: Int) extends Module {
 class Uart(baudRate: Int, clkFreq: Int) extends Module {
   override def desiredName: String = s"uart_b${baudRate}_f$clkFreq"
   val io                           = IO(new Bundle {
-    val tx = new UartTXIO
-    val rx = new UartRXIO
+    val tx = new UartTxIO
+    val rx = new UartRxIO
   }).suggestName("UART")
 
-  val tx = Module(new UartTX(baudRate, clkFreq))
-  val rx = Module(new UartRX(baudRate, clkFreq))
+  val tx = Module(new UartTx(baudRate, clkFreq))
+  val rx = Module(new UartRx(baudRate, clkFreq))
 
   tx.io <> io.tx
   rx.io <> io.rx
