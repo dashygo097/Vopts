@@ -18,8 +18,8 @@ class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
   override def desiredName: String = s"uart_level_b${option.baudRate}_f$clkFreq"
   val io                           = IO(new UartCmdProcessorIO).suggestName("UART_CMD")
 
-  val uart_tx = Module(new UartTX(option.baudRate, clkFreq))
-  val uart_rx = Module(new UartRX(option.baudRate, clkFreq))
+  val uart_tx = Module(new UartTx(option.baudRate, clkFreq))
+  val uart_rx = Module(new UartRx(option.baudRate, clkFreq))
 
   io.txd                   := uart_tx.io.txd
   uart_tx.io.channel.valid := false.B
