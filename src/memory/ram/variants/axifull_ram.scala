@@ -11,7 +11,7 @@ class AXIFullSlaveRAM(
   idWidth: Int,
   userWidth: Int,
   memSize: BigInt,
-  baseAddr: BigInt = 0x0,
+  baseAddr: BigInt,
 ) extends Module {
   override def desiredName: String =
     s"axifull_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}_s${memSize}_b$baseAddr"

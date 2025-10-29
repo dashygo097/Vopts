@@ -27,7 +27,7 @@ class AXILiteSlaveDMA(
   ctrlAddrWidth: Int,
   idWidth: Int,
   userWidth: Int,
-  baseAddr: BigInt = 0x0L
+  baseAddr: BigInt
 ) extends Module {
   override def desiredName: String =
     s"axilite_slave_dma_${addrWidth}x${dataWidth}_ctrl${ctrlAddrWidth}_i${idWidth}_u$userWidth"

@@ -7,6 +7,7 @@ import chisel3.util._
 object AXIFull2LiteBridgeState extends ChiselEnum {
   val IDLE = Value(0.U(4.W))
 
+  // Write states
   val W_WAIT_AW     = Value(1.U(4.W))
   val W_WAIT_W      = Value(2.U(4.W))
   val W_LITE_AW     = Value(3.U(4.W))
@@ -14,6 +15,7 @@ object AXIFull2LiteBridgeState extends ChiselEnum {
   val W_SEND_B      = Value(5.U(4.W))
   val W_DRAIN_UNSUP = Value(6.U(4.W))
 
+  // Read states
   val R_WAIT_AR  = Value(7.U(4.W))
   val R_LITE_AR  = Value(8.U(4.W))
   val R_LITE_R   = Value(9.U(4.W))
