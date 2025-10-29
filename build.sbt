@@ -147,4 +147,4 @@ lazy val app = (project in file("app"))
   )
 
 lazy val root = (project in file("."))
-  .aggregate(utils, dds, math, com, dsp, mem, perip, mod, net)
+  .aggregate(utils, dds, math, com, dsp, mem, perip, net, mod)
