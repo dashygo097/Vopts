@@ -7,7 +7,7 @@ import chisel3.util._
 class AXILiteSlaveRAM(
   addrWidth: Int,
   dataWidth: Int,
-  memSize: BigInt,
+  memSize: Int,
   baseAddr: BigInt
 ) extends Module {
   override def desiredName: String =
