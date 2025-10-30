@@ -50,7 +50,3 @@ class SyncFIFO[T <: Data](gen: T, depth: Int) extends Module {
     queue.io.deq.ready := false.B
   }
 }
-
-object TestSyncFIFO extends App {
-  VerilogEmitter.parse(new SyncFIFO(UInt(32.W), 16), "sync_fifo.sv", info = true)
-}
