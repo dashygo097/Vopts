@@ -99,7 +99,3 @@ class PingPongFIFO[T <: Data](gen: T, depth: Int) extends Module {
   io.read_buffer_empty := Mux(read_ping, read_empty_ping, read_empty_pong)
   io.buffer_switch     := write_buffer_sel
 }
-
-object TestPingPong extends App {
-  VerilogEmitter.parse(new PingPongFIFO(UInt(32.W), 16), "pingpong.sv", info = true)
-}
