@@ -12,6 +12,7 @@ class AXIFullSlaveRAM(
   userWidth: Int,
   memSize: BigInt,
   baseAddr: BigInt,
+  useSyncMem: Boolean = true, 
 ) extends Module {
   override def desiredName: String =
     s"axifull_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}_s${memSize}_b$baseAddr"
@@ -20,7 +21,7 @@ class AXIFullSlaveRAM(
     IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val axi                          = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
-  val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr))
+  val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr, useSyncMem))
 
   // Parameters
   val addr_lsb          = log2Ceil(dataWidth / 8)
