@@ -14,18 +14,51 @@ class UartCmdProcessorIO extends Bundle {
   val resp_ready = Output(Bool())
 }
 
-class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
-  override def desiredName: String = s"uart_level_b${option.baudRate}_f$clkFreq"
-  val io                           = IO(new UartCmdProcessorIO).suggestName("UART_CMD")
+class UartCmdProcessor(clkFreq: Int, baudRate: Int, endianness: String) extends Module {
+  override def desiredName: String =
+    s"uart_level_b${baudRate}_f${clkFreq}_$endianness"
 
-  val uart_tx = Module(new UartTx(option.baudRate, clkFreq))
-  val uart_rx = Module(new UartRx(option.baudRate, clkFreq))
+  val io = IO(new UartCmdProcessorIO).suggestName("UART_CMD")
+
+  val uart_tx = Module(new UartTx(baudRate, clkFreq))
+  val uart_rx = Module(new UartRx(baudRate, clkFreq))
+
+  def assembleWord32FromBytes(b0: UInt, b1: UInt, b2: UInt, b3: UInt): UInt =
+    if (isLittleEndian) {
+      // Little-endian: LSB first (b0 is LSB)
+      Cat(b3, b2, b1, b0)
+    } else {
+      // Big-endian: MSB first (b0 is MSB)
+      Cat(b0, b1, b2, b3)
+    }
+
+  def disassembleWord32(word: UInt): Vec[UInt] = {
+    val bytes = Wire(Vec(4, UInt(8.W)))
+    if (isLittleEndian) {
+      // Little-endian: LSB first
+      bytes(0) := word(7, 0)
+      bytes(1) := word(15, 8)
+      bytes(2) := word(23, 16)
+      bytes(3) := word(31, 24)
+    } else {
+      // Big-endian: MSB first
+      bytes(0) := word(31, 24)
+      bytes(1) := word(23, 16)
+      bytes(2) := word(15, 8)
+      bytes(3) := word(7, 0)
+    }
+    bytes
+  }
 
   io.txd                   := uart_tx.io.txd
   uart_tx.io.channel.valid := false.B
   uart_tx.io.channel.bits  := 0.U
   uart_rx.io.rxd           := io.rxd
   uart_rx.io.channel.ready := true.B
+
+  require(endianness == "big" || endianness == "little", s"endianness must be 'big' or 'little', got '$endianness'")
+
+  val isLittleEndian = endianness == "little"
 
   val rx_state    = RegInit(0.U(2.W))
   val rx_byte_cnt = RegInit(0.U(4.W))
@@ -69,10 +102,23 @@ class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
               2.U -> UartCmdType.MOVE
             )
           )
-          cmd_addr_reg  := Cat(rx_buffer(4), rx_buffer(3), rx_buffer(2), rx_buffer(1))
-          cmd_wdata_reg := Cat(uart_rx.io.channel.bits, rx_buffer(7), rx_buffer(6), rx_buffer(5))
-          rx_state      := 0.U
-          rx_byte_cnt   := 0.U
+
+          cmd_addr_reg := assembleWord32FromBytes(
+            rx_buffer(1),
+            rx_buffer(2),
+            rx_buffer(3),
+            rx_buffer(4)
+          )
+
+          cmd_wdata_reg := assembleWord32FromBytes(
+            rx_buffer(5),
+            rx_buffer(6),
+            rx_buffer(7),
+            uart_rx.io.channel.bits
+          )
+
+          rx_state    := 0.U
+          rx_byte_cnt := 0.U
         }
       }
     }
@@ -86,15 +132,17 @@ class UartCmdProcessor(clkFreq: Int, option: UartCmdOption) extends Module {
   io.resp_ready            := false.B
   uart_tx.io.channel.valid := false.B
   uart_tx.io.channel.bits  := 0.U
-
   switch(tx_state) {
     is(0.U) { // IDLE
       when(io.resp_valid) {
-        tx_buffer(0)   := 0.U
-        tx_buffer(1)   := io.resp_rdata(7, 0)
-        tx_buffer(2)   := io.resp_rdata(15, 8)
-        tx_buffer(3)   := io.resp_rdata(23, 16)
-        tx_buffer(4)   := io.resp_rdata(31, 24)
+        tx_buffer(0) := 0.U // Status byte
+
+        val resp_bytes = disassembleWord32(io.resp_rdata)
+        tx_buffer(1) := resp_bytes(0)
+        tx_buffer(2) := resp_bytes(1)
+        tx_buffer(3) := resp_bytes(2)
+        tx_buffer(4) := resp_bytes(3)
+
         tx_total_bytes := 5.U
         tx_byte_cnt    := 0.U
         tx_state       := 1.U

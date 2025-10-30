@@ -24,9 +24,9 @@ object MasterUartCmdState extends ChiselEnum {
   val MOVE_WRITE_RESP = Value(9.U(4.W))
 }
 
-class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option: UartCmdOption) extends Module {
+class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, baudRate: Int, endianness: String) extends Module {
   override def desiredName: String =
-    s"axilite_master_uart_cmd_${addrWidth}x${dataWidth}_b${option.baudRate}_f$clkFreq"
+    s"axilite_master_uart_cmd_${addrWidth}x${dataWidth}_b${baudRate}_f$clkFreq"
 
   // AXI Lite Master Interface
   val ext_axi   = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)).suggestName("M_AXI")
@@ -36,7 +36,7 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
   val cmd_valid = IO(Output(Bool())).suggestName("CMD_VALID")
   val cmd_type  = IO(Output(UartCmdType())).suggestName("CMD_TYPE")
 
-  val uart_cmd = Module(new UartCmdProcessor(clkFreq, option))
+  val uart_cmd = Module(new UartCmdProcessor(clkFreq, baudRate, endianness))
 
   // State machine for AXI transactions
   val state = RegInit(MasterUartCmdState.IDLE)
@@ -205,7 +205,7 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, option:
 
 object TestAXILiteMasterUartCmd extends App {
   VerilogEmitter.parse(
-    new AXILiteMasterUartCmd(32, 32, 100000000, UartCmdOption(115200)),
+    new AXILiteMasterUartCmd(32, 32, 100000000, 115200, "big"),
     "axi_lite_master_uart_cmd.sv",
     info = true
   )
