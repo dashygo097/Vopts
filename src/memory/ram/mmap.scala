@@ -1,5 +1,6 @@
 package mem.ram
 
+import utils._
 import chisel3._
 import chisel3.util._
 
@@ -21,9 +22,9 @@ class MMapRegionIO(addrWidth: Int, dataWidth: Int) extends Bundle {
 class MMapRegion(
   addrWidth: Int,
   dataWidth: Int,
-  memSize: BigInt,
+  memSize: Int,
   baseAddr: BigInt,
-  useSyncMem: Boolean = true 
+  useSyncMem: Boolean = true
 ) extends Module {
   override def desiredName: String =
     s"ram_${if (useSyncMem) "syncmem_" else ""}${addrWidth}x${dataWidth}_s${memSize}_b$baseAddr"
@@ -83,19 +84,27 @@ class MMapRegion(
     }
   } else {
     // Synchronous RAM (SyncReadMem Implementation)
-    val ram         = SyncReadMem(memSize.toInt, Vec(dataWidth / 8, UInt(8.W)))
-    
+    val ram = SyncReadMem(memSize.toInt, Vec(dataWidth / 8, UInt(8.W)))
+
     val write_addr = aw_offset_addr(opt_mem_addr_bits + addr_lsb - 1, addr_lsb)
     val read_addr  = ar_offset_addr(opt_mem_addr_bits + addr_lsb - 1, addr_lsb)
 
     // FIXME: This dontTouch is necessary for chisel3 not to wipe out the io.write_strb during optimization
     dontTouch(io.write_strb)
-    when (io.write_en && aw_valid) {
+    when(io.write_en && aw_valid) {
       ram.write(write_addr, byte_in, io.write_strb.asBools)
     }
-    
+
     val read_vec = ram.read(read_addr, true.B)
-    
+
     io.read_data := Cat(read_vec.reverse)
   }
+}
+
+object TestMMapRegion extends App {
+  VerilogEmitter.parse(
+    new MMapRegion(32, 32, 1024, 0x10000, useSyncMem = true),
+    "ram.sv",
+    info = true
+  )
 }
