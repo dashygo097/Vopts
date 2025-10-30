@@ -88,6 +88,7 @@ class MMapRegion(
     val write_addr = aw_offset_addr(opt_mem_addr_bits + addr_lsb - 1, addr_lsb)
     val read_addr  = ar_offset_addr(opt_mem_addr_bits + addr_lsb - 1, addr_lsb)
 
+    // FIXME: This dontTouch is necessary for chisel3 not to wipe out the io.write_strb during optimization
     dontTouch(io.write_strb)
     when (io.write_en && aw_valid) {
       ram.write(write_addr, byte_in, io.write_strb.asBools)
