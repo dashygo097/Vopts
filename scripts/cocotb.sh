@@ -2,6 +2,7 @@
 
 BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
 BUILD_DIR=$BASE_DIR/build
+SIM_DIR=$BASE_DIR/sims
 COCOTB_DIR=$BASE_DIR/sims/cocotb
 COCOTB_MAKEFILE="$COCOTB_DIR/cocotb.make"
 
@@ -30,9 +31,6 @@ show_header() {
   echo
 }
 
-
-                                                                            
-
 show_status() {
   local status=$1
   local message=$2
@@ -51,7 +49,7 @@ select_dut() {
   
   local tb_files=()
   while IFS= read -r -d $'\0' file; do
-    tb_files+=("$file")
+    tb_files+=("${file#$BUILD_DIR/}")
   done < <(find "$BUILD_DIR" -type f \( -name "*.v" \) -print0)
   
   if [ ${#tb_files[@]} -eq 0 ]; then
@@ -60,7 +58,7 @@ select_dut() {
   fi
   
   for i in "${!tb_files[@]}"; do
-    echo -e "  ${GRAY}$((i+1)))${NC} $(basename "${tb_files[$i]}")" >&2
+    echo -e "  ${GRAY}$((i+1)))${NC} ${tb_files[$i]}" >&2
   done
   
   local selected
@@ -81,9 +79,9 @@ select_dut() {
   done
   
   local tb_file="${tb_files[$((selected-1))]}"
-  echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$tb_file")${NC} ($tb_file)" >&2
+  echo -e "\033[1A\033[2K${GREEN}◆ Selected: $tb_file${NC}" >&2
   
-  echo "$(basename "$tb_file")"
+  echo "$tb_file"
 }
  
 
@@ -112,7 +110,7 @@ select_testbench() {
   
   local tb_files=()
   while IFS= read -r -d $'\0' file; do
-    tb_files+=("$file")
+    tb_files+=("${file#$TB_DIR/}")
   done < <(find "$COCOTB_DIR" -type f \( -name "*.py" \) -print0)
   
   if [ ${#tb_files[@]} -eq 0 ]; then
@@ -144,7 +142,7 @@ select_testbench() {
   local tb_file="${tb_files[$((selected-1))]}"
   echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$tb_file")${NC} ($tb_file)" >&2
   
-  echo "$(basename "$tb_file")"
+  echo $(basename "$tb_file")
 }
 
 run_test() {
@@ -171,17 +169,16 @@ run_test() {
   make -f $COCOTB_MAKEFILE \
     VERILOG_SOURCES="$dut_file" \
     TOPLEVEL="$top_module" \
-    MODULE="${tb_file%.*}" \
+    COCOTB_TEST_MODULES="${tb_file%.*}" \
     -C "$BUILD_DIR" || {
       show_status "error" "Failed to run cocotb testbench."
       exit 1
     }
-  mkdir -p $COCOTB_DIR/logs/${tb_file%.*}
-  mv $BUILD_DIR/sim_build $COCOTB_DIR/logs/${tb_file%.*}/sim_build
-  mv $BUILD_DIR/results.xml $COCOTB_DIR/logs/${tb_file%.*}/results.xml
+  mkdir -p "$SIM_DIR/logs/${tb_file%.*}"
+  mv "$BUILD_DIR/sim_build" "$SIM_DIR/logs/${tb_file%.*}/sim_build"
+  mv "$BUILD_DIR/results.xml" "$SIM_DIR/logs/${tb_file%.*}/results.xml"
 
   show_status "success" "Cocotb testbench executed successfully."
-
 }
 
 # Main execution

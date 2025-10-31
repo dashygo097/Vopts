@@ -1,0 +1,10 @@
+[project]
+name = "vopts"
+version = "0.1.0"
+description = "Python dependecies for vopts"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "cocotb>=2.0.0",
+    "scipy>=1.16.3",
+]

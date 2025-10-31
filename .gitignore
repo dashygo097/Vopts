@@ -11,3 +11,6 @@ obj_dir/
 
 app/
 sims/
+
+.python-version
+.venv

@@ -27,8 +27,7 @@ run: pre
 
 clean:
 	@rm -rf $(SIM_DIR)/logs
-	@rm -rf $(TB_DIR)/obj_dir
-	@rm -rf $(COCOTB_DIR)/logs
+	@rm -rf $(SIM_DIR)/build
 
 update:
 	@sbt clean bloopInstall
