@@ -34,6 +34,7 @@ class DirectMappedCache(
   val write_data_r = RegNext(io.write_data)
   val read_en_r    = RegNext(io.read_en)
 
+  // Read logic
   val readData = cacheArray.read(index, io.read_en || io.write_en)
 
   val validHit = readData.valid && (readData.tag === addrTag_r)
