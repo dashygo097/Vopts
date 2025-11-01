@@ -4,49 +4,50 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class DirectMappedCache[T <: Data](
-  gen: T, 
-  addrWidth: Int, 
-  lineSize: Int, 
+class DirectMappedCache(
+  addrWidth: Int,
+  dataWidth: Int,
+  lineSize: Int,
   numLines: Int
 ) extends Module {
-  override def desiredName: String = 
-    s"direct_mapped_cache_a${addrWidth}_l${lineSize}x${numLines}"
-  
-  val ext_io = IO(new CacheExternalIO(gen, addrWidth)).suggestName("CACHE")
-  val io = Wire(new CacheIO(gen, addrWidth))
+  override def desiredName: String =
+    s"direct_mapped_cache_${addrWidth}x${dataWidth}_l${lineSize}x$numLines"
 
-  // Parameters 
-  val tagWidth    = addrWidth - log2Ceil(numLines) - log2Ceil(lineSize/4)
-  val indexWidth  = log2Ceil(numLines)
-  val offsetWidth = log2Ceil(lineSize/4)
+  val ext_io = IO(new CacheExternalIO(addrWidth, dataWidth)).suggestName("CACHE")
+  val io     = Wire(new CacheIO(addrWidth, dataWidth))
 
-  val cacheArray = SyncReadMem(numLines, new CacheEntry(gen, tagWidth))
+  // Parameters
+  val bytesPerWord = dataWidth / 8
+  val tagWidth     = addrWidth - log2Ceil(numLines) - log2Ceil(lineSize / bytesPerWord)
+  val indexWidth   = log2Ceil(numLines)
+  val offsetWidth  = log2Ceil(lineSize / bytesPerWord)
+
+  val cacheArray = SyncReadMem(numLines, new CacheEntry(dataWidth, tagWidth))
 
   val index   = io.addr(indexWidth + offsetWidth - 1, offsetWidth)
   val addrTag = io.addr(addrWidth - 1, indexWidth + offsetWidth)
 
   // Pipeline registers
-  val index_r       = RegNext(index)
-  val addrTag_r     = RegNext(addrTag)
-  val write_en_r    = RegNext(io.write_en)
-  val write_data_r  = RegNext(io.write_data)
-  val read_en_r     = RegNext(io.read_en)
+  val index_r      = RegNext(index)
+  val addrTag_r    = RegNext(addrTag)
+  val write_en_r   = RegNext(io.write_en)
+  val write_data_r = RegNext(io.write_data)
+  val read_en_r    = RegNext(io.read_en)
 
   val readData = cacheArray.read(index, io.read_en || io.write_en)
 
   val validHit = readData.valid && (readData.tag === addrTag_r)
   io.miss := read_en_r && !validHit
-  
+
   io.read_data := readData.data
 
   // Write logic
   when(write_en_r) {
-    val writeEntry = Wire(new CacheEntry(gen, tagWidth))
+    val writeEntry = Wire(new CacheEntry(dataWidth, tagWidth))
     writeEntry.valid := true.B
     writeEntry.tag   := addrTag_r
     writeEntry.data  := write_data_r
-    
+
     cacheArray.write(index_r, writeEntry)
   }
 
@@ -55,10 +56,8 @@ class DirectMappedCache[T <: Data](
 
 object TestDirectMappedCache extends App {
   VerilogEmitter.parse(
-    new DirectMappedCache(UInt(32.W), 32, 16, 64),
+    new DirectMappedCache(32, 32, 16, 64),
     "direct_mapped_cache.sv",
     info = true
   )
 }
-
-
