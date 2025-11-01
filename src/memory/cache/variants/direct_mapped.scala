@@ -16,6 +16,7 @@ class DirectMappedCache[T <: Data](
   val ext_io = IO(new CacheExternalIO(gen, addrWidth)).suggestName("CACHE")
   val io = Wire(new CacheIO(gen, addrWidth))
 
+  // Parameters 
   val tagWidth    = addrWidth - log2Ceil(numLines) - log2Ceil(lineSize/4)
   val indexWidth  = log2Ceil(numLines)
   val offsetWidth = log2Ceil(lineSize/4)
@@ -32,8 +33,7 @@ class DirectMappedCache[T <: Data](
   val write_data_r  = RegNext(io.write_data)
   val read_en_r     = RegNext(io.read_en)
 
-  val memReadEn = (io.read_en || io.write_en) && !reset.asBool
-  val readData = cacheArray.read(index, memReadEn)
+  val readData = cacheArray.read(index, io.read_en || io.write_en)
 
   val validHit = readData.valid && (readData.tag === addrTag_r)
   io.miss := read_en_r && !validHit
@@ -51,18 +51,6 @@ class DirectMappedCache[T <: Data](
   }
 
   ext_io.connect(io)
-}
-
-object DirectMappedCache {
-  def apply[T <: Data](
-    gen: T, 
-    addrWidth: Int, 
-    lineSize: Int, 
-    numLines: Int
-  ): CacheIO[T] = {
-    val cache = Module(new DirectMappedCache(gen, addrWidth, lineSize, numLines))
-    cache.io
-  }
 }
 
 object TestDirectMappedCache extends App {
