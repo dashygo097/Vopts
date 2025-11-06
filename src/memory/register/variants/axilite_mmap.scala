@@ -43,7 +43,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   }
 }
 
-object TestAXILiteSlaveMMapDemo extends App {
+object TestAXILiteSlaveMMap extends App {
   val mmap = Seq(
     Register("slv_reg0", 0x10000L, 0x0L),
     Register("slv_reg1", 0x14000L, 0x0L),
