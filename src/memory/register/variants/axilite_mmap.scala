@@ -8,20 +8,8 @@ import chisel3.util._
 class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) extends Module {
   override def desiredName: String =
     s"axilite_slave_mmap_${addrWidth}x${dataWidth}_r${mmap.length}"
-  // AXI Lite Slave Interface
-  val maxDataValue                 = BigInt(1) << dataWidth
-  val maxAddrValue                 = BigInt(1) << addrWidth
-  for (reg <- mmap) {
-    require(
-      reg.addr >= 0 && reg.addr < maxAddrValue,
-      s"Register address ${reg.addr} out of range for addrWidth $addrWidth"
-    )
-    require(
-      reg.initValue >= 0 && reg.initValue < maxDataValue,
-      s"Register initial value ${reg.initValue} out of range for dataWidth $dataWidth"
-    )
-  }
 
+  // AXI Lite Slave Interface
   val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
