@@ -3,78 +3,80 @@ package com.amba
 import chisel3._
 
 abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Module {
-  val maxDataValue                 = BigInt(1) << dataWidth
-  val maxAddrValue                 = BigInt(1) << addrWidth
-
   val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
-  private val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
-  ext_axi.connect(axi)
+  val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
-  val awready = RegInit(false.B)
-  val wready  = RegInit(false.B)
-  val bvalid  = RegInit(false.B)
-  val arready = RegInit(false.B)
-  val rvalid  = RegInit(false.B)
+  // Signals
+  val axi_awready = RegInit(false.B)
+  val axi_awaddr  = RegInit(0.U(addrWidth.W))
+  val axi_wready  = RegInit(false.B)
+  val axi_bvalid  = RegInit(false.B)
+  val axi_bresp   = RegInit(0.U(2.W))
+  val axi_arready = RegInit(false.B)
+  val axi_araddr  = RegInit(0.U(addrWidth.W))
+  val axi_rdata   = RegInit(0.U(dataWidth.W))
+  val axi_rvalid  = RegInit(false.B)
+  val axi_rresp   = RegInit(0.U(2.W))
+
+  // I/O Connections
+  axi.aw.ready    := axi_awready
+  axi.w.ready     := axi_wready
+  axi.b.bits.resp := axi_bresp
+  axi.b.valid     := axi_bvalid
+  axi.ar.ready    := axi_arready
+  axi.r.bits.data := axi_rdata
+  axi.r.bits.resp := axi_rresp
+  axi.r.valid     := axi_rvalid
+
+  // Handshake conditions
+  val axi_will_awrite = !axi_awready && axi.aw.valid
+  val axi_will_write = !axi_wready && axi_awready && axi.aw.valid
+  val axi_will_bresp = !axi_bvalid && axi_wready && axi.w.valid
+  val axi_will_aread = !axi_arready && axi.ar.valid
+  val axi_will_read = !axi_rvalid && axi_arready && axi.ar.valid
   
-  val awaddr = Reg(UInt(addrWidth.W))
-  val araddr = Reg(UInt(addrWidth.W))
-  
-  axi.aw.ready := awready
-  axi.w.ready  := wready
-  axi.b.valid  := bvalid
-  axi.ar.ready := arready
-  axi.r.valid  := rvalid
-
-  axi.b.bits.resp := 0.U(2.W)
-  axi.r.bits.resp := 0.U(2.W)
-
   // AW
-  when(!awready && axi.aw.valid) {
-    awaddr  := axi.aw.bits.addr
-    awready := true.B
-  } .elsewhen(axi.w.fire) { 
-    awready := false.B
+  when(axi_will_awrite) {
+    axi_awaddr  := axi.aw.bits.addr
+    axi_awready := true.B
+  }.otherwise {
+    axi_awready := false.B
   }
 
   // W
-  when(!wready && awready) {
-    wready := true.B
-  } .elsewhen(axi.w.fire) {
-    wready := false.B
+  when(axi_will_write) {
+    axi_wready := true.B
+  }.otherwise {
+    when(axi_wready && axi.w.valid) {
+      axi_wready := false.B
+    }
   }
 
-  // B 
-  when(axi.w.fire && !bvalid) {
-    bvalid := true.B
-  } .elsewhen(bvalid && axi.b.ready) {
-    bvalid := false.B
+  // B
+  when(axi_will_bresp) {
+    axi_bvalid := true.B
+  }.otherwise {
+    when(axi.b.ready && axi_bvalid) {
+      axi_bvalid := false.B
+    }
   }
-
+  
   // AR
-  when(!arready && axi.ar.valid) {
-    araddr  := axi.ar.bits.addr
-    arready := true.B
-  } .elsewhen(axi.r.fire) { 
-    arready := false.B
+  when(axi_will_aread) {
+    axi_araddr  := axi.ar.bits.addr
+    axi_arready := true.B
+  }.otherwise {
+    axi_arready := false.B
   }
 
   // R
-  when(axi.ar.fire && !rvalid) {
-    rvalid := true.B
-  } .elsewhen(axi.r.fire) {
-    rvalid := false.B
+  when(axi_will_read) {
+    axi_rvalid := true.B
+  }.otherwise {
+    when(axi_rvalid && axi.r.ready) {
+      axi_rvalid := false.B
+    }
   }
 
-  def doWrite(addr: UInt, data: UInt, strb: UInt): Unit
-  def doRead(addr: UInt): UInt
-  def getBresp(addr: UInt): UInt = 0.U(2.W)
-  def getRresp(addr: UInt): UInt = 0.U(2.W)
-
-  when(axi.w.fire) {
-    doWrite(awaddr, axi.w.bits.data, axi.w.bits.strb)
-  }
-  
-  axi.r.bits.data := doRead(araddr)
-  axi.b.bits.resp := getBresp(awaddr)
-  axi.r.bits.resp := getRresp(araddr)
+  ext_axi.connect(axi)
 }
