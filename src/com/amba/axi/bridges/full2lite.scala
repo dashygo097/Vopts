@@ -39,7 +39,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
 
   val state = RegInit(AXIFull2LiteBridgeState.IDLE)
 
-  def isBurstSupported(b: UInt) = (b === 0.U /*FIXED*/ ) || (b === 1.U /*INCR*/ )
+  def isBurstSupported(b: UInt) = (b === 0.U ) || (b === 1.U )
   def sizeOk(sz: UInt)          = sz === reqSize
 
   // Write-path registers
@@ -105,7 +105,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
 
   // Address increment logic (INCR/FIXED)
   def nextAddr(curr: UInt, burst: UInt): UInt =
-    Mux(burst === 1.U /*INCR*/, curr + beatBytes, curr) // FIXED => same addr
+    Mux(burst === 1.U, curr + beatBytes, curr) 
 
   // FSM
   switch(state) {
@@ -119,7 +119,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
         when(slave.aw.ready) {
           val beats = slave.aw.bits.len + 1.U
           wr_addr  := slave.aw.bits.addr
-          wr_len   := Mux(beats === 0.U, 1.U, beats) // treat 0 as 1 beat
+          wr_len   := Mux(beats === 0.U, 1.U, beats)
           wr_burst := slave.aw.bits.burst
           wr_prot  := slave.aw.bits.prot
 
@@ -143,7 +143,6 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
     }
 
     is(AXIFull2LiteBridgeState.W_WAIT_W) {
-      // Wait to capture one W beat before issuing a Lite write
       when(slave.w.valid && slave.w.ready) {
         wdata_buf   := slave.w.bits.data
         wstrb_buf   := slave.w.bits.strb
@@ -165,7 +164,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
 
     is(AXIFull2LiteBridgeState.W_LITE_B) {
       when(master.b.valid && master.b.ready) {
-        // Aggregate error if any beat fails (OKAY=0, EXOKAY=1, SLVERR=2, DECERR=3)
+        // OKAY=0, EXOKAY=1, SLVERR=2, DECERR=3
         wr_err      := wr_err || (master.b.bits.resp =/= 0.U)
         wr_len      := wr_len - 1.U
         wr_addr     := nextAddr(wr_addr, wr_burst)
@@ -193,7 +192,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
           slave.b.bits.resp := 3.U // DECERR
           slave.b.valid     := true.B
           when(slave.b.ready)(state := AXIFull2LiteBridgeState.IDLE)
-            .otherwise(state := AXIFull2LiteBridgeState.W_SEND_B) // reuse RESP state
+            .otherwise(state := AXIFull2LiteBridgeState.W_SEND_B)
         }
       }
     }
