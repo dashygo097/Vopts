@@ -28,13 +28,10 @@ class AXILiteSlaveDMA(
   idWidth: Int,
   userWidth: Int,
   baseAddr: BigInt
-) extends Module {
+) extends AXILiteSlave(addrWidth, dataWidth) {
+  override protected def getExtAXIName: String = "S_AXI_CTRL"
   override def desiredName: String =
     s"axilite_slave_dma_${addrWidth}x${dataWidth}_ctrl${ctrlAddrWidth}_i${idWidth}_u$userWidth"
-
-  // AXI-Lite Slave (CSR)
-  val ext_axi_ctrl = IO(new AXILiteSlaveExternalIO(ctrlAddrWidth, 32)).suggestName("S_AXI_CTRL")
-  val axi_ctrl     = Wire(new AXILiteSlaveIO(ctrlAddrWidth, 32))
 
   // AXI Full Master (to memory)
   val ext_axi_mem = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))
@@ -108,87 +105,50 @@ class AXILiteSlaveDMA(
     ready_pulse  := true.B
   }
 
-  // AXI-Lite CSR slave
-  val axi_awready = RegInit(false.B)
-  val axi_awaddr  = RegInit(0.U(ctrlAddrWidth.W))
-  val axi_wready  = RegInit(false.B)
-  val axi_bvalid  = RegInit(false.B)
-  val axi_bresp   = RegInit(0.U(2.W))
-  val axi_arready = RegInit(false.B)
-  val axi_araddr  = RegInit(0.U(ctrlAddrWidth.W))
-  val axi_rdata   = RegInit(0.U(32.W))
-  val axi_rvalid  = RegInit(false.B)
-  val axi_rresp   = RegInit(0.U(2.W))
-
   // I/O Connections
-  axi_ctrl.aw.ready    := axi_awready
-  axi_ctrl.w.ready     := axi_wready
-  axi_ctrl.b.bits.resp := axi_bresp
-  axi_ctrl.b.valid     := axi_bvalid
-  axi_ctrl.ar.ready    := axi_arready
-  axi_ctrl.r.bits.data := axi_rdata
-  axi_ctrl.r.bits.resp := axi_rresp
-  axi_ctrl.r.valid     := axi_rvalid
+  axi.aw.ready    := axi_awready
+  axi.w.ready     := axi_wready
+  axi.b.bits.resp := axi_bresp
+  axi.b.valid     := axi_bvalid
+  axi.ar.ready    := axi_arready
+  axi.r.bits.data := axi_rdata
+  axi.r.bits.resp := axi_rresp
+  axi.r.valid     := axi_rvalid
 
-  // Write Address
-  when(!axi_awready && axi_ctrl.aw.valid) {
-    axi_awaddr  := axi_ctrl.aw.bits.addr
-    axi_awready := true.B
-  }.otherwise {
-    axi_awready := false.B
-  }
+  // AW 
 
-  // Write Data
-  when(!axi_wready && axi_awready && axi_ctrl.aw.valid) {
-    axi_wready := true.B
-  }.otherwise {
-    when(axi_wready && axi_ctrl.w.valid) {
-      axi_wready := false.B
-    }
-  }
+  // W 
 
-  // Write Response + decode
-  when(!axi_bvalid && axi_wready && axi_ctrl.w.valid) {
-    axi_bvalid := true.B
+  // B + Decode
+  when(axi_will_bresp) {
     axi_bresp  := 0.U // OKAY
 
     when(axi_awaddr === CTRL_ADDR) {
-      when(axi_ctrl.w.bits.data(0)) {
+      when(axi.w.bits.data(0)) {
         ready_pulse := true.B; done_sticky := false.B // start W1P
       }
-      when(axi_ctrl.w.bits.data(1)) {
+      when(axi.w.bits.data(1)) {
         soft_reset_pulse := true.B // soft reset W1P
       }
-      reg_enable     := axi_ctrl.w.bits.data(2)
-      reg_int_enable := axi_ctrl.w.bits.data(3)
+      reg_enable     := axi.w.bits.data(2)
+      reg_int_enable := axi.w.bits.data(3)
     }.elsewhen(axi_awaddr === SRC_ADDR) {
-      reg_src_addr := axi_ctrl.w.bits.data.asUInt.pad(addrWidth)
+      reg_src_addr := axi.w.bits.data.asUInt.pad(addrWidth)
     }.elsewhen(axi_awaddr === DST_ADDR) {
-      reg_dst_addr := axi_ctrl.w.bits.data.asUInt.pad(addrWidth)
+      reg_dst_addr := axi.w.bits.data.asUInt.pad(addrWidth)
     }.elsewhen(axi_awaddr === LENGTH_ADDR) {
-      reg_length := axi_ctrl.w.bits.data.asUInt.pad(addrWidth)
+      reg_length := axi.w.bits.data.asUInt.pad(addrWidth)
     }.elsewhen(axi_awaddr === BURST_SIZE_ADDR) {
-      reg_burst_size := axi_ctrl.w.bits.data(7, 0)
+      reg_burst_size := axi.w.bits.data(7, 0)
     }.elsewhen(axi_awaddr === PRIORITY_ADDR) {
-      reg_priority := axi_ctrl.w.bits.data(2, 0)
-    }
-  }.otherwise {
-    when(axi_ctrl.b.ready && axi_bvalid) {
-      axi_bvalid := false.B
+      reg_priority := axi.w.bits.data(2, 0)
     }
   }
 
-  // Read Address
-  when(!axi_arready && axi_ctrl.ar.valid) {
-    axi_araddr  := axi_ctrl.ar.bits.addr
-    axi_arready := true.B
-  }.otherwise {
-    axi_arready := false.B
-  }
+  // AW 
 
-  // Read Data
-  when(!axi_rvalid && axi_arready && axi_ctrl.ar.valid) {
-    axi_rvalid := true.B
+  // R 
+  when(axi_will_read) {
     axi_rresp  := 0.U // OKAY
     axi_rdata  := 0.U
 
@@ -209,12 +169,7 @@ class AXILiteSlaveDMA(
     }.elsewhen(axi_araddr === PRIORITY_ADDR) {
       axi_rdata := Cat(0.U(29.W), reg_priority)
     }
-  }.otherwise {
-    when(axi_rvalid && axi_ctrl.r.ready)(axi_rvalid := false.B)
   }
-
-  // Connect external ports
-  ext_axi_ctrl.connect(axi_ctrl)
 
   // AXI4-Full Master bridge (single beat transfers)
   val beatBytes = dataWidth / 8
