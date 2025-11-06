@@ -3,7 +3,9 @@ package com.amba
 import chisel3._
 
 abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Module {
-  val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
+  protected def getExtAXIName: String = "S_AXI" 
+
+  val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName(getExtAXIName)
   val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
   // Signals
