@@ -3,10 +3,10 @@ package com.amba
 import chisel3._
 
 abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Module {
-  protected def getExtAXIName: String = "S_AXI" 
+  protected def getExtAXIName: String = "S_AXI"
 
   val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName(getExtAXIName)
-  val axi = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
+  val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
   // Signals
   val axi_awready = RegInit(false.B)
@@ -32,11 +32,11 @@ abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Modu
 
   // Handshake conditions
   val axi_will_awrite = !axi_awready && axi.aw.valid
-  val axi_will_write = !axi_wready && axi_awready && axi.aw.valid
-  val axi_will_bresp = !axi_bvalid && axi_wready && axi.w.valid
-  val axi_will_aread = !axi_arready && axi.ar.valid
-  val axi_will_read = !axi_rvalid && axi_arready && axi.ar.valid
-  
+  val axi_will_write  = !axi_wready && axi_awready && axi.aw.valid
+  val axi_will_bresp  = !axi_bvalid && axi_wready && axi.w.valid
+  val axi_will_aread  = !axi_arready && axi.ar.valid
+  val axi_will_read   = !axi_rvalid && axi_arready && axi.ar.valid
+
   // AW
   when(axi_will_awrite) {
     axi_awaddr  := axi.aw.bits.addr
@@ -62,7 +62,7 @@ abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Modu
       axi_bvalid := false.B
     }
   }
-  
+
   // AR
   when(axi_will_aread) {
     axi_araddr  := axi.ar.bits.addr
