@@ -26,20 +26,20 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   mmap_regs.io.read_addr := axi_araddr
   axi_rdata              := mmap_regs.io.read_data
 
-  // AW 
+  // AW
 
-  // W 
+  // W
 
-  // B 
+  // B
   when(axi_will_bresp) {
-    axi_bresp  := Mux(mmap_regs.io.write_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
+    axi_bresp := Mux(mmap_regs.io.write_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
   }
 
-  // AR 
+  // AR
 
-  // R 
+  // R
   when(axi_will_read) {
-    axi_rresp  := Mux(mmap_regs.io.read_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
+    axi_rresp := Mux(mmap_regs.io.read_resp, 0.U, 2.U) // 'SLVERR' if address error else 'OKAY'
   }
 }
 

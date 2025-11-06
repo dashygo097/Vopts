@@ -30,7 +30,7 @@ class AXILiteSlaveDMA(
   baseAddr: BigInt
 ) extends AXILiteSlave(addrWidth, dataWidth) {
   override protected def getExtAXIName: String = "S_AXI_CTRL"
-  override def desiredName: String =
+  override def desiredName: String             =
     s"axilite_slave_dma_${addrWidth}x${dataWidth}_ctrl${ctrlAddrWidth}_i${idWidth}_u$userWidth"
 
   // AXI Full Master (to memory)
@@ -115,13 +115,13 @@ class AXILiteSlaveDMA(
   axi.r.bits.resp := axi_rresp
   axi.r.valid     := axi_rvalid
 
-  // AW 
+  // AW
 
-  // W 
+  // W
 
   // B + Decode
   when(axi_will_bresp) {
-    axi_bresp  := 0.U // OKAY
+    axi_bresp := 0.U // OKAY
 
     when(axi_awaddr === CTRL_ADDR) {
       when(axi.w.bits.data(0)) {
@@ -145,12 +145,12 @@ class AXILiteSlaveDMA(
     }
   }
 
-  // AW 
+  // AW
 
-  // R 
+  // R
   when(axi_will_read) {
-    axi_rresp  := 0.U // OKAY
-    axi_rdata  := 0.U
+    axi_rresp := 0.U // OKAY
+    axi_rdata := 0.U
 
     when(axi_araddr === CTRL_ADDR) {
       axi_rdata := Cat(0.U(28.W), reg_int_enable, reg_enable, 0.U(1.W), 0.U(1.W)) // RO view; start/reset show 0

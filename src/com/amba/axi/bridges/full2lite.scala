@@ -39,7 +39,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
 
   val state = RegInit(AXIFull2LiteBridgeState.IDLE)
 
-  def isBurstSupported(b: UInt) = (b === 0.U ) || (b === 1.U )
+  def isBurstSupported(b: UInt) = (b === 0.U) || (b === 1.U)
   def sizeOk(sz: UInt)          = sz === reqSize
 
   // Write-path registers
@@ -105,7 +105,7 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
 
   // Address increment logic (INCR/FIXED)
   def nextAddr(curr: UInt, burst: UInt): UInt =
-    Mux(burst === 1.U, curr + beatBytes, curr) 
+    Mux(burst === 1.U, curr + beatBytes, curr)
 
   // FSM
   switch(state) {
