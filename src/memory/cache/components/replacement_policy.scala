@@ -14,8 +14,8 @@ case object Random extends ReplacementPolicy {
 
 object ReplacementPolicy {
   def fromString(name: String): Option[ReplacementPolicy] = name.toLowerCase match {
-    case "random" | "rand"                => Some(Random)
-    case _                                => None
+    case "random" | "rand" => Some(Random)
+    case _                 => None
   }
 
   def available: Seq[ReplacementPolicy] = Seq(Random)
@@ -29,17 +29,14 @@ abstract class ReplacementPolicyState(val numLines: Int) {
 
 class RandomState(numLines: Int) extends ReplacementPolicyState(numLines) {
   val lfsrWidth = math.max(log2Ceil(numLines), 4)
-  val lfsr = LFSR(lfsrWidth)
+  val lfsr      = LFSR(lfsrWidth)
 
-  override def getVictim(): UInt = {
+  override def getVictim(): UInt =
     lfsr(log2Ceil(numLines) - 1, 0)
-  }
 
-  override def update(accessedIndex: UInt, isHit: Bool): Unit = {
-  }
+  override def update(accessedIndex: UInt, isHit: Bool): Unit = {}
 
-  override def reset(): Unit = {
-  }
+  override def reset(): Unit = {}
 }
 
 object ReplacementPolicyState {
@@ -47,5 +44,3 @@ object ReplacementPolicyState {
     case Random => new RandomState(numLines)
   }
 }
-
-

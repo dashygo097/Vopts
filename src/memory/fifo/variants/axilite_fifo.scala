@@ -24,7 +24,7 @@ class AXILiteSlaveSyncFIFO(
   sync_fifo.io.enq.valid := write_to_fifo && axi.w.valid
   sync_fifo.io.enq.bits  := axi.w.bits.data
 
-  // FIFO Read Path 
+  // FIFO Read Path
   val read_from_fifo = axi_arready && axi.ar.valid && (axi.ar.bits.addr === FIFO_ADDR)
   sync_fifo.io.deq.ready := read_from_fifo && axi.r.ready
 
@@ -37,20 +37,20 @@ class AXILiteSlaveSyncFIFO(
     axi_rdata := 0.U
   }
 
-  // AW 
+  // AW
 
-  // W 
+  // W
 
-  // B 
+  // B
   when(axi_will_bresp) {
-    axi_bresp  := Mux(sync_fifo.io.full && write_to_fifo, 2.U, 0.U) // SLVERR if full
+    axi_bresp := Mux(sync_fifo.io.full && write_to_fifo, 2.U, 0.U) // SLVERR if full
   }
 
-  // AR 
+  // AR
 
-  // R 
+  // R
   when(axi_will_read) {
-    axi_rresp  := Mux(sync_fifo.io.empty && read_from_fifo, 2.U, 0.U) // SLVERR if empty
+    axi_rresp := Mux(sync_fifo.io.empty && read_from_fifo, 2.U, 0.U) // SLVERR if empty
   }
 }
 
