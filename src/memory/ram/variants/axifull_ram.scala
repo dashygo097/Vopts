@@ -98,9 +98,9 @@ class AXIFullSlaveRAM(
     MuxCase(
       addr,
       Seq(
-        (burst === 0.U) -> addr,
-        (burst === 1.U) -> next_incr,
-        (burst === 2.U) -> Mux(needs_wrap, addr - Cat(wrap_boundary - 1.U, Fill(addr_lsb, 0.U)), next_incr)
+        (burst === AXIBurstType.FIXED) -> addr,
+        (burst === AXIBurstType.INCR) -> next_incr,
+        (burst === AXIBurstType.WRAP) -> Mux(needs_wrap, addr - Cat(wrap_boundary - 1.U, Fill(addr_lsb, 0.U)), next_incr)
       )
     )
   }

@@ -28,13 +28,13 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
   val unsupportedReadUser  = WireDefault(false.B)
 
   // Check for unsupported features
-  unsupportedWriteBurst := slave.aw.valid && slave.aw.bits.burst =/= 1.U
+  unsupportedWriteBurst := slave.aw.valid && slave.aw.bits.burst =/= AXIBurstType.INCR
   unsupportedWriteLen   := slave.aw.valid && slave.aw.bits.len =/= 0.U
   unsupportedWriteID    := slave.aw.valid && slave.aw.bits.id =/= 0.U
   unsupportedWriteUser  := slave.aw.valid && slave.aw.bits.user =/= 0.U
   unsupportedWrite      := unsupportedWriteBurst || unsupportedWriteLen || unsupportedWriteID || unsupportedWriteUser
 
-  unsupportedReadBurst := slave.ar.valid && slave.ar.bits.burst =/= 1.U
+  unsupportedReadBurst := slave.ar.valid && slave.ar.bits.burst =/= AXIBurstType.INCR
   unsupportedReadLen   := slave.ar.valid && slave.ar.bits.len =/= 0.U
   unsupportedReadID    := slave.ar.valid && slave.ar.bits.id =/= 0.U
   unsupportedReadUser  := slave.ar.valid && slave.ar.bits.user =/= 0.U
