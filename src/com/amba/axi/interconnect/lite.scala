@@ -131,7 +131,7 @@ object TestAXILiteInterconnect extends App {
         (0x90000000L, 0xa0000000L)
       )
     ),
-    "axi_lite_interconnect.sv",
+    "axilite_interconnect.sv",
     info = true
   )
 }

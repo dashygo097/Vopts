@@ -138,7 +138,7 @@ object TestAXIFullInterconnect extends App {
         (0x90000000L, 0xa0000000L)
       )
     ),
-    "axi_full_interconnect.sv",
+    "axifull_interconnect.sv",
     info = true
   )
 }

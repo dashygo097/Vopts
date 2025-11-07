@@ -57,7 +57,7 @@ class AXILiteSlaveSyncFIFO(
 object TestAXILiteSlaveSyncFIFO extends App {
   VerilogEmitter.parse(
     new AXILiteSlaveSyncFIFO(32, 32, 64, 0x30000),
-    "axi_lite_slave_fifo.sv",
+    "axilite_slave_fifo.sv",
     info = true
   )
 }

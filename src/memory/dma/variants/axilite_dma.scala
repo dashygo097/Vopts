@@ -292,7 +292,7 @@ object TestAXILiteSlaveDMA extends App {
       userWidth = 1,
       baseAddr = 0x40000
     ),
-    "axi_lite_slave_dma.sv",
+    "axilite_slave_dma.sv",
     info = true
   )
 }
