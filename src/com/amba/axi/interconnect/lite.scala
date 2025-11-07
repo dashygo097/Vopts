@@ -40,7 +40,7 @@ class AXILiteInterconnect(
     slaveSelect
   }
 
-  // Write Address Channel
+  // AW 
   for (i <- 0 until addressMap.length) {
     masters(i).aw.valid := slave.aw.valid && (decodeAddress(slave.aw.bits.addr) === i.U)
     masters(i).aw.bits  := slave.aw.bits
@@ -51,7 +51,7 @@ class AXILiteInterconnect(
     }
   )
 
-  // Write Data Channel
+  // W 
   for (i <- 0 until addressMap.length) {
     masters(i).w.valid := slave.w.valid && (decodeAddress(slave.aw.bits.addr) === i.U)
     masters(i).w.bits  := slave.w.bits
@@ -62,9 +62,10 @@ class AXILiteInterconnect(
     }
   )
 
-  // Write Response Channel
-  for (i <- 0 until addressMap.length)
+  // B 
+  for (i <- 0 until addressMap.length) {
     masters(i).b.ready := slave.b.ready && (decodeAddress(slave.aw.bits.addr) === i.U)
+  }
   slave.b.valid        := Mux1H(
     (0 until addressMap.length).map { i =>
       (decodeAddress(slave.aw.bits.addr) === i.U) -> masters(i).b.valid
@@ -76,7 +77,7 @@ class AXILiteInterconnect(
     }
   )
 
-  // Read Address Channel
+  // AR 
   for (i <- 0 until addressMap.length) {
     masters(i).ar.valid := slave.ar.valid && (decodeAddress(slave.ar.bits.addr) === i.U)
     masters(i).ar.bits  := slave.ar.bits
@@ -87,9 +88,10 @@ class AXILiteInterconnect(
     }
   )
 
-  // Read Data Channel
-  for (i <- 0 until addressMap.length)
+  // R 
+  for (i <- 0 until addressMap.length) {
     masters(i).r.ready := slave.r.ready && (decodeAddress(slave.ar.bits.addr) === i.U)
+  }
   slave.r.valid        := Mux1H(
     (0 until addressMap.length).map { i =>
       (decodeAddress(slave.ar.bits.addr) === i.U) -> masters(i).r.valid
@@ -127,8 +129,8 @@ object TestAXILiteInterconnect extends App {
       32,
       32,
       Seq(
-        (0x80000000L, 0x90000000L),
-        (0x90000000L, 0xa0000000L)
+        (0x80000000L, 0x8000FFFFL),
+        (0x80010000L, 0x8001FFFFL)
       )
     ),
     "axilite_interconnect.sv",
