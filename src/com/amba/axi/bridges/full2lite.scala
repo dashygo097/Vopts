@@ -24,7 +24,7 @@ object AXIFull2LiteBridgeState extends ChiselEnum {
 
 class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Module {
   override def desiredName: String =
-    s"axi_full2lite_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
+    s"axifull2lite_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
 
   require(dataWidth % 8 == 0 && (dataWidth & (dataWidth - 1)) == 0, "dataWidth must be power-of-two multiple of 8")
 
@@ -248,7 +248,7 @@ object AXIFull2LiteBridge {
 object TestAXIFull2LiteBridge extends App {
   VerilogEmitter.parse(
     new AXIFull2LiteBridge(32, 32, 4, 1),
-    "axi_full_to_lite_bridge.sv",
+    "axifull2lite_bridge.sv",
     info = true
   )
 }

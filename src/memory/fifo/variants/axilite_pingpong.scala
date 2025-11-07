@@ -58,7 +58,7 @@ class AXILiteSlavePingPongFIFO(
 object TestAXILiteSlavePingPong extends App {
   VerilogEmitter.parse(
     new AXILiteSlavePingPongFIFO(32, 32, 16, 0x40000L),
-    "axi_lite_slave_pingpong.sv",
+    "axilite_slave_pingpong.sv",
     info = true
   )
 }

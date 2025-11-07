@@ -94,7 +94,7 @@ lazy val mem = (project in file("src/memory"))
     ),
   )
 
-lazy val perip = (project in file("src/perip"))
+lazy val perip = (project in file("src/peripherals"))
   .dependsOn(utils, mem)
   .settings(
     name := "perip",

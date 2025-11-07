@@ -64,9 +64,9 @@ class AXILiteMasterRW(
     read_resp := axi.r.bits.resp
   }
 
-  setupStateMachine()
+  setup()
 }
 
 object TestAXILiteMasterRW extends App {
-  VerilogEmitter.parse(new AXILiteMasterRW(32, 32), "axi_lite_master_rw.sv", info = true)
+  VerilogEmitter.parse(new AXILiteMasterRW(32, 32), "axilite_master_rw.sv", info = true)
 }

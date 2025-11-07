@@ -206,7 +206,7 @@ class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, baudRat
 object TestAXILiteMasterUartCmd extends App {
   VerilogEmitter.parse(
     new AXILiteMasterUartCmd(32, 32, 100000000, 115200, "big"),
-    "axi_lite_master_uart_cmd.sv",
+    "axilite_master_uart_cmd.sv",
     info = true
   )
 }

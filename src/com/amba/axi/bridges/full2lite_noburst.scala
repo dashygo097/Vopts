@@ -5,7 +5,7 @@ import chisel3._
 
 class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Module {
   override def desiredName: String =
-    s"axi_full2lite_no_burst_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
+    s"axifull2lite_no_burst_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
 
   val ext_slave = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
@@ -94,7 +94,7 @@ object AXIFull2LiteBridgeNoBurst {
 object TestAXIFull2LiteBridgeNoBurst extends App {
   VerilogEmitter.parse(
     new AXIFull2LiteBridgeNoBurst(32, 32, 4, 1),
-    "axi_full_to_lite_bridge_no_burst.sv",
+    "axifull2lite_bridge_no_burst.sv",
     info = true
   )
 }

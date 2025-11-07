@@ -26,7 +26,7 @@ class AXIFullMasterRW(
   userWidth: Int = 0
 ) extends Module {
   override def desiredName: String =
-    s"axi_full_master_rw_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
+    s"axifull_master_rw_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
 
   // External AXI pins and internal AXI record
   val ext_axi = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("M_AXI")
@@ -239,7 +239,7 @@ class AXIFullMasterRW(
 object TestAXIFullMasterRW extends App {
   VerilogEmitter.parse(
     new AXIFullMasterRW(32, 64, idWidth = 4, userWidth = 1),
-    "axi_full_master_rw.sv",
+    "axifull_master_rw.sv",
     info = true
   )
 }

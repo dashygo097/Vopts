@@ -52,7 +52,7 @@ object TestAXILiteSlaveMMap extends App {
   )
   VerilogEmitter.parse(
     new AXILiteSlaveMMapRegs(32, 32, mmap),
-    "axi_lite_slave_mmap.sv",
+    "axilite_slave_mmap.sv",
     info = true
   )
 }

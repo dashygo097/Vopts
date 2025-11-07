@@ -59,7 +59,7 @@ abstract class AXILiteMaster(
   // Additional state handlers can be overridden
   protected def handleAdditionalStates(): Unit = {}
 
-  protected def setupStateMachine(): Unit = {
+  protected def setup(): Unit = {
     switch(state) {
       is(IDLE) {
         axi_awvalid := false.B
