@@ -91,7 +91,7 @@ class AXIFullSlaveRAM(
 
   def nextAddr(addr: UInt, burst: UInt, wrap_size: UInt): UInt = {
     val next_incr     = Cat(addr(addrWidth - 1, addr_lsb) + 1.U, Fill(addr_lsb, 0.U))
-    val addr_offset   = addr(log2Ceil(memSize * (dataWidth / 8)) - 1, addr_lsb)
+    val addr_offset   = addr(dataWidth - 1, addr_lsb)
     val wrap_boundary = wrap_size >> addr_lsb
     val needs_wrap    = (addr_offset & (wrap_boundary - 1.U)) === (wrap_boundary - 1.U)
 

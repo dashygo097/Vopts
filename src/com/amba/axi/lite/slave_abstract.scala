@@ -1,24 +1,28 @@
 package com.amba
 
 import chisel3._
+import chisel3.util._
 
-abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Module {
+abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) extends Module {
   protected def getExtAXIName: String = "S_AXI"
 
   val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName(getExtAXIName)
   val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
+  // Parameters
+  protected val addr_lsb = log2Ceil(dataWidth / 8)
+
   // Signals
-  val axi_awready = RegInit(false.B)
-  val axi_awaddr  = RegInit(0.U(addrWidth.W))
-  val axi_wready  = RegInit(false.B)
-  val axi_bvalid  = RegInit(false.B)
-  val axi_bresp   = RegInit(0.U(2.W))
-  val axi_arready = RegInit(false.B)
-  val axi_araddr  = RegInit(0.U(addrWidth.W))
-  val axi_rdata   = RegInit(0.U(dataWidth.W))
-  val axi_rvalid  = RegInit(false.B)
-  val axi_rresp   = RegInit(0.U(2.W))
+  protected val axi_awready = RegInit(false.B)
+  protected val axi_awaddr  = RegInit(0.U(addrWidth.W))
+  protected val axi_wready  = RegInit(false.B)
+  protected val axi_bvalid  = RegInit(false.B)
+  protected val axi_bresp   = RegInit(0.U(2.W))
+  protected val axi_arready = RegInit(false.B)
+  protected val axi_araddr  = RegInit(0.U(addrWidth.W))
+  protected val axi_rdata   = RegInit(0.U(dataWidth.W))
+  protected val axi_rvalid  = RegInit(false.B)
+  protected val axi_rresp   = RegInit(0.U(2.W))
 
   // I/O Connections
   axi.aw.ready    := axi_awready
@@ -30,12 +34,12 @@ abstract class AXILiteSlave(val addrWidth: Int, val dataWidth: Int) extends Modu
   axi.r.bits.resp := axi_rresp
   axi.r.valid     := axi_rvalid
 
-  // Handshake conditions
-  val axi_will_awrite = !axi_awready && axi.aw.valid
-  val axi_will_write  = !axi_wready && axi_awready && axi.aw.valid
-  val axi_will_bresp  = !axi_bvalid && axi_wready && axi.w.valid
-  val axi_will_aread  = !axi_arready && axi.ar.valid
-  val axi_will_read   = !axi_rvalid && axi_arready && axi.ar.valid
+  // Handshake Conditions
+  protected val axi_will_awrite = !axi_awready && axi.aw.valid
+  protected val axi_will_write  = !axi_wready && axi_awready && axi.aw.valid
+  protected val axi_will_bresp  = !axi_bvalid && axi_wready && axi.w.valid
+  protected val axi_will_aread  = !axi_arready && axi.ar.valid
+  protected val axi_will_read   = !axi_rvalid && axi_arready && axi.ar.valid
 
   // AW
   when(axi_will_awrite) {

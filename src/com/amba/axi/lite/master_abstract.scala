@@ -17,12 +17,15 @@ abstract class AXILiteMaster(
 
   // State width for the register
   protected def stateWidth: Int
-
   protected def getExtAXIName: String = "M_AXI"
 
   val ext_axi = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth))
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXILiteMasterIO(addrWidth, dataWidth))
+
+  // Parameters
+  protected val addr_lsb = log2Ceil(dataWidth / 8)
+  protected val opt_mem_size = dataWidth - log2Ceil(dataWidth / 8)
 
   // Signals
   protected val axi_awaddr  = RegInit(0.U(addrWidth.W))
@@ -48,7 +51,7 @@ abstract class AXILiteMaster(
 
   protected val state = RegInit(IDLE)
 
-  // Abstract callback methods
+  // Abstract Callback Methods
   protected def onIDLE(): Unit      = {}
   protected def onWriteAddr(): Unit = {}
   protected def onWriteData(): Unit = {}

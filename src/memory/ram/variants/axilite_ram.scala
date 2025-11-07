@@ -2,7 +2,6 @@ package mem.ram
 
 import com.amba._
 import chisel3._
-import chisel3.util._
 
 class AXILiteSlaveRAM(
   addrWidth: Int,
@@ -13,10 +12,7 @@ class AXILiteSlaveRAM(
   override def desiredName: String =
     s"axilite_slave_ram_${addrWidth}x${dataWidth}_s${memSize}_b$baseAddr"
 
-  val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr))
-
-  // Parameters
-  val addr_lsb = log2Ceil(dataWidth / 8)
+  val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr, false))
 
   val aw_addr_valid = Wire(Bool())
   val ar_addr_valid = Wire(Bool())
