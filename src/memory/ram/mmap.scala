@@ -62,7 +62,7 @@ class MMapRegion(
 
   // Not Using SyncReadMem
   if (!useSyncMem) {
-    val ram      = RegInit(VecInit(Seq.fill(memSize.toInt)(0.U(dataWidth.W))))
+    val ram      = Mem(memSize, UInt(dataWidth.W))
     val mem_addr = Wire(UInt(opt_mem_addr_bits.W))
 
     mem_addr := Mux(
