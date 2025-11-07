@@ -1,6 +1,5 @@
 package mem.ram
 
-import utils._
 import chisel3._
 import chisel3.util._
 
@@ -99,12 +98,4 @@ class MMapRegion(
 
     io.read_data := Cat(read_vec.reverse)
   }
-}
-
-object TestMMapRegion extends App {
-  VerilogEmitter.parse(
-    new MMapRegion(32, 32, 1024, 0x10000, useSyncMem = true),
-    "ram.sv",
-    info = true
-  )
 }

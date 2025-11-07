@@ -89,7 +89,7 @@ class AXIFullSlaveRAM(
   ar_addr_valid            := mmap_region.io.read_resp
   axi_rdata                := Mux(axi_rvalid && ar_addr_valid, mmap_region.io.read_data, 0.U(dataWidth.W))
 
-  // Address Write Channel
+  // AW
   when(!axi_awready && axi.aw.valid && !axi_awv_awr_flag && !axi_arv_arr_flag) {
     axi_awready      := true.B
     axi_awv_awr_flag := true.B
@@ -121,7 +121,7 @@ class AXIFullSlaveRAM(
     }
   }
 
-  // Data Write Channel
+  // W 
   when(!axi_wready && axi.w.valid && axi_awv_awr_flag) {
     axi_wready := true.B
   }.elsewhen(axi.w.bits.last && axi_wready) {
@@ -135,7 +135,7 @@ class AXIFullSlaveRAM(
     axi_bvalid := false.B
   }
 
-  // Address Read Channel
+  // AR 
   when(!axi_arready && axi.ar.valid && !axi_awv_awr_flag && !axi_arv_arr_flag) {
     axi_arready      := true.B
     axi_arv_arr_flag := true.B
