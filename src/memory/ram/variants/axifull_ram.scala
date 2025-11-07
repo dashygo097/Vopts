@@ -172,7 +172,7 @@ class AXIFullSlaveRAM(
 
 object TestAXIFullSlaveRAM extends App {
   VerilogEmitter.parse(
-    new AXIFullSlaveRAM(32, 32, 4, 1, 8, 0x20000),
+    new AXIFullSlaveRAM(32, 32, 4, 1, 8, 0x80000000L),
     "axifull_slave_ram.sv",
     info = true
   )

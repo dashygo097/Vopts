@@ -45,10 +45,10 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
 
 object TestAXILiteSlaveMMap extends App {
   val mmap = Seq(
-    Register("slv_reg0", 0x10000L, 0x0L),
-    Register("slv_reg1", 0x14000L, 0x0L),
-    Register("slv_reg2", 0x18000L, 0x0L),
-    Register("slv_reg3", 0x1c000L, 0x0L)
+    Register("slv_reg0", 0x80000000L, 0x0L),
+    Register("slv_reg1", 0x80004000L, 0x0L),
+    Register("slv_reg2", 0x80008000L, 0x0L),
+    Register("slv_reg3", 0x8000C000L, 0x0L)
   )
   VerilogEmitter.parse(
     new AXILiteSlaveMMapRegs(32, 32, mmap),
