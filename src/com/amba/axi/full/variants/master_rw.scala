@@ -4,12 +4,6 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-object AXIBurstType {
-  val FIXED = 0.U(2.W)
-  val INCR  = 1.U(2.W)
-  val WRAP  = 2.U(2.W)
-}
-
 object MasterFullRWState extends ChiselEnum {
   val IDLE       = Value(0.U(3.W))
   val WRITE_ADDR = Value(1.U(3.W))
@@ -23,7 +17,7 @@ class AXIFullMasterRW(
   addrWidth: Int,
   dataWidth: Int,
   idWidth: Int,
-  userWidth: Int = 0
+  userWidth: Int
 ) extends Module {
   override def desiredName: String =
     s"axifull_master_rw_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
@@ -33,23 +27,23 @@ class AXIFullMasterRW(
   val axi     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
   // User control interface
+  val write_data  = IO(UInt(dataWidth.W)).suggestName("W_DATA")
+  val write_valid = IO(Bool()).suggestName("W_VALID")
+  val write_ready = IO(Bool()).suggestName("W_READY")
   val write_addr  = IO(Input(UInt(addrWidth.W))).suggestName("W_ADDR")
   val write_len   = IO(Input(UInt(8.W))).suggestName("W_LEN") // beats: 1..256
   val write_burst = IO(Input(UInt(2.W))).suggestName("W_BURST")
-  val write_en    = IO(Input(Bool())).suggestName("W_EN")
   val write_done  = IO(Output(Bool())).suggestName("W_DONE")
   val write_resp  = IO(Output(UInt(2.W))).suggestName("W_RESP")
 
+  val read_data = IO(Output(UInt(dataWidth.W))).suggestName("R_DATA")
+  val read_valid = IO(Output(Bool())).suggestName("R_VALID")
+  val read_ready = IO(Input(Bool())).suggestName("R_READY")
   val read_addr  = IO(Input(UInt(addrWidth.W))).suggestName("R_ADDR")
   val read_len   = IO(Input(UInt(8.W))).suggestName("R_LEN") // beats: 1..256
   val read_burst = IO(Input(UInt(2.W))).suggestName("R_BURST")
-  val read_en    = IO(Input(Bool())).suggestName("R_EN")
   val read_done  = IO(Output(Bool())).suggestName("R_DONE")
   val read_resp  = IO(Output(UInt(2.W))).suggestName("R_RESP")
-
-  // Streaming data
-  val w_in  = IO(Flipped(Decoupled(UInt(dataWidth.W)))).suggestName("W_IN")
-  val r_out = IO(Decoupled(UInt(dataWidth.W))).suggestName("R_OUT")
 
   val busy = IO(Output(Bool())).suggestName("BUSY")
 
@@ -93,12 +87,16 @@ class AXIFullMasterRW(
   read_resp  := 0.U
   busy       := (state =/= MasterFullRWState.IDLE)
 
-  // Small queues for decoupling user and AXI
-  val wq = Module(new Queue(UInt(dataWidth.W), entries = 8)) // adjust depth as needed
-  wq.io.enq <> w_in
+  // Queues for decoupling user and AXI
+  val wq = Module(new Queue(UInt(dataWidth.W), entries = 8))
+  wq.io.enq.valid := write_valid
+  wq.io.enq.bits  := write_data
+  write_ready    := wq.io.enq.ready
 
   val rq = Module(new Queue(UInt(dataWidth.W), entries = 8))
-  r_out <> rq.io.deq
+  read_data  := rq.io.deq.bits
+  read_valid := rq.io.deq.valid
+  rq.io.deq.ready := read_ready
 
   // AW
   axi.aw.bits.addr   := aw_addr_r
@@ -114,7 +112,7 @@ class AXIFullMasterRW(
   axi.aw.bits.user   := zeroUser
   axi.aw.valid       := aw_valid_r
 
-  // W: drive from wq during active write
+  // W
   val w_last = w_count === aw_len_r
   axi.w.bits.data := wq.io.deq.bits
   axi.w.bits.strb := fullStrb
@@ -159,7 +157,7 @@ class AXIFullMasterRW(
       w_count    := 0.U
       r_count    := 0.U
 
-      when(write_en) {
+      when(write_ready) {
         val wLen0 = Mux(write_len === 0.U, 1.U, write_len)
         aw_addr_r  := write_addr
         aw_len_r   := (wLen0 - 1.U)(7, 0)
@@ -167,7 +165,7 @@ class AXIFullMasterRW(
         aw_valid_r := true.B
         state      := MasterFullRWState.WRITE_ADDR
 
-      }.elsewhen(read_en) {
+      }.elsewhen(read_ready) {
         val rLen0 = Mux(read_len === 0.U, 1.U, read_len)
         ar_addr_r  := read_addr
         ar_len_r   := (rLen0 - 1.U)(7, 0)
@@ -232,13 +230,12 @@ class AXIFullMasterRW(
     }
   }
 
-  // Bind external pins
   ext_axi.connect(axi)
 }
 
 object TestAXIFullMasterRW extends App {
   VerilogEmitter.parse(
-    new AXIFullMasterRW(32, 64, idWidth = 4, userWidth = 1),
+    new AXIFullMasterRW(32, 32, 4, 1),
     "axifull_master_rw.sv",
     info = true
   )
