@@ -11,8 +11,7 @@ class AXIFullSlaveRAM(
   idWidth: Int,
   userWidth: Int,
   memSize: Int,
-  baseAddr: BigInt,
-  useSyncMem: Boolean = true,
+  baseAddr: BigInt
 ) extends Module {
   override def desiredName: String =
     s"axifull_slave_ram_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}_s${memSize}_b$baseAddr"
@@ -21,7 +20,7 @@ class AXIFullSlaveRAM(
   val ext_axi = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val axi     = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
-  val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr, useSyncMem))
+  val mmap_region = Module(new MMapRegion(addrWidth, dataWidth, memSize, baseAddr, false))
 
   // Parameters
   val addr_lsb = log2Ceil(dataWidth / 8)
@@ -173,7 +172,7 @@ class AXIFullSlaveRAM(
 
 object TestAXIFullSlaveRAM extends App {
   VerilogEmitter.parse(
-    new AXIFullSlaveRAM(32, 32, 4, 1, 8, 0x20000, useSyncMem = false),
+    new AXIFullSlaveRAM(32, 32, 4, 1, 8, 0x20000),
     "axi_full_slave_ram.sv",
     info = true
   )
