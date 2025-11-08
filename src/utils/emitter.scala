@@ -8,11 +8,18 @@ object VerilogEmitter {
     gen: => chisel3.Module,
     filename: String,
     info: Boolean = true,
+    lowering: Boolean = false,
     options: Seq[String] = Seq()
   ): Unit = {
-    val code = ChiselStage.emitSystemVerilog(
+    val firtoolOpts = if (lowering) {
+      options ++
+        Seq("--lowering-options=disallowLocalVariables,disallowPackedArrays")
+    } else {
+      options
+    }
+    val code        = ChiselStage.emitSystemVerilog(
       gen = gen,
-      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info") ++ options
+      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info") ++ firtoolOpts
     )
 
     val num_lines = code.split("\n").length

@@ -2,6 +2,7 @@
 
 BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
 BUILD_DIR=$BASE_DIR/build
+SYNTH_DIR=$BASE_DIR/synth
 
 RED='\033[1;31m'
 GREEN='\033[1;32m'
@@ -105,24 +106,23 @@ run_stat() {
   show_header
   module_file="$(select_module)"
   top_module="$(fetch_top_module)"
-  LOG_DIR="$BASE_DIR/sims/logs/${top_module%.*}"
-  mkdir -p "$LOG_DIR"
+  mkdir -p "$SYNTH_DIR/${top_module%.*}"
 
-  cd "$BUILD_DIR" || exit 1
+  cd "$SYNTH_DIR/${top_module%.*}" || exit 1
   show_status "info" "Generating .ys file: $module_file..."
-  cat > "synth_${top_module}.ys" << EOF
+  cat > "synth_stat.ys" << EOF
 
-read_verilog -sv ${module_file}
+read_verilog -sv $BUILD_DIR/${module_file}
 hierarchy -check -top ${top_module}
 
 synth_xilinx -family xc7 -top ${top_module}
+sta
 
-write_verilog synth_${top_module}.v
-show
+write_verilog $SYNTH_DIR/${top_module%.*}/synth_${top_module}.v
 
 EOF
   show_status "info" "Running Yosys synthesis and stat..."
-  yosys -s "synth_${top_module}.ys" > "$LOG_DIR/stat.log" 2>&1
+  yosys -s "synth_stat.ys" > "$SYNTH_DIR/${top_module%.*}/stat.log" 2>&1
   show_status "success" "Stat run completed. Logs saved in $LOG_DIR"
 }
 

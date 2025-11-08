@@ -91,24 +91,22 @@ class AXIFullInterconnect(
   )
 
   // Read Data Channel
-  for (i <- 0 until addressMap.length) {
+  for (i <- 0 until addressMap.length)
     masters(i).r.ready := slave.r.ready && (decodeAddress(slave.ar.bits.addr) === i.U)
-  }
-  slave.r.valid        := Mux1H(
+  slave.r.valid := Mux1H(
     (0 until addressMap.length).map { i =>
       (decodeAddress(slave.ar.bits.addr) === i.U) -> masters(i).r.valid
     }
   )
-  slave.r.bits         := Mux1H(
+  slave.r.bits  := Mux1H(
     (0 until addressMap.length).map { i =>
       (decodeAddress(slave.ar.bits.addr) === i.U) -> masters(i).r.bits
     }
   )
 
   ext_slave.connect(slave)
-  for (i <- 0 until addressMap.length) {
+  for (i <- 0 until addressMap.length)
     ext_masters(i).connect(masters(i))
-  }
 
   def connect(intf: AXIFullMasterExternalIO): Unit          = intf <> ext_slave
   def connect(intf: AXIFullSlaveExternalIO, idx: Int): Unit = {
@@ -136,8 +134,8 @@ object TestAXIFullInterconnect extends App {
       4,
       1,
       Seq(
-        (0x80000000L, 0x8000FFFFL),
-        (0x80010000L, 0x8001FFFFL)
+        (0x80000000L, 0x8000ffffL),
+        (0x80010000L, 0x8001ffffL)
       )
     ),
     "axifull_interconnect.sv",

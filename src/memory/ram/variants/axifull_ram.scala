@@ -91,9 +91,8 @@ class AXIFullSlaveRAM(
   ar_addr_valid            := mmap_region.io.read_resp
   axi_rdata                := Mux(axi_rvalid && ar_addr_valid, mmap_region.io.read_data, 0.U(dataWidth.W))
 
-  def nextIncr(addr: UInt): UInt = {
+  def nextIncr(addr: UInt): UInt =
     Cat(addr(addrWidth - 1, addr_lsb) + 1.U, Fill(addr_lsb, 0.U))
-  }
 
   def nextWrap(addr: UInt, wrap_size: UInt): UInt = {
     val wrap_boundary = wrap_size >> addr_lsb
@@ -102,16 +101,15 @@ class AXIFullSlaveRAM(
     Mux(need_wrap, addr - Cat(wrap_boundary - 1.U, Fill(addr_lsb, 0.U)), nextIncr(addr))
   }
 
-  def nextAddr(addr: UInt, burst: UInt, wrap_size: UInt): UInt = {
+  def nextAddr(addr: UInt, burst: UInt, wrap_size: UInt): UInt =
     MuxCase(
       addr,
       Seq(
         (burst === AXIBurstType.FIXED) -> addr,
-        (burst === AXIBurstType.INCR) -> nextIncr(addr),
-        (burst === AXIBurstType.WRAP) -> nextWrap(addr, wrap_size)
+        (burst === AXIBurstType.INCR)  -> nextIncr(addr),
+        (burst === AXIBurstType.WRAP)  -> nextWrap(addr, wrap_size)
       )
     )
-  }
 
   // AW
   when(axi.aw.valid && !axi_awready) {

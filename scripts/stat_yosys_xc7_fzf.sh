@@ -2,18 +2,7 @@
 
 BASE_DIR=$(dirname $(cd "$(dirname "$0")" && pwd))
 BUILD_DIR=$BASE_DIR/build
-
-RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[1;34m'
-MAGENTA='\033[1;35m'
-CYAN='\033[1;36m'
-GRAY='\033[1;37m'
-NC='\033[0m' 
-BOLD='\033[1m'
-DIM='\033[2m'
-
+SYNTH_DIR=$BASE_DIR/synt
 show_header() {
   echo -e "${BLUE}"
   echo "            ███████╗████████╗ █████╗ ████████╗"
@@ -43,7 +32,7 @@ show_status() {
 
 select_module() {
   echo -e "${DIM}◇ Select a module: ${NC}" >&2
-  local module_file=$(find "$BUILD_DIR" -type f \( -name "*.sv" -o -name "*.v" \) | fzf --height=30% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
+  local module_file=$(find "$BUILD_DIR" -type f \( -name "*.v" -o -name "*.sv" \) | sed "s|^$BUILD_DIR/||" | fzf --height=30% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
   
   if [ -z "$module_file" ]; then
     echo -e "${RED}✖  No testbench selected. Skip.${NC}" >&2
@@ -79,24 +68,23 @@ run_stat() {
   show_header
   module_file="$(select_module)"
   top_module="$(fetch_top_module)"
-  LOG_DIR="$BASE_DIR/sims/logs/${top_module%.*}"
-  mkdir -p "$LOG_DIR"
+  mkdir -p "$SYNTH_DIR/${top_module%.*}"
 
-  cd "$BUILD_DIR" || exit 1
+  cd "$SYNTH_DIR/${top_module%.*}" || exit 1
   show_status "info" "Generating .ys file: $module_file..."
-  cat > "synth_${top_module}.ys" << EOF
+  cat > "synth_stat.ys" << EOF
 
-read_verilog -sv ${module_file}
+read_verilog -sv $BUILD_DIR/${module_file}
 hierarchy -check -top ${top_module}
 
 synth_xilinx -family xc7 -top ${top_module}
+sta
 
-write_verilog synth_${top_module}.v
-show
+write_verilog $SYNTH_DIR/${top_module%.*}/synth_${top_module}.v
 
 EOF
   show_status "info" "Running Yosys synthesis and stat..."
-  yosys "synth_${top_module}.ys" > "$LOG_DIR/stat.log" 2>&1
+  yosys -s "synth_stat.ys" > "$SYNTH_DIR/${top_module%.*}/stat.log" 2>&1
   show_status "success" "Stat run completed. Logs saved in $LOG_DIR"
 }
 

@@ -2,6 +2,7 @@ BASE_DIR = $(shell pwd)
 BUILD_DIR = $(BASE_DIR)/build
 SCRIPTS_DIR = $(BASE_DIR)/scripts
 SIM_DIR = $(BASE_DIR)/sims
+SYNTH_DIR = $(BASE_DIR)/synth
 TB_DIR = $(SIM_DIR)/tb
 COCOTB_DIR = $(SIM_DIR)/cocotb
 
@@ -13,6 +14,7 @@ FZF ?= false
 pre:
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(SIM_DIR)
+	@mkdir -p $(SYNTH_DIR)
 	@mkdir -p $(TB_DIR)
 	@mkdir -p $(COCOTB_DIR)
 

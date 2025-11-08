@@ -24,7 +24,7 @@ abstract class AXILiteMaster(
   val axi     = Wire(new AXILiteMasterIO(addrWidth, dataWidth))
 
   // Parameters
-  protected val addr_lsb = log2Ceil(dataWidth / 8)
+  protected val addr_lsb     = log2Ceil(dataWidth / 8)
   protected val opt_mem_size = dataWidth - log2Ceil(dataWidth / 8)
 
   // Signals
