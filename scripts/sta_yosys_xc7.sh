@@ -18,12 +18,12 @@ DIM='\033[2m'
 
 show_header() {
     echo -e "${BLUE}"
-    echo " ███████╗████████╗ █████╗ ████████╗"
-    echo " ██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝"
-    echo " ███████╗   ██║   ███████║   ██║   "
-    echo " ╚════██║   ██║   ██╔══██║   ██║   "
-    echo " ███████║   ██║   ██║  ██║   ██║   "
-    echo " ╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   "
+    echo " ███████╗████████╗ █████╗   "
+    echo " ██╔════╝╚══██╔══╝██╔══██╗  "
+    echo " ███████╗   ██║   ███████║  "
+    echo " ╚════██║   ██║   ██╔══██║  "
+    echo " ███████║   ██║   ██║  ██║  "
+    echo " ╚══════╝   ╚═╝   ╚═╝  ╚═╝  "
     echo -e "${NC}"
     echo -e "${DIM}Synthesis & Timing Analysis Tool${NC}"
     echo -e "${DIM}──────────────────────────────────────────────────────────${NC}"
@@ -107,7 +107,7 @@ fetch_clock_period() {
     echo "$clock_period"
 }
 
-run_stat() {
+run_sta() {
     show_header
     
     module_file="$(select_module)"
@@ -121,7 +121,7 @@ run_stat() {
     
     local clock_period_ps=$((clock_period * 1000))
     
-    cat > "synth_stat.ys" << EOF
+    cat > "synth_sta.ys" << EOF
 # Read design
 read_verilog -sv $BUILD_DIR/${module_file}
 
@@ -161,17 +161,14 @@ EOF
 
     show_status "info" "Running Yosys synthesis and timing analysis..."
     
-    if yosys -s "synth_stat.ys" > "synthesis.log" 2>&1; then
+    if yosys -s "synth_sta.ys" > "synthesis.log" 2>&1; then
         show_status "success" "Synthesis completed successfully"
     else
         show_status "error" "Synthesis failed - check synthesis.log"
         exit 1
     fi
     
-    echo
-    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}         TIMING ANALYSIS RESULTS${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}◆ Timing Analysis Results${NC}"
     
     if [ -f timing_report.txt ]; then
         local max_delay=$(grep "Latest arrival time in" timing_report.txt | sed -n "s/.*is \([0-9]*\):.*/\1/p" | head -1)
@@ -181,101 +178,89 @@ EOF
             local target_mhz=$(awk "BEGIN {printf \"%.2f\", 1000 / $clock_period}")
             local period_ns=$(awk "BEGIN {printf \"%.3f\", $max_delay / 1000}")
             
-            echo -e "${YELLOW}Critical Path Delay:${NC}   ${max_delay} ps (${period_ns} ns)"
-            echo -e "${YELLOW}Achievable Fmax:${NC}      ${fmax_mhz} MHz"
-            echo -e "${YELLOW}Target Frequency:${NC}     ${target_mhz} MHz (${clock_period}ns period)"
-            echo
+            echo -e "${DIM}│${NC} ${YELLOW}Critical Path Delay:${NC}   ${max_delay} ps (${period_ns} ns)"
+            echo -e "${DIM}│${NC} ${YELLOW}Achievable Fmax:${NC}      ${fmax_mhz} MHz"
+            echo -e "${DIM}│${NC} ${YELLOW}Target Frequency:${NC}     ${target_mhz} MHz (${clock_period}ns period)"
+            echo -e "${DIM}│${NC}"
             
             if (( $(echo "$fmax_mhz >= $target_mhz" | bc -l) )); then
                 local slack=$(awk "BEGIN {printf \"%.1f\", ($fmax_mhz - $target_mhz) / $target_mhz * 100}")
-                echo -e "${GREEN}✔ Timing constraints MET (${slack}% margin)${NC}"
+                echo -e "${DIM}│${NC} ${GREEN}✔ Timing constraints MET (${slack}% margin)${NC}"
             else
                 local deficit=$(awk "BEGIN {printf \"%.1f\", ($target_mhz - $fmax_mhz) / $target_mhz * 100}")
-                echo -e "${RED}✖ Timing constraints VIOLATED (${deficit}% deficit)${NC}"
+                echo -e "${DIM}│${NC} ${RED}✖ Timing constraints VIOLATED (${deficit}% deficit)${NC}"
             fi
-            echo
-            
-            echo -e "${YELLOW}Critical Path Breakdown:${NC}"
-            grep -A 10 "Latest arrival time in" timing_report.txt | tail -10
+
         else
-            echo -e "${RED}Could not parse timing data${NC}"
-            echo -e "${YELLOW}Debug: max_delay='$max_delay'${NC}"
-            echo -e "${YELLOW}First few lines of timing_report.txt:${NC}"
-            head -3 timing_report.txt
+            echo -e "${DIM}│${NC} ${RED}Could not parse timing data${NC}"
+            echo -e "${DIM}│${NC} ${YELLOW}Debug: max_delay='$max_delay'${NC}"
+            echo -e "${DIM}│${NC} ${YELLOW}First few lines of timing_report.txt:${NC}"
+            head -3 timing_report.txt | sed "s/^/${DIM}│${NC} /"
         fi
     else
-        echo -e "${RED}Timing report not generated${NC}"
+        echo -e "${DIM}│${NC} ${RED}Timing report not generated${NC}"
     fi
     
-    echo
-    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}         RESOURCE UTILIZATION${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}◆ Resource Utilization${NC}"
     
-    # Extract resource stats from last stat output
-    echo -e "${YELLOW}Flip-Flops:${NC}"
-    grep "FDRE" synthesis.log | tail -1 | awk '{printf "  %-20s %d\n", "FDRE (D Flip-Flops):", $2}'
-    grep "FDSE" synthesis.log | tail -1 | awk '{if($2>0) printf "  %-20s %d\n", "FDSE (Set FF):", $2}'
-    grep "FDCE" synthesis.log | tail -1 | awk '{if($2>0) printf "  %-20s %d\n", "FDCE (Clock Enable):", $2}'
+    echo -e "${DIM}│${NC} ${YELLOW}Flip-Flops:${NC}"
+    grep "FDRE" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{printf dim "│" nc "   %-22s %d\n", "FDRE (D Flip-Flops):", $2}'
+    grep "FDSE" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "FDSE (Set FF):", $2}'
+    grep "FDCE" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "FDCE (Clock Enable):", $2}'
     
-    echo
-    echo -e "${YELLOW}Logic:${NC}"
+    echo -e "${DIM}│${NC}"
+    echo -e "${DIM}│${NC} ${YELLOW}Logic:${NC}"
     local total_luts=0
     for i in {2..6}; do
         local count=$(grep "LUT$i" synthesis.log | grep -v "LUTRAM" | tail -1 | awk '{print $2}')
         if [ ! -z "$count" ] && [ "$count" != "0" ]; then
-            printf "  %-20s %d\n" "LUT$i:" "$count"
+            printf "${DIM}│${NC}   %-22s %d\n" "LUT$i:" "$count"
             total_luts=$((total_luts + count))
         fi
     done
-    echo -e "  ${CYAN}────────────────────────${NC}"
-    printf "  %-20s %d\n" "Total LUTs:" "$total_luts"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+    printf "${DIM}│${NC}   %-22s %d\n" "Total LUTs:" "$total_luts"
     
-    echo
-    echo -e "${YELLOW}Routing:${NC}"
-    grep "MUXF7" synthesis.log | tail -1 | awk '{if($2>0) printf "  %-20s %d\n", "MUXF7:", $2}'
-    grep "MUXF8" synthesis.log | tail -1 | awk '{if($2>0) printf "  %-20s %d\n", "MUXF8:", $2}'
-    grep "BUFG" synthesis.log | tail -1 | awk '{printf "  %-20s %d\n", "BUFG (Clock):", $2}'
+    echo -e "${DIM}│${NC}"
+    echo -e "${DIM}│${NC} ${YELLOW}Routing:${NC}"
+    grep "MUXF7" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "MUXF7:", $2}'
+    grep "MUXF8" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "MUXF8:", $2}'
+    grep "BUFG" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{printf dim "│" nc "   %-22s %d\n", "BUFG (Clock):", $2}'
     
     local estimated_lc=$(grep "Estimated number of LCs" synthesis.log | tail -1 | awk '{print $6}')
     if [ ! -z "$estimated_lc" ]; then
-        echo
-        echo -e "${YELLOW}Estimated Logic Cells:${NC} $estimated_lc"
+        echo -e "${DIM}│${NC}"
+        echo -e "${DIM}│${NC} ${YELLOW}Estimated Logic Cells:${NC} $estimated_lc"
     fi
-    
-    echo
-    echo -e "${GREEN}Files generated:${NC}"
-    echo -e "  ${DIM}├─${NC} synthesis.log            (Full synthesis log)"
-    echo -e "  ${DIM}├─${NC} timing_report.txt        (Timing analysis)"
-    echo -e "  ${DIM}├─${NC} synth_${top_module}.v       (Synthesized netlist)"
-    echo -e "  ${DIM}└─${NC} synth_stat.ys            (Yosys script)"
-    echo
     
     if [ -f timing_report.txt ]; then
         local max_delay=$(grep "Latest arrival time in" timing_report.txt | sed -n "s/.*is \([0-9]*\):.*/\1/p" | head -1)
         if [ ! -z "$max_delay" ] && [ "$max_delay" -gt "0" ] 2>/dev/null; then
             local fmax_mhz=$(awk "BEGIN {printf \"%.2f\", 1000000 / $max_delay}")
-            local target_mhz=$(awk "BEGIN {printf \"%.2f\", 1000 / $clock_period}")
             
-            echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
-            echo -e "${CYAN}         FREQUENCY TARGETS${NC}"
-            echo -e "${CYAN}═══════════════════════════════════════════════════${NC}"
+            echo -e "${CYAN}◆ Frequency Targets${NC}"
             
             for target in 50 100 125 150 200 250 300 400 500 750 1000; do
                 if (( $(echo "$fmax_mhz >= $target" | bc -l) )); then
                     local margin=$(awk "BEGIN {printf \"%.1f\", ($fmax_mhz - $target) / $target * 100}")
-                    echo -e "  ${GREEN}✓${NC} ${target} MHz (${margin}% timing margin)"
+                    echo -e "${DIM}│${NC} ${GREEN}✔${NC} ${target} MHz (${margin}% timing margin)"
                 else
                     local deficit=$(awk "BEGIN {printf \"%.1f\", ($target - $fmax_mhz) / $target * 100}")
-                    echo -e "  ${RED}✗${NC} ${target} MHz (${deficit}% too fast)"
+                    echo -e "${DIM}│${NC} ${RED}✖${NC} ${target} MHz (${deficit}% too fast)"
                 fi
             done
-            echo
         fi
     fi
+
+    echo -e "${GREEN}◆ Files Generated${NC}"
+    echo -e "${DIM}├─${NC} synthesis.log            (Full synthesis log)"
+    echo -e "${DIM}├─${NC} timing_report.txt        (Timing analysis)"
+    echo -e "${DIM}├─${NC} synth_${top_module}.v       (Synthesized netlist)"
+    echo -e "${DIM}└─${NC} synth_sta.ys            (Yosys script)"
+    echo
     
     show_status "success" "All outputs saved in: $SYNTH_DIR/${top_module}/"
 }
 
 # Main execution
-run_stat
+run_sta

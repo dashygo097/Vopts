@@ -9,7 +9,7 @@ COCOTB_DIR = $(SIM_DIR)/cocotb
 LIB ?= app
 FZF ?= false
 
-.PHONY: pre fmt build run clean update localpublish tb cocotb stat-xc7
+.PHONY: pre fmt build run clean update localpublish tb cocotb sta-xc7
 
 pre:
 	@mkdir -p $(BUILD_DIR)
@@ -60,10 +60,10 @@ cocotb: pre
 		bash $(SCRIPTS_DIR)/cocotb.sh; \
 	fi
 
-stat-xc7: pre
+sta-xc7: pre
 	@if [ "$(FZF)" = "true" ] ; then \
-		bash $(SCRIPTS_DIR)/stat_yosys_xc7_fzf.sh ; \
+		bash $(SCRIPTS_DIR)/sta_yosys_xc7_fzf.sh ; \
 	else \
-		bash $(SCRIPTS_DIR)/stat_yosys_xc7.sh ; \
+		bash $(SCRIPTS_DIR)/sta_yosys_xc7.sh ; \
 	fi
 
