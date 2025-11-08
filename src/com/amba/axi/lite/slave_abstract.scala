@@ -38,13 +38,13 @@ abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) ex
   protected val axi_will_awrite = !axi_awready && axi.aw.valid
   protected val axi_on_awrite = axi_awready && axi.aw.valid 
   protected val axi_will_write  = !axi_wready && axi_awready && axi.aw.valid
-  protected val axi_on_write  = axi_wready && axi.w.valid
+  protected val axi_last_write  = axi_wready && axi.w.valid
   protected val axi_will_bresp  = !axi_bvalid && axi_wready && axi.w.valid
   protected val axi_on_bresp = axi_bvalid && axi.b.ready
   protected val axi_will_aread  = !axi_arready && axi.ar.valid
   protected val axi_on_aread  = axi_arready && axi.ar.valid
   protected val axi_will_read   = !axi_rvalid && axi_arready && axi.ar.valid
-  protected val axi_on_read   = axi_rvalid && axi.r.ready
+  protected val axi_last_read   = axi_rvalid && axi.r.ready
 
   // AW
   when(axi_will_awrite) {
@@ -59,7 +59,7 @@ abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) ex
   when(axi_will_write) {
     axi_wready := true.B
   }
-  when(axi_on_write) {
+  when(axi_last_write) {
     axi_wready := false.B
   }
 
@@ -84,7 +84,7 @@ abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) ex
   when(axi_will_read) {
     axi_rvalid := true.B
   }
-  when(axi_on_read) {
+  when(axi_last_read) {
     axi_rvalid := false.B
   }
 

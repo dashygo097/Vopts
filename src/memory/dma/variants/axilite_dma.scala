@@ -135,7 +135,7 @@ class AXILiteSlaveDMA(
     }
   }
 
-  // AW
+  // AR
 
   // R
   when(axi_will_read) {
