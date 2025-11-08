@@ -93,12 +93,12 @@ class AXIFullInterconnect(
   // Read Data Channel
   for (i <- 0 until addressMap.length)
     masters(i).r.ready := slave.r.ready && (decodeAddress(slave.ar.bits.addr) === i.U)
-  slave.r.valid := Mux1H(
+  slave.r.valid        := Mux1H(
     (0 until addressMap.length).map { i =>
       (decodeAddress(slave.ar.bits.addr) === i.U) -> masters(i).r.valid
     }
   )
-  slave.r.bits  := Mux1H(
+  slave.r.bits         := Mux1H(
     (0 until addressMap.length).map { i =>
       (decodeAddress(slave.ar.bits.addr) === i.U) -> masters(i).r.bits
     }

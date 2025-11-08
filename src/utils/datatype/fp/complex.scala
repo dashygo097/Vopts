@@ -43,6 +43,13 @@ class FPComplex(dw: Int, bp: Int) extends Bundle {
     c
   }
 
+  def fromSIny(real: SInt, imag: SInt): FPComplex = {
+    val c = this.newInstance()
+    c.real := real
+    c.imag := imag
+    c
+  }
+
   def isCompatible(that: FPComplex): Boolean =
     this.dw() == that.dw() && this.bp() == that.bp()
 

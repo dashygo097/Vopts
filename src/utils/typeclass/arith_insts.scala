@@ -23,15 +23,15 @@ object ArithmeticInstances {
       require(y.isValidInt, "Double value is not a valid UInt")
       y.toInt.U(x.getWidth.W)
     }
-    def mapUInt(x: UInt, y: UInt): UInt           = y
-    def mapSInt(x: UInt, y: SInt): UInt           = y.asUInt
   }
 
   implicit val sintArithmetic: Arithmetic[SInt] = new Arithmetic[SInt] {
     def apply(idx: Int)(x: SInt): Bool            = x(idx)
     def apply(high: Int, low: Int)(x: SInt): UInt = x(high, low)
     def add(x: SInt, y: SInt): SInt               = x + y
+    def add(x: SInt, y: UInt): SInt               = x + y.asSInt
     def sub(x: SInt, y: SInt): SInt               = x - y
+    def sub(x: SInt, y: UInt): SInt               = x - y.asSInt
     def mul(x: SInt, y: SInt): SInt               = x * y
     def mul(x: SInt, y: UInt): SInt               = x * y.asSInt
     def div(x: SInt, y: SInt): SInt               = {
@@ -48,14 +48,14 @@ object ArithmeticInstances {
       require(y.isValidInt, "Double value is not a valid SInt")
       y.toInt.S(x.getWidth.W)
     }
-    def mapUInt(x: SInt, y: UInt): SInt           = y.asSInt
-    def mapSInt(x: SInt, y: SInt): SInt           = y
   }
   implicit val fpArithmetic: Arithmetic[FP]     = new Arithmetic[FP] {
     def apply(idx: Int)(x: FP): Bool            = x(idx)
     def apply(high: Int, low: Int)(x: FP): UInt = x.value(high, low)
     def add(x: FP, y: FP): FP                   = x + y
+    def add(x: FP, y: UInt): FP                 = x + y
     def sub(x: FP, y: FP): FP                   = x - y
+    def sub(x: FP, y: UInt): FP                 = x - y
     def mul(x: FP, y: FP): FP                   = x * y
     def mul(x: FP, y: UInt): FP                 = x * y
     def div(x: FP, y: FP): FP                   = {
@@ -66,10 +66,8 @@ object ArithmeticInstances {
       assert(y =/= 0.U, "Division by zero in FP arithmetic")
       x / y
     }
-    def zero(x: FP): FP                         = new FP(x.dw(), x.bp()).fromDouble(0.0)
-    def fromInt(x: FP, y: Int): FP              = new FP(x.dw(), x.bp()).fromDouble(y.toDouble)
+    def zero(x: FP): FP                         = new FP(x.dw(), x.bp()).fromInt(0)
+    def fromInt(x: FP, y: Int): FP              = new FP(x.dw(), x.bp()).fromInt(y)
     def fromDouble(x: FP, y: Double): FP        = new FP(x.dw(), x.bp()).fromDouble(y)
-    def mapUInt(x: FP, y: UInt): FP             = new FP(x.dw(), x.bp()).mapSInt(y.asSInt)
-    def mapSInt(x: FP, y: SInt): FP             = new FP(x.dw(), x.bp()).mapSInt(y)
   }
 }

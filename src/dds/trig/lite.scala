@@ -19,7 +19,7 @@ class LiteTrigDDS[T <: Data](gen: T, freq: Long, phaseWidth: Int, lutWidth: Int,
   val phase                = RegInit(0.U(phaseWidth.W))
   val lutAddr              = Wire(UInt(log2Ceil(lutWidth).W))
 
-  val poff = (freq * pow(2.0, phaseWidth) / clkFreq).toInt.U
+  val poff = (freq * (2 << phaseWidth) / clkFreq).toInt.U
 
   val sine_rom = VecInit(
     (0 until lutWidth).map { i =>
