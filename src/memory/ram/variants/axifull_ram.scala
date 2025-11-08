@@ -60,11 +60,6 @@ class AXIFullSlaveRAM(
   val ar_addr_valid = Wire(Bool())
 
   // Handshake Signals
-  val axi_will_awrite  = axi.aw.valid && !axi_awready
-  val axi_will_write  = axi.w.valid && !axi_wready && axi_awlen_cntr <= axi_awlen
-  val axi_on_write = axi.w.valid && axi_wready && !axi.w.bits.last
-  val axi_finish_write = axi.w.valid && axi_wready && axi.w.bits.last && !axi_bvalid
-  val axi_finish_bresp = axi.b.ready && axi_bvalid
 
   // I/O Connections
   axi.aw.ready    := axi_awready
