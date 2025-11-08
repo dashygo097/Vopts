@@ -15,13 +15,13 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   val slv_reg_re = Wire(Bool())
 
   // I/O Connections
-  slv_reg_we              := axi_awready && axi.aw.valid && !axi_bvalid
+  slv_reg_we              := axi_on_awrite 
   mmap_regs.io.write_en   := slv_reg_we
   mmap_regs.io.write_addr := axi_awaddr
   mmap_regs.io.write_data := axi.w.bits.data
   mmap_regs.io.write_strb := axi.w.bits.strb
 
-  slv_reg_re             := axi_arready && axi.ar.valid && !axi_rvalid
+  slv_reg_re             := axi_on_aread
   mmap_regs.io.read_en   := slv_reg_re
   mmap_regs.io.read_addr := axi_araddr
   axi_rdata              := mmap_regs.io.read_data

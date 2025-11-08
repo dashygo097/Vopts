@@ -105,16 +105,6 @@ class AXILiteSlaveDMA(
     ready_pulse  := true.B
   }
 
-  // I/O Connections
-  axi.aw.ready    := axi_awready
-  axi.w.ready     := axi_wready
-  axi.b.bits.resp := axi_bresp
-  axi.b.valid     := axi_bvalid
-  axi.ar.ready    := axi_arready
-  axi.r.bits.data := axi_rdata
-  axi.r.bits.resp := axi_rresp
-  axi.r.valid     := axi_rvalid
-
   // AW
 
   // W

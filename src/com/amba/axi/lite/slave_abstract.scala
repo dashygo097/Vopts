@@ -36,52 +36,56 @@ abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) ex
 
   // Handshake Conditions
   protected val axi_will_awrite = !axi_awready && axi.aw.valid
+  protected val axi_on_awrite = axi_awready && axi.aw.valid 
   protected val axi_will_write  = !axi_wready && axi_awready && axi.aw.valid
+  protected val axi_on_write  = axi_wready && axi.w.valid
   protected val axi_will_bresp  = !axi_bvalid && axi_wready && axi.w.valid
+  protected val axi_on_bresp = axi_bvalid && axi.b.ready
   protected val axi_will_aread  = !axi_arready && axi.ar.valid
+  protected val axi_on_aread  = axi_arready && axi.ar.valid
   protected val axi_will_read   = !axi_rvalid && axi_arready && axi.ar.valid
+  protected val axi_on_read   = axi_rvalid && axi.r.ready
 
   // AW
   when(axi_will_awrite) {
     axi_awaddr  := axi.aw.bits.addr
     axi_awready := true.B
-  }.otherwise {
+  }
+  when(axi_on_awrite) {
     axi_awready := false.B
   }
 
   // W
   when(axi_will_write) {
     axi_wready := true.B
-  }.otherwise {
-    when(axi_wready && axi.w.valid) {
-      axi_wready := false.B
-    }
+  }
+  when(axi_on_write) {
+    axi_wready := false.B
   }
 
   // B
   when(axi_will_bresp) {
     axi_bvalid := true.B
-  }.otherwise {
-    when(axi.b.ready && axi_bvalid) {
-      axi_bvalid := false.B
-    }
+  }
+  when(axi_on_bresp) {
+    axi_bvalid := false.B
   }
 
   // AR
   when(axi_will_aread) {
     axi_araddr  := axi.ar.bits.addr
     axi_arready := true.B
-  }.otherwise {
+  }
+  when(axi_on_aread) {
     axi_arready := false.B
   }
 
   // R
   when(axi_will_read) {
     axi_rvalid := true.B
-  }.otherwise {
-    when(axi_rvalid && axi.r.ready) {
-      axi_rvalid := false.B
-    }
+  }
+  when(axi_on_read) {
+    axi_rvalid := false.B
   }
 
   ext_axi.connect(axi)

@@ -20,12 +20,12 @@ class AXILiteSlavePingPongFIFO(
   val PINGPONG_STATUS_ADDR = (baseAddr + 0x04).U(addrWidth.W)
 
   // Write Path
-  val write_valid = axi_awready && axi.aw.valid && (axi.aw.bits.addr === PINGPONG_ADDR)
+  val write_valid = axi_on_awrite && (axi.aw.bits.addr === PINGPONG_ADDR)
   pingpong.io.write_port.valid := write_valid && axi.w.valid
   pingpong.io.write_port.bits  := axi.w.bits.data
 
   // Read Path
-  val read_valid = axi_arready && axi.ar.valid && (axi.ar.bits.addr === PINGPONG_ADDR)
+  val read_valid = axi_on_aread && (axi.ar.bits.addr === PINGPONG_ADDR)
   pingpong.io.read_port.ready := read_valid && axi.r.ready
 
   // Multiplex read data
