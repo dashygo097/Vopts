@@ -18,13 +18,13 @@ class AXILiteSlaveRAM(
   val ar_addr_valid = Wire(Bool())
 
   // Memory connections
-  mmap_region.io.write_en   := axi_wready && axi.w.valid
+  mmap_region.io.write_en   := axi_on_awrite 
   mmap_region.io.write_addr := axi_awaddr
   mmap_region.io.write_data := axi.w.bits.data
   mmap_region.io.write_strb := axi.w.bits.strb
   aw_addr_valid             := mmap_region.io.write_resp
 
-  mmap_region.io.read_en   := axi_arready && axi.ar.valid
+  mmap_region.io.read_en   := axi_on_aread
   mmap_region.io.read_addr := axi_araddr
   ar_addr_valid            := mmap_region.io.read_resp
   axi_rdata                := Mux(axi_rvalid && ar_addr_valid, mmap_region.io.read_data, 0.U(dataWidth.W))

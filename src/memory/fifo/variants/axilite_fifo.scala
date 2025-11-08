@@ -20,12 +20,12 @@ class AXILiteSlaveSyncFIFO(
   val FIFO_STATUS_ADDR = (baseAddr + 0x04).U(addrWidth.W)
 
   // FIFO Write Path
-  val write_to_fifo = axi_awready && axi.aw.valid && (axi.aw.bits.addr === FIFO_ADDR)
+  val write_to_fifo = axi_on_awrite && (axi.aw.bits.addr === FIFO_ADDR)
   sync_fifo.io.enq.valid := write_to_fifo && axi.w.valid
   sync_fifo.io.enq.bits  := axi.w.bits.data
 
   // FIFO Read Path
-  val read_from_fifo = axi_arready && axi.ar.valid && (axi.ar.bits.addr === FIFO_ADDR)
+  val read_from_fifo = axi_on_aread && (axi.ar.bits.addr === FIFO_ADDR)
   sync_fifo.io.deq.ready := read_from_fifo && axi.r.ready
 
   // Multiplexed Read Data

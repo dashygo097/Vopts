@@ -59,6 +59,13 @@ class AXIFullSlaveRAM(
   val aw_addr_valid = Wire(Bool())
   val ar_addr_valid = Wire(Bool())
 
+  // Handshake Signals
+  val axi_will_awrite  = axi.aw.valid && !axi_awready
+  val axi_will_write  = axi.w.valid && !axi_wready && axi_awlen_cntr <= axi_awlen
+  val axi_on_write = axi.w.valid && axi_wready && !axi.w.bits.last
+  val axi_finish_write = axi.w.valid && axi_wready && axi.w.bits.last && !axi_bvalid
+  val axi_finish_bresp = axi.b.ready && axi_bvalid
+
   // I/O Connections
   axi.aw.ready    := axi_awready
   axi.w.ready     := axi_wready
@@ -89,18 +96,24 @@ class AXIFullSlaveRAM(
   ar_addr_valid            := mmap_region.io.read_resp
   axi_rdata                := Mux(axi_rvalid && ar_addr_valid, mmap_region.io.read_data, 0.U(dataWidth.W))
 
-  def nextAddr(addr: UInt, burst: UInt, wrap_size: UInt): UInt = {
-    val next_incr     = Cat(addr(addrWidth - 1, addr_lsb) + 1.U, Fill(addr_lsb, 0.U))
-    val addr_offset   = addr(dataWidth - 1, addr_lsb)
-    val wrap_boundary = wrap_size >> addr_lsb
-    val needs_wrap    = (addr_offset & (wrap_boundary - 1.U)) === (wrap_boundary - 1.U)
+  def nextIncr(addr: UInt): UInt = {
+    Cat(addr(addrWidth - 1, addr_lsb) + 1.U, Fill(addr_lsb, 0.U))
+  }
 
+  def nextWrap(addr: UInt, wrap_size: UInt): UInt = {
+    val wrap_boundary = wrap_size >> addr_lsb
+    val addr_offset   = addr(log2Ceil(memSize * (dataWidth / 8)) - 1, addr_lsb)
+    val need_wrap     = (addr_offset & (wrap_boundary - 1.U)) === (wrap_boundary - 1.U)
+    Mux(need_wrap, addr - Cat(wrap_boundary - 1.U, Fill(addr_lsb, 0.U)), nextIncr(addr))
+  }
+
+  def nextAddr(addr: UInt, burst: UInt, wrap_size: UInt): UInt = {
     MuxCase(
       addr,
       Seq(
         (burst === AXIBurstType.FIXED) -> addr,
-        (burst === AXIBurstType.INCR) -> next_incr,
-        (burst === AXIBurstType.WRAP) -> Mux(needs_wrap, addr - Cat(wrap_boundary - 1.U, Fill(addr_lsb, 0.U)), next_incr)
+        (burst === AXIBurstType.INCR) -> nextIncr(addr),
+        (burst === AXIBurstType.WRAP) -> nextWrap(addr, wrap_size)
       )
     )
   }
