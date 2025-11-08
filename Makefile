@@ -28,6 +28,7 @@ run: pre
 	@sbt $(LIB)/run
 
 clean:
+	@rm -rf $(SYNTH_DIR)
 	@rm -rf $(SIM_DIR)/logs
 	@rm -rf $(SIM_DIR)/build
 
