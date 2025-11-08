@@ -11,6 +11,7 @@ obj_dir/
 
 app/
 sims/
+synth/
 
 .python-version
 .venv

@@ -36,7 +36,7 @@ class AXIFullMasterRW(
   val write_done  = IO(Output(Bool())).suggestName("W_DONE")
   val write_resp  = IO(Output(UInt(2.W))).suggestName("W_RESP")
 
-  val read_data = IO(Output(UInt(dataWidth.W))).suggestName("R_DATA")
+  val read_data  = IO(Output(UInt(dataWidth.W))).suggestName("R_DATA")
   val read_valid = IO(Output(Bool())).suggestName("R_VALID")
   val read_ready = IO(Input(Bool())).suggestName("R_READY")
   val read_addr  = IO(Input(UInt(addrWidth.W))).suggestName("R_ADDR")
@@ -91,11 +91,11 @@ class AXIFullMasterRW(
   val wq = Module(new Queue(UInt(dataWidth.W), entries = 8))
   wq.io.enq.valid := write_valid
   wq.io.enq.bits  := write_data
-  write_ready    := wq.io.enq.ready
+  write_ready     := wq.io.enq.ready
 
   val rq = Module(new Queue(UInt(dataWidth.W), entries = 8))
-  read_data  := rq.io.deq.bits
-  read_valid := rq.io.deq.valid
+  read_data       := rq.io.deq.bits
+  read_valid      := rq.io.deq.valid
   rq.io.deq.ready := read_ready
 
   // AW

@@ -44,7 +44,7 @@ show_status() {
 
 select_testbench() {
   echo -e "${DIM}◇ Select a testbench: ${NC}" >&2
-local tb_file=$(find "$TB_DIR" -type f \( -name "*.sv" -o -name "*.v" \) | sed "s|^$TB_DIR/||" | fzf --height=30% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
+  local tb_file=$(find "$TB_DIR" -type f \( -name "*.sv" -o -name "*.v" \) | sed "s|^$TB_DIR/||" | fzf --height=30% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
   
   if [ -z "$tb_file" ]; then
     echo -e "${RED}✖  No testbench selected. Skip.${NC}" >&2

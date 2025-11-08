@@ -11,7 +11,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   val mmap_regs = Module(new MMapRegisters(addrWidth, dataWidth, mmap))
 
   // I/O Connections
-  mmap_regs.io.write_en   := axi_will_write 
+  mmap_regs.io.write_en   := axi_will_write
   mmap_regs.io.write_addr := axi_awaddr
   mmap_regs.io.write_data := axi.w.bits.data
   mmap_regs.io.write_strb := axi.w.bits.strb
@@ -42,11 +42,12 @@ object TestAXILiteSlaveMMap extends App {
     Register("slv_reg0", 0x80000000L, 0x0L),
     Register("slv_reg1", 0x80004000L, 0x0L),
     Register("slv_reg2", 0x80008000L, 0x0L),
-    Register("slv_reg3", 0x8000C000L, 0x0L)
+    Register("slv_reg3", 0x8000c000L, 0x0L)
   )
   VerilogEmitter.parse(
     new AXILiteSlaveMMapRegs(32, 32, mmap),
     "axilite_slave_mmap.sv",
-    info = true
+    info = true,
+    lowering=true,
   )
 }
