@@ -265,7 +265,8 @@ object mat4x4 {
 
 trait MatrixOps[T <: Data] {
   self: Matrix[T] =>
-  def +(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
+
+  def add(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
     val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
     for (r <- 0 until self.row())
@@ -273,7 +274,9 @@ trait MatrixOps[T <: Data] {
         mat.value(r)(c) := self.value(r)(c) + that.value(r)(c)
     mat
   }
-  def -(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
+  def +(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T]   = add(that)
+
+  def sub(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
     val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
     for (r <- 0 until self.row())
@@ -281,7 +284,9 @@ trait MatrixOps[T <: Data] {
         mat.value(r)(c) := self.value(r)(c) - that.value(r)(c)
     mat
   }
-  def *(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
+  def -(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T]   = sub(that)
+
+  def mul(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
     val mat = Wire(new Matrix(self.gen(), self.row(), that.col()))
     for (r <- 0 until self.row())
@@ -289,14 +294,9 @@ trait MatrixOps[T <: Data] {
         mat.value(r)(c) := self.value(r)(c) * that.value(r)(c)
     mat
   }
-  def *(that: UInt)(implicit ev: Arithmetic[T]): Matrix[T]      = {
-    val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
-    for (r <- 0 until self.row())
-      for (c <- 0 until self.col())
-        mat.value(r)(c) := self.value(r)(c) * that
-    mat
-  }
-  def /(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
+  def *(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T]   = mul(that)
+
+  def div(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
     val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
     for (r <- 0 until self.row())
@@ -304,11 +304,5 @@ trait MatrixOps[T <: Data] {
         mat.value(r)(c) := self.value(r)(c) / that.value(r)(c)
     mat
   }
-  def /(that: UInt)(implicit ev: Arithmetic[T]): Matrix[T]      = {
-    val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
-    for (r <- 0 until self.row())
-      for (c <- 0 until self.col())
-        mat.value(r)(c) := self.value(r)(c) / that
-    mat
-  }
+  def /(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T]   = div(that)
 }

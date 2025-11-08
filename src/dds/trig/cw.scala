@@ -19,7 +19,7 @@ class CWDDS[T <: Data](
   val io                   = IO(new SO(gen)).suggestName("DDS_CW")
   val phase                = RegInit(0.U(phaseWidth.W))
   val lutAddr              = Wire(UInt(log2Ceil(lutWidth).W))
-  val poff                 = (freq * pow(2.0, phaseWidth) / clkFreq).toInt.U
+  val poff                 = (freq * (2 << phaseWidth) / clkFreq).toInt.U
 
   val sine_rom = VecInit(
     (0 until lutWidth).map { i =>
@@ -58,8 +58,8 @@ class MultiCWDDS[T <: Data](
 
   for (ch <- 0 until nChannels) {
     val phase      = RegInit(0.U(phaseWidth.W))
-    val poff       = (freqs(ch) * pow(2.0, phaseWidth) / clkFreq).toInt.U
-    val pha_offset = ((phas(ch) / 360.0) * pow(2.0, phaseWidth)).toInt.U
+    val poff       = (freqs(ch) * (2 << phaseWidth) / clkFreq).toInt.U
+    val pha_offset = ((phas(ch) / 360.0) * (2 << phaseWidth)).toInt.U
 
     phase := phase + poff
     val addr = (phase + pha_offset)(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth)).asUInt
