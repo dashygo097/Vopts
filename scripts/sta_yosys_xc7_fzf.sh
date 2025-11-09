@@ -179,17 +179,12 @@ EOF
     fi
     
     echo -e "${CYAN}◆ Resource Utilization${NC}"
-    
-    echo -e "${DIM}│${NC} ${YELLOW}Flip-Flops:${NC}"
-    grep "FDRE" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{printf dim "│" nc "   %-22s %d\n", "FDRE (D Flip-Flops):", $2}'
-    grep "FDSE" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "FDSE (Set FF):", $2}'
-    grep "FDCE" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "FDCE (Clock Enable):", $2}'
-    
-    echo -e "${DIM}│${NC}"
+
     echo -e "${DIM}│${NC} ${YELLOW}Logic:${NC}"
     local total_luts=0
     for i in {2..6}; do
-        local count=$(grep "LUT$i" synthesis.log | grep -v "LUTRAM" | tail -1 | awk '{print $2}')
+        local line=$(grep "LUT$i" synthesis.log | grep -v "LUTRAM" | tail -1)
+        local count=$(echo "$line" | awk '{print $1}')
         if [ ! -z "$count" ] && [ "$count" != "0" ]; then
             printf "${DIM}│${NC}   %-22s %d\n" "LUT$i:" "$count"
             total_luts=$((total_luts + count))
@@ -197,12 +192,31 @@ EOF
     done
     echo -e "${DIM}│${NC}   ──────────────────────────"
     printf "${DIM}│${NC}   %-22s %d\n" "Total LUTs:" "$total_luts"
-    
-    echo -e "${DIM}│${NC}"
-    echo -e "${DIM}│${NC} ${YELLOW}Routing:${NC}"
-    grep "MUXF7" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "MUXF7:", $2}'
-    grep "MUXF8" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{if($2>0) printf dim "│" nc "   %-22s %d\n", "MUXF8:", $2}'
-    grep "BUFG" synthesis.log | tail -1 | awk -v dim="$DIM" -v nc="$NC" '{printf dim "│" nc "   %-22s %d\n", "BUFG (Clock):", $2}'
+
+    echo -e "${DIM}│${NC} ${YELLOW}Flip-Flops:${NC}"
+    local count_fdre=$(grep -E "^\s*[0-9]+\s+FDRE\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_fdse=$(grep -E "^\s*[0-9]+\s+FDSE\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_fdce=$(grep -E "^\s*[0-9]+\s+FDCE\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    printf "${DIM}│${NC}   %-22s %d\n" "FDRE:" "${count_fdre:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "FDSE:" "${count_fdse:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "FDCE:" "${count_fdce:-0}"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+    local total_dffs=$(( ${count_fdre:-0} + ${count_fdse:-0} + ${count_fdce:-0} ))
+    printf "${DIM}│${NC}   %-22s %d\n" "Total DFFs:" "$total_dffs"
+
+    echo -e "${DIM}│${NC} ${YELLOW}IO:${NC}"
+    local count_ibuf=$(grep -E "^\s*[0-9]+\s+IBUF\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_obuf=$(grep -E "^\s*[0-9]+\s+OBUF\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    printf "${DIM}│${NC}   %-22s %d\n" "IBUF:" "${count_ibuf:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "OBUF:" "${count_obuf:-0}"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+
+    echo -e "${DIM}│${NC} ${YELLOW}Clock & Other:${NC}"
+    local count_bufg=$(grep -E "^\s*[0-9]+\s+BUFG\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_carry=$(grep -E "^\s*[0-9]+\s+CARRY4\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    printf "${DIM}│${NC}   %-22s %d\n" "BUFG (Clock):" "${count_bufg:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "CARRY4:" "${count_carry:-0}"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
     
     local estimated_lc=$(grep "Estimated number of LCs" synthesis.log | tail -1 | awk '{print $6}')
     if [ ! -z "$estimated_lc" ]; then

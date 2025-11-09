@@ -25,6 +25,10 @@
 - icarus & cocotb (only tested under cocotb 1.9.2)
 - fzf (optional)
 
+#### For Synthesis and STA:
+
+- Use the updated yosys(Yosys 0.58+162)
+
 ## How to use
 
 To generate systemVerilog, write demos under **app/...** , and run
@@ -44,7 +48,7 @@ or
 Run test using **verilator** and **gtkwave / surfer** through **tb.sh(or fzf version tb_fzf.sh).**
 
 > ```bash
-> make tb # (make tb-fzf)
+> make tb # (FZF=true)
 > ```
 
 Make sure that the tb file located in **testbench/tb** <br>
@@ -52,7 +56,7 @@ Make sure that the tb file located in **testbench/tb** <br>
 or using
 
 > ```bash
-> make cocotb # (make cocotb-fzf)
+> make cocotb # (FZF=true)
 > ```
 
 for cocotb
