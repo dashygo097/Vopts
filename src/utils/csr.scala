@@ -7,3 +7,9 @@ case class Register(
   writable: Boolean = true,
   readable: Boolean = true
 )
+
+trait CSRMMap { 
+  def baseAddr: BigInt 
+  def registers: Seq[Register]
+}
+
