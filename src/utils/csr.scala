@@ -1,4 +1,4 @@
-package mem.register
+package utils 
 
 case class Register(
   name: String,
