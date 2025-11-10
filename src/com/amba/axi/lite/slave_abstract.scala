@@ -6,8 +6,8 @@ import chisel3.util._
 abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) extends Module {
   protected def getExtAXIName: String = "S_AXI"
 
-  val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName(getExtAXIName)
-  val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
+  protected val ext_axi = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName(getExtAXIName)
+  protected val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
   // Parameters
   protected val addr_lsb = log2Ceil(dataWidth / 8)
