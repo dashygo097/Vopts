@@ -9,8 +9,7 @@ class FIFOCSR(override val baseAddr: BigInt) extends CSRMMap {
   override def registers: Seq[Register] = Seq(
     Register("FIFO_WDATA", baseAddr + 0x00, writable=true, readable=false),
     Register("FIFO_RDATA", baseAddr + 0x04, writable=false, readable=true), 
-    Register("FIFO_CTRL", baseAddr + 0x08, writable=true, readable=false),
-    Register("FIFO_STATUS", baseAddr + 0x0C, writable=false, readable=true)
+    Register("FIFO_STATUS", baseAddr + 0x08, writable=false, readable=true)
   )
 }
 
@@ -19,32 +18,19 @@ class AXILiteSlaveSyncFIFO(
   dataWidth: Int,
   depth: Int,
   baseAddr: BigInt
-) extends AXILiteSlave(addrWidth, dataWidth) {
+) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new FIFOCSR(baseAddr)) {
   override def desiredName: String = s"axilite_syncfifo_${addrWidth}x${dataWidth}_d$depth"
 
   val sync_fifo = Module(new SyncFIFO(UInt(dataWidth.W), depth))
 
-  // Address decoding
-  val FIFO_ADDR        = (baseAddr + 0x00).U(addrWidth.W)
-  val FIFO_STATUS_ADDR = (baseAddr + 0x04).U(addrWidth.W)
-
   // FIFO Write Path
-  val write_to_fifo = axi_on_awrite && (axi.aw.bits.addr === FIFO_ADDR)
+  val write_to_fifo = axi_on_awrite && (axi.aw.bits.addr === getCSRAddr("FIFO_WDATA"))
   sync_fifo.io.enq.valid := write_to_fifo && axi.w.valid
   sync_fifo.io.enq.bits  := axi.w.bits.data
 
   // FIFO Read Path
-  val read_from_fifo = axi_on_aread && (axi.ar.bits.addr === FIFO_ADDR)
+  val read_from_fifo = axi_on_aread && (axi.ar.bits.addr === getCSRAddr("FIFO_RDATA"))
   sync_fifo.io.deq.ready := read_from_fifo && axi.r.ready
-
-  // Multiplexed Read Data
-  when(axi.ar.bits.addr === FIFO_ADDR) {
-    axi_rdata := sync_fifo.io.deq.bits
-  }.elsewhen(axi.ar.bits.addr === FIFO_STATUS_ADDR) {
-    axi_rdata := Cat(sync_fifo.io.empty, sync_fifo.io.full) // [1]: empty, [0]: full
-  }.otherwise {
-    axi_rdata := 0.U
-  }
 
   // AW
 
