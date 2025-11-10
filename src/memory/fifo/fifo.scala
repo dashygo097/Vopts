@@ -3,7 +3,7 @@ package mem.fifo
 import chisel3._
 import chisel3.util._
 
-class SyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
+class SyncFIFOIO[T <: Data](gen: T) extends Bundle {
   val enq   = Flipped(Decoupled(gen))
   val deq   = Decoupled(gen)
   val empty = Output(Bool())
@@ -11,41 +11,42 @@ class SyncFIFOIO[T <: Data](gen: T, depth: Int) extends Bundle {
 }
 
 class SyncFIFO[T <: Data](gen: T, depth: Int) extends Module {
-  override def desiredName: String =
-    s"sync_fifo_${depth}x${gen.getWidth}"
-  val io                           = IO(new SyncFIFOIO(gen, depth)).suggestName("S_FIFO")
+  require(isPow2(depth), "FIFO depth must be a power of 2")
+  
+  override def desiredName: String = s"sync_fifo_${depth}x${gen.getWidth}"
+  val io = IO(new SyncFIFOIO(gen)).suggestName("S_FIFO")
 
-  val queue  = Module(new Queue(gen, depth, pipe = false, flow = false))
-  val enqPtr = RegInit(0.U(log2Ceil(depth).W))
-  val deqPtr = RegInit(0.U(log2Ceil(depth).W))
-  val full   = RegInit(false.B)
-  val empty  = RegInit(true.B)
+  val ptrWidth = log2Ceil(depth + 1)
+  
+  val mem = SyncReadMem(depth, gen)
+  val enqPtr = RegInit(0.U(ptrWidth.W))
+  val deqPtr = RegInit(0.U(ptrWidth.W))
+  val maybeFullReg = RegInit(false.B)
 
-  io.enq.ready      := !full
-  io.deq.valid      := !empty
-  io.deq.bits       := queue.io.deq.bits
-  io.full           := full
-  io.empty          := empty
-  queue.io.enq.bits := io.enq.bits
+  val empty = enqPtr === deqPtr && !maybeFullReg
+  val full = enqPtr === deqPtr && maybeFullReg
+  
+  // I/O Connections
+  io.enq.ready := !full
+  io.deq.valid := !empty
+  io.full := full
+  io.empty := empty
 
-  when(io.enq.valid && io.enq.ready) {
-    queue.io.enq.valid := true.B
-    enqPtr             := Mux(enqPtr === (depth - 1).U, 0.U, enqPtr + 1.U)
-    when(enqPtr + 1.U === deqPtr) {
-      full := true.B
-    }
-    empty              := false.B
-  }.otherwise {
-    queue.io.enq.valid := false.B
+  // W
+  when(io.enq.fire) {
+    mem.write(enqPtr(log2Ceil(depth)-1, 0), io.enq.bits)
+    enqPtr := Mux(enqPtr === (depth - 1).U, 0.U, enqPtr + 1.U)
   }
-  when(io.deq.valid && io.deq.ready) {
-    queue.io.deq.ready := true.B
-    deqPtr             := Mux(deqPtr === (depth - 1).U, 0.U, deqPtr + 1.U)
-    when(deqPtr + 1.U === enqPtr) {
-      empty := true.B
-    }
-    full               := false.B
-  }.otherwise {
-    queue.io.deq.ready := false.B
+
+  // R
+  val deqPtrNext = Mux(deqPtr === (depth - 1).U, 0.U, deqPtr + 1.U)
+  when(io.deq.fire) {
+    deqPtr := deqPtrNext
+  }
+  io.deq.bits := mem.read(deqPtr(log2Ceil(depth)-1, 0))
+
+  // Full/Empty
+  when(io.enq.fire =/= io.deq.fire) {
+    maybeFullReg := io.enq.fire
   }
 }
