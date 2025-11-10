@@ -45,13 +45,13 @@ or
 
 ## Run Autotest
 
-Run test using **verilator** and **gtkwave / surfer** through **tb.sh(or fzf version tb_fzf.sh).**
+Run test using **verilator** and **gtkwave / surfer** through **tb.sh**
 
 > ```bash
 > make tb # (FZF=true)
 > ```
 
-Make sure that the tb file located in **testbench/tb** <br>
+Make sure that the tb file located in **sims/tb** <br>
 
 or using
 
@@ -59,11 +59,19 @@ or using
 > make cocotb # (FZF=true)
 > ```
 
-for cocotb
+for cocotb through **cocotb.sh**
 
-Similarly, make sure that the py scripts are located in **testbench/cocotb**
+Similarly, make sure that the py scripts are located in **sims/cocotb** and make sure you have cocotb env, activating a venv with uv is recommended.
 
 ###### All the related scripts can be found in scripts/
+
+## Run STA
+
+Run sta using **Yosys** through **./sta-yosys-xc7.sh** with Xilinx toolchain.
+
+> ```bash
+> make sta-xc7 # (FZF=true)
+> ```
 
 ## References
 
