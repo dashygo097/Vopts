@@ -1,4 +1,4 @@
-package utils 
+package utils
 
 case class Register(
   name: String,
@@ -8,8 +8,7 @@ case class Register(
   readable: Boolean = true
 )
 
-trait CSRMMap { 
-  def baseAddr: BigInt 
+trait CSRMMap {
+  def baseAddr: BigInt
   def registers: Seq[Register]
 }
-

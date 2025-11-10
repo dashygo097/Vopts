@@ -6,7 +6,7 @@ trait Analog[T <: Data] extends Arithmetic[T]
 
 object AnalogSyntax {
   implicit class AnalogOps[T <: Data](val x: T) extends AnyVal {
-    def apply(idx: Int)(implicit arith: Analog[T]): Bool            = arith.apply(idx)(x)
+    def apply(idx: Int)(implicit arith: Analog[T]): Bool                = arith.apply(idx)(x)
     def apply(high: Int, low: Int)(implicit arith: Arithmetic[T]): UInt = arith.apply(high, low)(x)
     def +(y: T)(implicit arith: Arithmetic[T]): T                       = arith.add(x, y)
     def -(y: T)(implicit arith: Arithmetic[T]): T                       = arith.sub(x, y)

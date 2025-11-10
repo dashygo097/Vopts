@@ -4,9 +4,9 @@ import utils._
 import chisel3._
 
 abstract class AXILiteSlaveWithCSR(
-  addrWidth: Int, 
-  dataWidth: Int, 
-  mmap: CSRMMap 
+  addrWidth: Int,
+  dataWidth: Int,
+  mmap: CSRMMap
 ) extends AXILiteSlave(addrWidth, dataWidth) {
   // CSR Registers
   private val regMap = mmap.registers.map { reg =>
@@ -14,28 +14,24 @@ abstract class AXILiteSlaveWithCSR(
     reg.addr -> (reg, value)
   }.toMap
 
-  // Helpers 
-  protected def getAddr(name: String): UInt = {
+  // Helpers
+  protected def getAddr(name: String): UInt =
     regMap.find(_._2._1.name == name) match {
       case Some((addr, _)) => addr.U(addrWidth.W)
-      case None => throw new Exception(s"Register $name not found")
+      case None            => throw new Exception(s"Register $name not found")
     }
-  }
 
   // RW Access
-  protected def writeAccess(name: String): Bool = {
-    getAddr(name) === axi.aw.bits.addr
-  }
-  protected def readAccess(name: String): Bool = {
-    getAddr(name) === axi.ar.bits.addr
-  }
+  protected def writeAccess(name: String): Bool =
+    getAddr(name) === axi_awaddr
+  protected def readAccess(name: String): Bool  =
+    getAddr(name) === axi_araddr
 
   // Factory Methods
-  protected def registerRead(name: String, value: UInt): Unit = {
+  protected def registerRead(name: String, value: UInt): Unit =
     when(readAccess(name)) {
       axi_rdata := value
     }
-  }
 
   axi_rdata := 0.U
 }

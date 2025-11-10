@@ -21,6 +21,19 @@ object AXILiteSlaveDMAState extends ChiselEnum {
   val ERROR = Value(7.U(3.W))
 }
 
+class DMACSR(override val baseAddr: BigInt) extends CSRMMap {
+  override def registers: Seq[Register] = Seq(
+    Register("DMA_CTRL", baseAddr + 0x00),
+    Register("DMA_STATUS", baseAddr + 0x04),
+    Register("DMA_SRC_ADDR", baseAddr + 0x08),
+    Register("DMA_DST_ADDR", baseAddr + 0x0c),
+    Register("DMA_LENGTH", baseAddr + 0x10),
+    Register("DMA_BYTES_XFER", baseAddr + 0x14),
+    Register("DMA_BURST_SIZE", baseAddr + 0x18),
+    Register("DMA_PRIORITY", baseAddr + 0x1c)
+  )
+}
+
 class AXILiteSlaveDMA(
   addrWidth: Int,
   dataWidth: Int,
@@ -28,7 +41,7 @@ class AXILiteSlaveDMA(
   idWidth: Int,
   userWidth: Int,
   baseAddr: BigInt
-) extends AXILiteSlave(addrWidth, dataWidth) {
+) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new DMACSR(baseAddr)) {
   override protected def getExtAXIName: String = "S_AXI_CTRL"
   override def desiredName: String             =
     s"axilite_slave_dma_${addrWidth}x${dataWidth}_ctrl${ctrlAddrWidth}_i${idWidth}_u$userWidth"
@@ -43,16 +56,6 @@ class AXILiteSlaveDMA(
 
   // Submodule: DMA Channel
   val dma = Module(new DMAChannel(addrWidth, dataWidth))
-
-  // Address map
-  val CTRL_ADDR       = (baseAddr + 0x00).U(ctrlAddrWidth.W)
-  val STATUS_ADDR     = (baseAddr + 0x04).U(ctrlAddrWidth.W)
-  val SRC_ADDR        = (baseAddr + 0x08).U(ctrlAddrWidth.W)
-  val DST_ADDR        = (baseAddr + 0x0c).U(ctrlAddrWidth.W)
-  val LENGTH_ADDR     = (baseAddr + 0x10).U(ctrlAddrWidth.W)
-  val BYTES_XFER_ADDR = (baseAddr + 0x14).U(ctrlAddrWidth.W)
-  val BURST_SIZE_ADDR = (baseAddr + 0x18).U(ctrlAddrWidth.W)
-  val PRIORITY_ADDR   = (baseAddr + 0x1c).U(ctrlAddrWidth.W)
 
   // Control/Status
   val reg_enable       = RegInit(false.B)
@@ -108,57 +111,49 @@ class AXILiteSlaveDMA(
   // AW
 
   // W
-
-  // B + Decode
-  when(axi_will_bresp) {
-    axi_bresp := 0.U // OKAY
-
-    when(axi_awaddr === CTRL_ADDR) {
+  when(axi_will_write) {
+    when(writeAccess("DMA_CTRL")) {
       when(axi.w.bits.data(0)) {
-        ready_pulse := true.B; done_sticky := false.B // start W1P
+        ready_pulse := true.B
+        done_sticky := false.B // start W1P
       }
       when(axi.w.bits.data(1)) {
         soft_reset_pulse := true.B // soft reset W1P
       }
       reg_enable     := axi.w.bits.data(2)
       reg_int_enable := axi.w.bits.data(3)
-    }.elsewhen(axi_awaddr === SRC_ADDR) {
-      reg_src_addr := axi.w.bits.data.asUInt.pad(addrWidth)
-    }.elsewhen(axi_awaddr === DST_ADDR) {
-      reg_dst_addr := axi.w.bits.data.asUInt.pad(addrWidth)
-    }.elsewhen(axi_awaddr === LENGTH_ADDR) {
-      reg_length := axi.w.bits.data.asUInt.pad(addrWidth)
-    }.elsewhen(axi_awaddr === BURST_SIZE_ADDR) {
+    }.elsewhen(writeAccess("DMA_SRC_ADDR")) {
+      reg_src_addr := axi.w.bits.data
+    }.elsewhen(writeAccess("DMA_DST_ADDR")) {
+      reg_dst_addr := axi.w.bits.data
+    }.elsewhen(writeAccess("DMA_LENGTH")) {
+      reg_length := axi.w.bits.data
+    }.elsewhen(writeAccess("DMA_BURST_SIZE")) {
       reg_burst_size := axi.w.bits.data(7, 0)
-    }.elsewhen(axi_awaddr === PRIORITY_ADDR) {
+    }.elsewhen(writeAccess("DMA_PRIORITY")) {
       reg_priority := axi.w.bits.data(2, 0)
     }
+  }
+
+  // B + Decode
+  when(axi_will_bresp) {
+    axi_bresp := 0.U // OKAY
+
   }
 
   // AR
 
   // R
+  registerRead("DMA_CTRL", Cat(reg_int_enable, reg_enable, 0.U(1.W), 0.U(1.W))) // RO view; start/reset show 0
+  registerRead("DMA_STATUS", Cat(error_sticky, done_sticky, dma.io.busy))       // [2] error, [1] done, [0] busy
+  registerRead("DMA_SRC_ADDR", reg_src_addr)
+  registerRead("DMA_DST_ADDR", reg_dst_addr)
+  registerRead("DMA_LENGTH", reg_length)
+  registerRead("DMA_BYTES_XFER", bytes_xfer)
+  registerRead("DMA_BURST_SIZE", reg_burst_size)
+  registerRead("DMA_PRIORITY", reg_priority)
   when(axi_will_read) {
-    axi_rresp := 0.U // OKAY
-    axi_rdata := 0.U
-
-    when(axi_araddr === CTRL_ADDR) {
-      axi_rdata := Cat(0.U(28.W), reg_int_enable, reg_enable, 0.U(1.W), 0.U(1.W)) // RO view; start/reset show 0
-    }.elsewhen(axi_araddr === STATUS_ADDR) {
-      axi_rdata := Cat(0.U(29.W), error_sticky, done_sticky, dma.io.busy) // [2] error, [1] done, [0] busy
-    }.elsewhen(axi_araddr === SRC_ADDR) {
-      axi_rdata := reg_src_addr(31, 0)
-    }.elsewhen(axi_araddr === DST_ADDR) {
-      axi_rdata := reg_dst_addr(31, 0)
-    }.elsewhen(axi_araddr === LENGTH_ADDR) {
-      axi_rdata := reg_length(31, 0)
-    }.elsewhen(axi_araddr === BYTES_XFER_ADDR) {
-      axi_rdata := bytes_xfer
-    }.elsewhen(axi_araddr === BURST_SIZE_ADDR) {
-      axi_rdata := Cat(0.U(24.W), reg_burst_size)
-    }.elsewhen(axi_araddr === PRIORITY_ADDR) {
-      axi_rdata := Cat(0.U(29.W), reg_priority)
-    }
+    axi_rresp := Mux(dma.io.error, 2.U, 0.U) // SLVERR if error
   }
 
   // AXI4-Full Master bridge (single beat transfers)

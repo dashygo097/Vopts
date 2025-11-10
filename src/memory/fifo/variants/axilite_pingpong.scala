@@ -5,38 +5,31 @@ import utils._
 import chisel3._
 import chisel3.util._
 
+class PingPongFIFOCSR(override val baseAddr: BigInt) extends CSRMMap {
+  override def registers: Seq[Register] = Seq(
+    Register("PINGPONG_DATA", baseAddr + 0x00),
+    Register("PINGPONG_STATUS", baseAddr + 0x04)
+  )
+}
+
 class AXILiteSlavePingPongFIFO(
   addrWidth: Int,
   dataWidth: Int,
   depth: Int,
   baseAddr: BigInt
-) extends AXILiteSlave(addrWidth, dataWidth) {
+) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new PingPongFIFOCSR(baseAddr)) {
   override def desiredName: String = s"axilite_pingpong_${addrWidth}x${dataWidth}_d$depth"
 
   val pingpong = Module(new PingPongFIFO(UInt(dataWidth.W), depth))
 
-  // Address decoding
-  val PINGPONG_ADDR        = (baseAddr + 0x00).U(addrWidth.W)
-  val PINGPONG_STATUS_ADDR = (baseAddr + 0x04).U(addrWidth.W)
-
   // Write Path
-  val write_valid = axi_on_awrite && (axi.aw.bits.addr === PINGPONG_ADDR)
+  val write_valid = axi_on_awrite && writeAccess("PINGPONG_DATA")
   pingpong.io.write_port.valid := write_valid && axi.w.valid
   pingpong.io.write_port.bits  := axi.w.bits.data
 
   // Read Path
-  val read_valid = axi_on_aread && (axi.ar.bits.addr === PINGPONG_ADDR)
+  val read_valid = axi_on_aread && readAccess("PINGPONG_DATA")
   pingpong.io.read_port.ready := read_valid && axi.r.ready
-
-  // Multiplex read data
-  when(axi.ar.bits.addr === PINGPONG_ADDR) {
-    axi_rdata := pingpong.io.read_port.bits
-  }.elsewhen(axi.ar.bits.addr === PINGPONG_STATUS_ADDR) {
-    // Status: [1]=read_empty, [0]=write_full
-    axi_rdata := Cat(pingpong.io.read_buffer_empty, pingpong.io.write_buffer_full)
-  }.otherwise {
-    axi_rdata := 0.U
-  }
 
   // AW
 
@@ -50,6 +43,8 @@ class AXILiteSlavePingPongFIFO(
   // AR
 
   // R
+  registerRead("PINGPONG_DATA", pingpong.io.read_port.bits)
+  registerRead("PINGPONG_STATUS", Cat(pingpong.io.read_buffer_empty, pingpong.io.write_buffer_full))
   when(axi_will_read) {
     axi_rresp := Mux(pingpong.io.read_buffer_empty, 2.U, 0.U)
   }
