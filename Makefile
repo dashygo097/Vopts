@@ -43,7 +43,7 @@ localpublish:
 
 tb: pre
 	@if [ "$(FZF)" = "true" ] ; then \
-		bash $(SCRIPTS_DIR)/tb_fzf.sh ; \
+		FZF=true bash $(SCRIPTS_DIR)/tb.sh ; \
 	else \
 		bash $(SCRIPTS_DIR)/tb.sh ; \
 	fi
@@ -55,14 +55,14 @@ cocotb: pre
 	@echo "" >> $(COCOTB_DIR)/cocotb.make
 	@echo "include $(shell cocotb-config --makefiles)/Makefile.sim" >> $(COCOTB_DIR)/cocotb.make
 	@if [ "$(FZF)" = "true" ] ; then \
-		bash $(SCRIPTS_DIR)/cocotb_fzf.sh; \
+		FZF=true bash $(SCRIPTS_DIR)/cocotb.sh; \
 	else \
 		bash $(SCRIPTS_DIR)/cocotb.sh; \
 	fi
 
 sta-xc7: pre
 	@if [ "$(FZF)" = "true" ] ; then \
-		bash $(SCRIPTS_DIR)/sta_yosys_xc7_fzf.sh ; \
+		FZF=true bash $(SCRIPTS_DIR)/sta_yosys_xc7.sh ; \
 	else \
 		bash $(SCRIPTS_DIR)/sta_yosys_xc7.sh ; \
 	fi

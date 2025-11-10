@@ -43,40 +43,56 @@ show_status() {
 }
 
 select_module() {
-    echo -e "${DIM}◇ Available modules:${NC}" >&2
-    local module_files=()
-    while IFS= read -r -d $'\0' file; do
-        module_files+=("$file")
-    done < <(find "$BUILD_DIR" -type f \( -name "*.sv" -o -name "*.v" \) -print0)
-
-    if [ ${#module_files[@]} -eq 0 ]; then
-        echo -e "${RED}✖ No module files found.${NC}" >&2
-        exit 1
-    fi
-
-    for i in "${!module_files[@]}"; do
-        echo -e "  ${GRAY}$((i+1)))${NC} $(basename "${module_files[$i]}")" >&2
-    done
-
-    local selected
-    while true; do
-        echo -ne "${YELLOW}? Select a module (1-${#module_files[@]}): ${NC}" >&2
-        read -r selected
-        if [[ "$selected" =~ ^[0-9]+$ ]] && \
-           [ "$selected" -ge 1 ] && \
-           [ "$selected" -le ${#module_files[@]} ]; then
-            break
-        elif [[ "$selected" = "q" || "$selected" = "Q" ]]; then
-            echo -e "${RED}✖ Exiting.${NC}" >&2
-            exit 0
-        else
-            echo -e "${RED}Invalid selection. Please enter a number between 1 and ${#module_files[@]}.${NC}" >&2
+    if [[ "$FZF" == "true" ]]; then
+        # FZF mode
+        echo -e "${DIM}◇ Select a module:${NC}" >&2
+        
+        local module_file=$(find "$BUILD_DIR" -type f \( -name "*.v" -o -name "*.sv" \) | sed "s|^$BUILD_DIR/||" | fzf --height=40% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
+        
+        if [ -z "$module_file" ]; then
+            echo -e "${RED}✖ No module selected. Exiting.${NC}" >&2
+            exit 1
         fi
-    done
+        
+        echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$module_file")${NC}" >&2
+        echo "$module_file"
+    else
+        # Manual selection mode
+        echo -e "${DIM}◇ Available modules:${NC}" >&2
+        local module_files=()
+        while IFS= read -r -d $'\0' file; do
+            module_files+=("$file")
+        done < <(find "$BUILD_DIR" -type f \( -name "*.sv" -o -name "*.v" \) -print0)
 
-    local module_file="${module_files[$((selected-1))]}"
-    echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$module_file")${NC}" >&2
-    echo "$(basename "$module_file")"
+        if [ ${#module_files[@]} -eq 0 ]; then
+            echo -e "${RED}✖ No module files found.${NC}" >&2
+            exit 1
+        fi
+
+        for i in "${!module_files[@]}"; do
+            echo -e "  ${GRAY}$((i+1)))${NC} $(basename "${module_files[$i]}")" >&2
+        done
+
+        local selected
+        while true; do
+            echo -ne "${YELLOW}? Select a module (1-${#module_files[@]}): ${NC}" >&2
+            read -r selected
+            if [[ "$selected" =~ ^[0-9]+$ ]] && \
+               [ "$selected" -ge 1 ] && \
+               [ "$selected" -le ${#module_files[@]} ]; then
+                break
+            elif [[ "$selected" = "q" || "$selected" = "Q" ]]; then
+                echo -e "${RED}✖ Exiting.${NC}" >&2
+                exit 0
+            else
+                echo -e "${RED}Invalid selection. Please enter a number between 1 and ${#module_files[@]}.${NC}" >&2
+            fi
+        done
+
+        local module_file="${module_files[$((selected-1))]}"
+        echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$module_file")${NC}" >&2
+        echo "$(basename "$module_file")"
+    fi
 }
 
 fetch_top_module() {
