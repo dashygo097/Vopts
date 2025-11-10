@@ -23,15 +23,13 @@ class AXILiteSlaveSyncFIFO(
   val sync_fifo = Module(new SyncFIFO(UInt(dataWidth.W), depth))
 
   // FIFO Write Path
-  val write_to_fifo = axi_will_awrite && writeAccess("FIFO_DATA")
+  val write_to_fifo = axi_on_awrite && writeAccess("FIFO_DATA")
   sync_fifo.io.enq.valid := write_to_fifo && axi.w.valid && !sync_fifo.io.full
   sync_fifo.io.enq.bits  := axi.w.bits.data
 
   // FIFO Read Path
-  val read_from_fifo = axi_will_aread && readAccess("FIFO_DATA")
+  val read_from_fifo = axi_on_aread && readAccess("FIFO_DATA")
   sync_fifo.io.deq.ready := read_from_fifo && axi.r.ready && !sync_fifo.io.empty
-  registerRead("FIFO_DATA", sync_fifo.io.deq.bits)
-  registerRead("FIFO_STATUS", Cat(sync_fifo.io.empty, sync_fifo.io.full))
 
   // AW
 
@@ -45,6 +43,8 @@ class AXILiteSlaveSyncFIFO(
   // AR
 
   // R
+  registerRead("FIFO_DATA", sync_fifo.io.deq.bits)
+  registerRead("FIFO_STATUS", Cat(sync_fifo.io.empty, sync_fifo.io.full))
   when(axi_will_read) {
     axi_rresp := Mux(sync_fifo.io.empty && read_from_fifo, 2.U, 0.U) // SLVERR if empty
   }
