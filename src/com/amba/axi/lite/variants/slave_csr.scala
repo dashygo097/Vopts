@@ -6,10 +6,10 @@ import chisel3._
 abstract class AXILiteSlaveWithCSR(
   addrWidth: Int, 
   dataWidth: Int, 
-  mmap: Seq[Register]
+  mmap: CSRMMap 
 ) extends AXILiteSlave(addrWidth, dataWidth) {
   
-  protected val regMap = mmap.map { reg =>
+  protected val regMap = mmap.registers.map { reg =>
     val hwReg = RegInit(reg.initValue.U(dataWidth.W))
     reg.addr -> (reg, hwReg)
   }.toMap

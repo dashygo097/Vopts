@@ -5,6 +5,15 @@ import utils._
 import chisel3._
 import chisel3.util._
 
+class FIFOCSR(override val baseAddr: BigInt) extends CSRMMap {
+  override def registers: Seq[Register] = Seq(
+    Register("FIFO_WDATA", baseAddr + 0x00, writable=true, readable=false),
+    Register("FIFO_RDATA", baseAddr + 0x04, writable=false, readable=true), 
+    Register("FIFO_CTRL", baseAddr + 0x08, writable=true, readable=false),
+    Register("FIFO_STATUS", baseAddr + 0x0C, writable=false, readable=true)
+  )
+}
+
 class AXILiteSlaveSyncFIFO(
   addrWidth: Int,
   dataWidth: Int,
