@@ -99,7 +99,6 @@ class UartCmdProcessor(clkFreq: Int, baudRate: Int, endianness: String) extends 
             Seq(
               0.U -> UartCmdType.WRITE,
               1.U -> UartCmdType.READ,
-              2.U -> UartCmdType.MOVE
             )
           )
 
