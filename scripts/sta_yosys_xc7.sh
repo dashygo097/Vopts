@@ -223,7 +223,7 @@ EOF
     local total_luts=0
     for i in {2..6}; do
         local line=$(grep "LUT$i" synthesis.log | grep -v "LUTRAM" | tail -1)
-        local count=$(echo "$line" | awk '{print $1}')
+        local count=$(grep -E "^\s*[0-9]+\s+LUT${i}\s*$" synthesis.log | tail -1 | awk '{print $1}')
         if [ ! -z "$count" ] && [ "$count" != "0" ]; then
             printf "${DIM}│${NC}   %-22s %d\n" "LUT$i:" "$count"
             total_luts=$((total_luts + count))
