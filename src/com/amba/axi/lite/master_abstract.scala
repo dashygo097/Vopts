@@ -7,21 +7,19 @@ abstract class AXILiteMaster(
   val addrWidth: Int,
   val dataWidth: Int
 ) extends Module {
-
-  protected def IDLE: UInt
-  protected def WRITE_ADDR: UInt
-  protected def WRITE_DATA: UInt
-  protected def WRITE_RESP: UInt
-  protected def READ_ADDR: UInt
-  protected def READ_DATA: UInt
-
-  // State width for the register
-  protected def stateWidth: Int
   protected def getExtAXIName: String = "M_AXI"
 
   val ext_axi = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth))
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXILiteMasterIO(addrWidth, dataWidth))
+
+  // State Encoding
+  protected val IDLE = 0.U(3.W)
+  protected val WRITE_ADDR = 1.U(3.W)
+  protected val WRITE_DATA = 2.U(3.W)
+  protected val WRITE_RESP =3.U(3.W)
+  protected val READ_ADDR = 4.U(3.W)
+  protected val READ_DATA =  5.U(3.W)
 
   // Parameters
   protected val addr_lsb     = log2Ceil(dataWidth / 8)

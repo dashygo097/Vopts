@@ -25,7 +25,7 @@ show_header() {
   echo "     ██║   ███████╗███████║   ██║   ██████╔╝███████╗██║ ╚████║╚██████╗██║  ██║"
   echo "     ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝"
   echo -e "${NC}"
-  echo -e "${DIM}                Testbench Automation Tool${NC}"
+  echo -e "${DIM}Testbench Automation Tool${NC}"
   echo -e "${DIM}──────────────────────────────────────────────────────────${NC}"
   echo
 }

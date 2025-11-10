@@ -7,17 +7,8 @@ class AXILiteMasterRW(
   addrWidth: Int,
   dataWidth: Int
 ) extends AXILiteMaster(addrWidth, dataWidth) {
-
   override def desiredName: String =
     s"axilite_master_rw_${addrWidth}x$dataWidth"
-
-  protected def stateWidth = 3
-  protected def IDLE       = 0.U(stateWidth.W)
-  protected def WRITE_ADDR = 1.U(stateWidth.W)
-  protected def WRITE_DATA = 2.U(stateWidth.W)
-  protected def WRITE_RESP = 3.U(stateWidth.W)
-  protected def READ_ADDR  = 4.U(stateWidth.W)
-  protected def READ_DATA  = 5.U(stateWidth.W)
 
   // User interface
   val write_data = IO(Input(UInt(dataWidth.W))).suggestName("W_DATA")
