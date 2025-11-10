@@ -28,22 +28,24 @@ abstract class AXILiteMaster(
   // Signals
   protected val axi_awaddr  = RegInit(0.U(addrWidth.W))
   protected val axi_awvalid = RegInit(false.B)
+  protected val axi_awprot = RegInit(0.U(3.W))
   protected val axi_wdata   = RegInit(0.U(dataWidth.W))
   protected val axi_wvalid  = RegInit(false.B)
   protected val axi_bready  = RegInit(false.B)
   protected val axi_araddr  = RegInit(0.U(addrWidth.W))
   protected val axi_arvalid = RegInit(false.B)
+  protected val axi_arprot = RegInit(0.U(3.W))
   protected val axi_rready  = RegInit(false.B)
 
   axi.aw.bits.addr := axi_awaddr
-  axi.aw.bits.prot := 0.U
+  axi.aw.bits.prot := axi_awprot
   axi.aw.valid     := axi_awvalid
   axi.w.bits.data  := axi_wdata
   axi.w.bits.strb  := Fill(dataWidth / 8, 1.U)
   axi.w.valid      := axi_wvalid
   axi.b.ready      := axi_bready
   axi.ar.bits.addr := axi_araddr
-  axi.ar.bits.prot := 0.U
+  axi.ar.bits.prot := axi_arprot
   axi.ar.valid     := axi_arvalid
   axi.r.ready      := axi_rready
 

@@ -4,233 +4,88 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-object MasterFullRWState extends ChiselEnum {
-  val IDLE       = Value(0.U(3.W))
-  val WRITE_ADDR = Value(1.U(3.W))
-  val WRITE_DATA = Value(2.U(3.W))
-  val WRITE_RESP = Value(3.U(3.W))
-  val READ_ADDR  = Value(4.U(3.W))
-  val READ_DATA  = Value(5.U(3.W))
-}
-
 class AXIFullMasterRW(
   addrWidth: Int,
   dataWidth: Int,
   idWidth: Int,
-  userWidth: Int
-) extends Module {
+  userWidth: Int = 0
+) extends AXIFullMaster(addrWidth, dataWidth, idWidth, userWidth) {
   override def desiredName: String =
-    s"axifull_master_rw_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
-
-  // External AXI pins and internal AXI record
-  val ext_axi = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("M_AXI")
-  val axi     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
-
-  // User control interface
-  val write_data  = IO(UInt(dataWidth.W)).suggestName("W_DATA")
-  val write_valid = IO(Bool()).suggestName("W_VALID")
-  val write_ready = IO(Bool()).suggestName("W_READY")
-  val write_addr  = IO(Input(UInt(addrWidth.W))).suggestName("W_ADDR")
-  val write_len   = IO(Input(UInt(8.W))).suggestName("W_LEN") // beats: 1..256
-  val write_burst = IO(Input(UInt(2.W))).suggestName("W_BURST")
-  val write_done  = IO(Output(Bool())).suggestName("W_DONE")
-  val write_resp  = IO(Output(UInt(2.W))).suggestName("W_RESP")
-
-  val read_data  = IO(Output(UInt(dataWidth.W))).suggestName("R_DATA")
-  val read_valid = IO(Output(Bool())).suggestName("R_VALID")
-  val read_ready = IO(Input(Bool())).suggestName("R_READY")
-  val read_addr  = IO(Input(UInt(addrWidth.W))).suggestName("R_ADDR")
-  val read_len   = IO(Input(UInt(8.W))).suggestName("R_LEN") // beats: 1..256
-  val read_burst = IO(Input(UInt(2.W))).suggestName("R_BURST")
-  val read_done  = IO(Output(Bool())).suggestName("R_DONE")
-  val read_resp  = IO(Output(UInt(2.W))).suggestName("R_RESP")
-
+    s"axifull_master_rw_${addrWidth}x${dataWidth}_i${idWidth}_u${userWidth}"
+  
+  // User Interface 
+  val write_data = IO(Input(UInt(dataWidth.W))).suggestName("W_DATA")
+  val write_addr = IO(Input(UInt(addrWidth.W))).suggestName("W_ADDR")
+  val write_strb = IO(Input(UInt((dataWidth / 8).W))).suggestName("W_STRB")
+  val write_len = IO(Input(UInt(8.W))).suggestName("W_LEN") // Burst length - 1
+  val write_burst = IO(Input(UInt(2.W))).suggestName("W_BURST") // 0=FIXED, 1=INCR, 2=WRAP
+  val write_id = IO(Input(UInt(idWidth.W))).suggestName("W_ID")
+  val write_en = IO(Input(Bool())).suggestName("W_EN")
+  val write_done = IO(Output(Bool())).suggestName("W_DONE")
+  val write_resp = IO(Output(UInt(2.W))).suggestName("W_RESP")
+  val write_bid = IO(Output(UInt(idWidth.W))).suggestName("W_BID")
+  
+  val read_data = IO(Output(UInt(dataWidth.W))).suggestName("R_DATA")
+  val read_addr = IO(Input(UInt(addrWidth.W))).suggestName("R_ADDR")
+  val read_len = IO(Input(UInt(8.W))).suggestName("R_LEN") // Burst length - 1
+  val read_burst = IO(Input(UInt(2.W))).suggestName("R_BURST") // 0=FIXED, 1=INCR, 2=WRAP
+  val read_id = IO(Input(UInt(idWidth.W))).suggestName("R_ID")
+  val read_en = IO(Input(Bool())).suggestName("R_EN")
+  val read_done = IO(Output(Bool())).suggestName("R_DONE")
+  val read_resp = IO(Output(UInt(2.W))).suggestName("R_RESP")
+  val read_rid = IO(Output(UInt(idWidth.W))).suggestName("R_RID")
+  val read_last = IO(Output(Bool())).suggestName("R_LAST")
+  
   val busy = IO(Output(Bool())).suggestName("BUSY")
-
-  // Internal constants
-  val beatBytes = dataWidth / 8
-  require(beatBytes > 0 && ((beatBytes & (beatBytes - 1)) == 0), "dataWidth must be a power-of-two multiple of 8")
-  val sizeBits  = log2Ceil(beatBytes).U(3.W)
-
-  val fullStrb = Fill(beatBytes, 1.U(1.W))
-  val zeroId   = 0.U(idWidth.W)
-  val zeroUser = 0.U(userWidth.W)
-
-  // State / regs
-  val state = RegInit(MasterFullRWState.IDLE)
-
-  // Address/control regs for AW/AR
-  val aw_addr_r  = RegInit(0.U(addrWidth.W))
-  val aw_len_r   = RegInit(0.U(8.W))
-  val aw_burst_r = RegInit(AXIBurstType.INCR)
-  val aw_valid_r = RegInit(false.B)
-
-  val ar_addr_r  = RegInit(0.U(addrWidth.W))
-  val ar_len_r   = RegInit(0.U(8.W))
-  val ar_burst_r = RegInit(AXIBurstType.INCR)
-  val ar_valid_r = RegInit(false.B)
-
-  // W/B channel regs
-  val w_active  = RegInit(false.B)
-  val w_count   = RegInit(0.U(8.W))
-  val b_ready_r = RegInit(false.B)
-
-  // R channel regs
-  val r_active  = RegInit(false.B)
-  val r_count   = RegInit(0.U(8.W))
-  val r_ready_r = RegInit(false.B)
-
-  // Responses and outputs
+  
+  // Default outputs
   write_done := false.B
-  read_done  := false.B
+  read_done := false.B
   write_resp := 0.U
-  read_resp  := 0.U
-  busy       := (state =/= MasterFullRWState.IDLE)
-
-  // Queues for decoupling user and AXI
-  val wq = Module(new Queue(UInt(dataWidth.W), entries = 8))
-  wq.io.enq.valid := write_valid
-  wq.io.enq.bits  := write_data
-  write_ready     := wq.io.enq.ready
-
-  val rq = Module(new Queue(UInt(dataWidth.W), entries = 8))
-  read_data       := rq.io.deq.bits
-  read_valid      := rq.io.deq.valid
-  rq.io.deq.ready := read_ready
-
-  // AW
-  axi.aw.bits.addr   := aw_addr_r
-  axi.aw.bits.prot   := 0.U
-  axi.aw.bits.id     := zeroId
-  axi.aw.bits.len    := aw_len_r
-  axi.aw.bits.size   := sizeBits
-  axi.aw.bits.burst  := aw_burst_r
-  axi.aw.bits.lock   := false.B
-  axi.aw.bits.cache  := 0.U
-  axi.aw.bits.qos    := 0.U
-  axi.aw.bits.region := 0.U
-  axi.aw.bits.user   := zeroUser
-  axi.aw.valid       := aw_valid_r
-
-  // W
-  val w_last = w_count === aw_len_r
-  axi.w.bits.data := wq.io.deq.bits
-  axi.w.bits.strb := fullStrb
-  axi.w.bits.last := w_last
-  axi.w.bits.id   := zeroId
-  axi.w.bits.user := zeroUser
-  axi.w.valid     := w_active && wq.io.deq.valid
-  wq.io.deq.ready := w_active && axi.w.ready
-
-  // B
-  axi.b.ready := b_ready_r
-
-  // AR
-  axi.ar.bits.addr   := ar_addr_r
-  axi.ar.bits.prot   := 0.U
-  axi.ar.bits.id     := zeroId
-  axi.ar.bits.len    := ar_len_r
-  axi.ar.bits.size   := sizeBits
-  axi.ar.bits.burst  := ar_burst_r
-  axi.ar.bits.lock   := false.B
-  axi.ar.bits.cache  := 0.U
-  axi.ar.bits.qos    := 0.U
-  axi.ar.bits.region := 0.U
-  axi.ar.bits.user   := zeroUser
-  axi.ar.valid       := ar_valid_r
-
-  // R -> rq
-  rq.io.enq.valid := r_active && axi.r.valid
-  rq.io.enq.bits  := axi.r.bits.data
-  axi.r.ready     := r_active && rq.io.enq.ready
-
-  // FSM
-  switch(state) {
-    is(MasterFullRWState.IDLE) {
-      // defaults
-      aw_valid_r := false.B
-      ar_valid_r := false.B
-      b_ready_r  := false.B
-      r_ready_r  := false.B
-      w_active   := false.B
-      r_active   := false.B
-      w_count    := 0.U
-      r_count    := 0.U
-
-      when(write_ready) {
-        val wLen0 = Mux(write_len === 0.U, 1.U, write_len)
-        aw_addr_r  := write_addr
-        aw_len_r   := (wLen0 - 1.U)(7, 0)
-        aw_burst_r := write_burst
-        aw_valid_r := true.B
-        state      := MasterFullRWState.WRITE_ADDR
-
-      }.elsewhen(read_ready) {
-        val rLen0 = Mux(read_len === 0.U, 1.U, read_len)
-        ar_addr_r  := read_addr
-        ar_len_r   := (rLen0 - 1.U)(7, 0)
-        ar_burst_r := read_burst
-        ar_valid_r := true.B
-        state      := MasterFullRWState.READ_ADDR
-      }
-    }
-
-    // WRITE
-    is(MasterFullRWState.WRITE_ADDR) {
-      when(axi.aw.ready && aw_valid_r) {
-        aw_valid_r := false.B
-        w_active   := true.B
-        w_count    := 0.U
-        state      := MasterFullRWState.WRITE_DATA
-      }
-    }
-
-    is(MasterFullRWState.WRITE_DATA) {
-      when(axi.w.valid && axi.w.ready) {
-        when(w_last) {
-          w_active  := false.B
-          b_ready_r := true.B
-          state     := MasterFullRWState.WRITE_RESP
-        }.otherwise {
-          w_count := w_count + 1.U
-        }
-      }
-    }
-
-    is(MasterFullRWState.WRITE_RESP) {
-      when(axi.b.valid && b_ready_r) {
-        b_ready_r  := false.B
-        write_done := true.B
-        write_resp := axi.b.bits.resp
-        state      := MasterFullRWState.IDLE
-      }
-    }
-
-    // READ
-    is(MasterFullRWState.READ_ADDR) {
-      when(axi.ar.ready && ar_valid_r) {
-        ar_valid_r := false.B
-        r_active   := true.B
-        r_count    := 0.U
-        state      := MasterFullRWState.READ_DATA
-      }
-    }
-
-    is(MasterFullRWState.READ_DATA) {
-      when(axi.r.valid && axi.r.ready) {
-        when(axi.r.bits.last) {
-          r_active  := false.B
-          read_done := true.B
-          read_resp := axi.r.bits.resp
-          state     := MasterFullRWState.IDLE
-        }.otherwise {
-          r_count := r_count + 1.U
-        }
-      }
+  read_resp := 0.U
+  read_data := axi.r.bits.data
+  write_bid := axi.b.bits.id
+  read_rid := axi.r.bits.id
+  read_last := axi.r.bits.last
+  busy := state =/= IDLE
+  
+  override protected def onIDLE(): Unit = {
+    when(write_en) {
+      state := WRITE_ADDR
+      axi_awaddr := write_addr
+      axi_awid := write_id
+      axi_awlen := write_len
+      axi_awsize := log2Ceil(dataWidth / 8).U
+      axi_awburst := write_burst
+      axi_awvalid := true.B
+      axi_wdata := write_data
+      axi_wstrb := write_strb
+      axi_wid := write_id
+      axi_wlast := (write_len === 0.U) 
+    }.elsewhen(read_en) {
+      state := READ_ADDR
+      axi_araddr := read_addr
+      axi_arid := read_id
+      axi_arlen := read_len
+      axi_arsize := log2Ceil(dataWidth / 8).U
+      axi_arburst := read_burst
+      axi_arvalid := true.B
     }
   }
-
-  ext_axi.connect(axi)
+  
+  override protected def onWriteResp(): Unit = {
+    write_done := true.B
+    write_resp := axi.b.bits.resp
+  }
+  
+  override protected def onReadData(): Unit = {
+    when(axi.r.bits.last || read_beat_count === axi_arlen) {
+      read_done := true.B
+      read_resp := axi.r.bits.resp
+    }
+  }
+  
+  setup()
 }
 
 object TestAXIFullMasterRW extends App {
