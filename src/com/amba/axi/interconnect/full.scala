@@ -43,7 +43,7 @@ class AXIFullInterconnect(
     slaveSelect
   }
 
-  // Write Address Channel
+  // AW 
   for (i <- 0 until addressMap.length) {
     masters(i).aw.valid := slave.aw.valid && (decodeAddress(slave.aw.bits.addr) === i.U)
     masters(i).aw.bits  := slave.aw.bits
@@ -54,7 +54,7 @@ class AXIFullInterconnect(
     }
   )
 
-  // Write Data Channel
+  // W
   for (i <- 0 until addressMap.length) {
     masters(i).w.valid := slave.w.valid && (decodeAddress(slave.aw.bits.addr) === i.U)
     masters(i).w.bits  := slave.w.bits
@@ -65,7 +65,7 @@ class AXIFullInterconnect(
     }
   )
 
-  // Write Response Channel
+  // B 
   for (i <- 0 until addressMap.length)
     masters(i).b.ready := slave.b.ready && (decodeAddress(slave.aw.bits.addr) === i.U)
   slave.b.valid        := Mux1H(
@@ -79,7 +79,7 @@ class AXIFullInterconnect(
     }
   )
 
-  // Read Address Channel
+  // AR 
   for (i <- 0 until addressMap.length) {
     masters(i).ar.valid := slave.ar.valid && (decodeAddress(slave.ar.bits.addr) === i.U)
     masters(i).ar.bits  := slave.ar.bits
@@ -90,7 +90,7 @@ class AXIFullInterconnect(
     }
   )
 
-  // Read Data Channel
+  // R
   for (i <- 0 until addressMap.length)
     masters(i).r.ready := slave.r.ready && (decodeAddress(slave.ar.bits.addr) === i.U)
   slave.r.valid        := Mux1H(
