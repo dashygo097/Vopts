@@ -156,19 +156,21 @@ class AXIFullSlaveRAM(
   }.elsewhen(axi_arready) {
     axi_arready := false.B
     axi_rvalid  := true.B
-    axi_rresp   := Mux(ar_addr_valid, 0.U, 2.U)
-    axi_rid     := axi_arid
+    axi_rid    := axi_arid
     axi_rlast  := axi_arlen === 0.U
   }
 
   // R
+
   when(axi_rvalid && axi.r.ready) {
     when(!axi_rlast) {
       axi_arlen_cntr := axi_arlen_cntr + 1.U
       axi_araddr     := nextAddr(axi_araddr, axi_arburst, ar_wrap_size)
+      axi_rresp := Mux(ar_addr_valid, 0.U, 2.U)
       axi_rlast      := axi_arlen_cntr + 1.U === axi_arlen
     }.otherwise {
       axi_rvalid := false.B
+      axi_rlast := false.B
     }
   }
 
