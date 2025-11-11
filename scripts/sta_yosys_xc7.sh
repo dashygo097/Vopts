@@ -159,6 +159,9 @@ select -clear
 # Static Timing Analysis (single run to avoid "No timing paths" warning)
 tee -o timing_report.txt sta
 
+# Design quality checks
+scc
+
 # Generate statistics
 stat
 stat -tech xilinx
@@ -183,38 +186,27 @@ EOF
         show_status "error" "Synthesis failed - check synthesis.log"
         exit 1
     fi
-    
-    echo -e "${CYAN}◆ Timing Analysis Results${NC}"
-    
-    if [ -f timing_report.txt ]; then
-        local max_delay=$(grep "Latest arrival time in" timing_report.txt | sed -n "s/.*is \([0-9]*\):.*/\1/p" | head -1)
-        
-        if [ ! -z "$max_delay" ] && [ "$max_delay" -gt "0" ] 2>/dev/null; then
-            local fmax_mhz=$(awk "BEGIN {printf \"%.2f\", 1000000 / $max_delay}")
-            local target_mhz=$(awk "BEGIN {printf \"%.2f\", 1000 / $clock_period}")
-            local period_ns=$(awk "BEGIN {printf \"%.3f\", $max_delay / 1000}")
-            
-            echo -e "${DIM}│${NC} ${YELLOW}Critical Path Delay:${NC}   ${max_delay} ps (${period_ns} ns)"
-            echo -e "${DIM}│${NC} ${YELLOW}Achievable Fmax:${NC}      ${fmax_mhz} MHz"
-            echo -e "${DIM}│${NC} ${YELLOW}Target Frequency:${NC}     ${target_mhz} MHz (${clock_period}ns period)"
-            echo -e "${DIM}│${NC}"
-            
-            if (( $(echo "$fmax_mhz >= $target_mhz" | bc -l) )); then
-                local slack=$(awk "BEGIN {printf \"%.1f\", ($fmax_mhz - $target_mhz) / $target_mhz * 100}")
-                echo -e "${DIM}│${NC} ${GREEN}✔ Timing constraints MET (${slack}% margin)${NC}"
-            else
-                local deficit=$(awk "BEGIN {printf \"%.1f\", ($target_mhz - $fmax_mhz) / $target_mhz * 100}")
-                echo -e "${DIM}│${NC} ${RED}✖ Timing constraints VIOLATED (${deficit}% deficit)${NC}"
-            fi
 
+    echo -e "${CYAN}◆ Logic Loop Detection (SCC)${NC}"
+    
+    if [ -f synthesis.log ]; then
+        local scc_found=$(grep "Found [0-9]* SCCs in module" synthesis.log | tail -1)
+        local total_sccs=$(grep "^Found [0-9]* SCCs\.$" synthesis.log | tail -1 | awk '{print $2}')
+        
+        if [ ! -z "$total_sccs" ]; then
+            if [ "$total_sccs" -eq 0 ]; then
+                echo -e "${DIM}│${NC} ${GREEN}✔ No combinational loops detected${NC}"
+            else
+                echo -e "${DIM}│${NC} ${RED}✖ Found $total_sccs strongly connected components${NC}"
+                echo -e "${DIM}│${NC} ${YELLOW}  (Indicates potential combinational loops)${NC}"
+            fi
+            
+            if [ ! -z "$scc_found" ]; then
+                echo -e "${DIM}│${NC} ${DIM}  $scc_found${NC}"
+            fi
         else
-            echo -e "${DIM}│${NC} ${RED}Could not parse timing data${NC}"
-            echo -e "${DIM}│${NC} ${YELLOW}Debug: max_delay='$max_delay'${NC}"
-            echo -e "${DIM}│${NC} ${YELLOW}First few lines of timing_report.txt:${NC}"
-            head -3 timing_report.txt | sed "s/^/${DIM}│${NC} /"
+            echo -e "${DIM}│${NC} ${YELLOW}SCC analysis not found in log${NC}"
         fi
-    else
-        echo -e "${DIM}│${NC} ${RED}Timing report not generated${NC}"
     fi
     
     echo -e "${CYAN}◆ Resource Utilization${NC}"
@@ -259,6 +251,39 @@ EOF
     if [ ! -z "$estimated_lc" ]; then
         echo -e "${DIM}│${NC}"
         echo -e "${DIM}│${NC} ${YELLOW}Estimated Logic Cells:${NC} $estimated_lc"
+    fi
+
+    echo -e "${CYAN}◆ Timing Analysis Results${NC}"
+    
+    if [ -f timing_report.txt ]; then
+        local max_delay=$(grep "Latest arrival time in" timing_report.txt | sed -n "s/.*is \([0-9]*\):.*/\1/p" | head -1)
+        
+        if [ ! -z "$max_delay" ] && [ "$max_delay" -gt "0" ] 2>/dev/null; then
+            local fmax_mhz=$(awk "BEGIN {printf \"%.2f\", 1000000 / $max_delay}")
+            local target_mhz=$(awk "BEGIN {printf \"%.2f\", 1000 / $clock_period}")
+            local period_ns=$(awk "BEGIN {printf \"%.3f\", $max_delay / 1000}")
+            
+            echo -e "${DIM}│${NC} ${YELLOW}Critical Path Delay:${NC}   ${max_delay} ps (${period_ns} ns)"
+            echo -e "${DIM}│${NC} ${YELLOW}Achievable Fmax:${NC}      ${fmax_mhz} MHz"
+            echo -e "${DIM}│${NC} ${YELLOW}Target Frequency:${NC}     ${target_mhz} MHz (${clock_period}ns period)"
+            echo -e "${DIM}│${NC}"
+            
+            if (( $(echo "$fmax_mhz >= $target_mhz" | bc -l) )); then
+                local slack=$(awk "BEGIN {printf \"%.1f\", ($fmax_mhz - $target_mhz) / $target_mhz * 100}")
+                echo -e "${DIM}│${NC} ${GREEN}✔ Timing constraints MET (${slack}% margin)${NC}"
+            else
+                local deficit=$(awk "BEGIN {printf \"%.1f\", ($target_mhz - $fmax_mhz) / $target_mhz * 100}")
+                echo -e "${DIM}│${NC} ${RED}✖ Timing constraints VIOLATED (${deficit}% deficit)${NC}"
+            fi
+
+        else
+            echo -e "${DIM}│${NC} ${RED}Could not parse timing data${NC}"
+            echo -e "${DIM}│${NC} ${YELLOW}Debug: max_delay='$max_delay'${NC}"
+            echo -e "${DIM}│${NC} ${YELLOW}First few lines of timing_report.txt:${NC}"
+            head -3 timing_report.txt | sed "s/^/${DIM}│${NC} /"
+        fi
+    else
+        echo -e "${DIM}│${NC} ${RED}Timing report not generated${NC}"
     fi
     
     if [ -f timing_report.txt ]; then

@@ -14,12 +14,12 @@ abstract class AXILiteMaster(
   val axi     = Wire(new AXILiteMasterIO(addrWidth, dataWidth))
 
   // State Encoding
-  protected val IDLE = 0.U(3.W)
+  protected val IDLE       = 0.U(3.W)
   protected val WRITE_ADDR = 1.U(3.W)
   protected val WRITE_DATA = 2.U(3.W)
-  protected val WRITE_RESP =3.U(3.W)
-  protected val READ_ADDR = 4.U(3.W)
-  protected val READ_DATA =  5.U(3.W)
+  protected val WRITE_RESP = 3.U(3.W)
+  protected val READ_ADDR  = 4.U(3.W)
+  protected val READ_DATA  = 5.U(3.W)
 
   // Parameters
   protected val addr_lsb     = log2Ceil(dataWidth / 8)
@@ -28,13 +28,13 @@ abstract class AXILiteMaster(
   // Signals
   protected val axi_awaddr  = RegInit(0.U(addrWidth.W))
   protected val axi_awvalid = RegInit(false.B)
-  protected val axi_awprot = RegInit(0.U(3.W))
+  protected val axi_awprot  = RegInit(0.U(3.W))
   protected val axi_wdata   = RegInit(0.U(dataWidth.W))
   protected val axi_wvalid  = RegInit(false.B)
   protected val axi_bready  = RegInit(false.B)
   protected val axi_araddr  = RegInit(0.U(addrWidth.W))
   protected val axi_arvalid = RegInit(false.B)
-  protected val axi_arprot = RegInit(0.U(3.W))
+  protected val axi_arprot  = RegInit(0.U(3.W))
   protected val axi_rready  = RegInit(false.B)
 
   axi.aw.bits.addr := axi_awaddr

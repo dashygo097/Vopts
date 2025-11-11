@@ -135,7 +135,7 @@ class AXILiteSlaveDMA(
     }
   }
 
-  // B 
+  // B
   when(axi_will_bresp) {
     axi_bresp := Mux(dma.io.error, 2.U, 0.U) // SLVERR if error
   }
