@@ -14,7 +14,7 @@ class FIRFilter[T <: Data](
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"fir_${filterType}_o${order}_g${groupSize}_${cutoff.mkString("_")}"
-  val pyPath               = "src/dsp/filter/fir.py"
+  val pyPath               = "scripts/python/filter_gen/fir.py"
   val command              = filterType match {
     case "bp" | "bandpass" =>
       Seq(
