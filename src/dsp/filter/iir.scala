@@ -15,7 +15,7 @@ class IIRFilter[T <: Data](
     extends Module {
   override def desiredName: String =
     s"IIRCore_${filterType}_o${order}_g${groupSize}_${cutoff.mkString("_")}"
-  val pyPath               = "scripts/python/filter_gen/iir.py"
+  val pyPath                       = "scripts/python/filter_gen/iir.py"
   val command                      = filterType match {
     case "bp" | "bandpass" =>
       Seq(
