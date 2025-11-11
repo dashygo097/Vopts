@@ -161,7 +161,6 @@ class AXIFullSlaveRAM(
   }
 
   // R
-
   when(axi_rvalid && axi.r.ready) {
     when(!axi_rlast) {
       axi_arlen_cntr := axi_arlen_cntr + 1.U
