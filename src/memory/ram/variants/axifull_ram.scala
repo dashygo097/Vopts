@@ -35,7 +35,7 @@ class AXIFullSlaveRAM(
   // W
 
   // B
-  when(axi_last_write) {
+  when(axi_will_bresp) {
     axi_bresp  := Mux(aw_addr_valid, 0.U, 2.U)
   }
 
