@@ -16,12 +16,12 @@ abstract class AXIFullMaster(
   val axi = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
   
   // State Encoding
-  protected val IDLE = 0.U(4.W)
-  protected val WRITE_ADDR = 1.U(4.W)
-  protected val WRITE_DATA = 2.U(4.W)
-  protected val WRITE_RESP = 3.U(4.W)
-  protected val READ_ADDR = 4.U(4.W)
-  protected val READ_DATA = 5.U(4.W)
+  protected val IDLE = 0.U(3.W)
+  protected val WRITE_ADDR = 1.U(3.W)
+  protected val WRITE_DATA = 2.U(3.W)
+  protected val WRITE_RESP = 3.U(3.W)
+  protected val READ_ADDR = 4.U(3.W)
+  protected val READ_DATA = 5.U(3.W)
   
   // Parameters
   protected val addr_lsb = log2Ceil(dataWidth / 8)
@@ -152,9 +152,8 @@ abstract class AXIFullMaster(
             axi_bready := true.B
           }.otherwise {
             axi_wlast := (write_beat_count + 1.U) === axi_awlen
+            onWriteData()
           }
-          
-          onWriteData()
         }
       }
       
@@ -180,7 +179,7 @@ abstract class AXIFullMaster(
         when(axi.r.valid && axi_rready) {
           read_beat_count := read_beat_count + 1.U
           
-          when(axi.r.bits.last || read_beat_count === axi_arlen) {
+          when(axi.r.bits.last) {
             state := IDLE
             axi_rready := false.B
           }
