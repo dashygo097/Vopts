@@ -40,32 +40,32 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
   unsupportedReadUser  := slave.ar.valid && slave.ar.bits.user =/= 0.U
   unsupportedRead      := unsupportedReadBurst || unsupportedReadLen || unsupportedReadID || unsupportedReadUser
 
-  // Write Address Channel
+  // AW 
   master.aw.bits.addr := slave.aw.bits.addr
   master.aw.bits.prot := slave.aw.bits.prot
   master.aw.valid     := slave.aw.valid && !unsupportedWrite
   slave.aw.ready      := master.aw.ready && !unsupportedWrite
 
-  // Write Data Channel
+  // W
   master.w.bits.data := slave.w.bits.data
   master.w.bits.strb := slave.w.bits.strb
   master.w.valid     := slave.w.valid && !unsupportedWrite
   slave.w.ready      := master.w.ready && !unsupportedWrite
 
-  // Write Response Channel
+  // B 
   slave.b.bits.resp := Mux(unsupportedWrite, 3.U, master.b.bits.resp) // DECERR if unsupported
   slave.b.bits.id   := 0.U
   slave.b.bits.user := 0.U
   slave.b.valid     := master.b.valid || (slave.aw.valid && slave.w.valid && unsupportedWrite)
   master.b.ready    := slave.b.ready && !unsupportedWrite
 
-  // Read Address Channel
+  // AR 
   master.ar.bits.addr := slave.ar.bits.addr
   master.ar.bits.prot := slave.ar.bits.prot
   master.ar.valid     := slave.ar.valid && !unsupportedRead
   slave.ar.ready      := master.ar.ready && !unsupportedRead
 
-  // Read Data Channel
+  // R 
   slave.r.bits.data := Mux(unsupportedRead, 0.U, master.r.bits.data)
   slave.r.bits.resp := Mux(unsupportedRead, 3.U, master.r.bits.resp) // DECERR if unsupported
   slave.r.bits.last := true.B
