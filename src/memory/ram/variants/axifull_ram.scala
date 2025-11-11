@@ -126,8 +126,6 @@ class AXIFullSlaveRAM(
   // W & B
   when(axi.w.valid && !axi_wready && axi_awlen_cntr <= axi_awlen) {
     axi_wready := true.B
-  }.elsewhen(axi_wready) {
-    axi_wready := false.B
   }
 
   when(axi_wready && axi.w.valid) {
@@ -136,6 +134,7 @@ class AXIFullSlaveRAM(
       axi_awaddr     := nextAddr(axi_awaddr, axi_awburst, aw_wrap_size)
     }
     when(axi.w.bits.last && !axi_bvalid) {
+      axi_wready := false.B
       axi_bvalid := true.B
       axi_bresp  := Mux(aw_addr_valid, 0.U, 2.U)
       axi_bid    := axi_awid
