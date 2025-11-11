@@ -146,7 +146,7 @@ class AXIFullSlaveRAM(
   }
 
   // AR
-  when(axi.ar.valid && !axi_arready && !axi_rvalid) {
+  when(axi.ar.valid && !axi_arready) {
     axi_arready    := true.B
     axi_araddr     := axi.ar.bits.addr
     axi_arburst    := axi.ar.bits.burst
@@ -158,7 +158,7 @@ class AXIFullSlaveRAM(
     axi_rvalid  := true.B
     axi_rresp   := Mux(ar_addr_valid, 0.U, 2.U)
     axi_rid     := axi_arid
-    axi_rlast   := axi_arlen === 0.U
+    axi_rlast  := axi_arlen === 0.U
   }
 
   // R
