@@ -390,8 +390,6 @@ puts "All reports saved in: \$output_dir/"
 puts ""
 
 log_success "Vivado STA analysis complete!"
-
-exit 0
 EOF
 
     show_status "success" "TCL script generated: sta_vivado.tcl"
