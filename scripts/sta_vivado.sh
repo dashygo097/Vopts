@@ -314,19 +314,10 @@ report_utilization \\
 report_utilization \\
     -file "\$output_dir/utilization_summary.rpt"
 
-report_utilization \\
-    -cells \\
-    -file "\$output_dir/utilization_cells.rpt"
-
 log_info "Generating power reports..."
 
 report_power \\
     -file "\$output_dir/power_summary.rpt"
-
-report_power \\
-    -hierarchical \\
-    -hierarchical_depth 5 \\
-    -file "\$output_dir/power_hierarchical.rpt"
 
 log_info "Generating methodology reports..."
 
@@ -360,176 +351,6 @@ report_property \\
 
 log_success "All reports generated successfully"
 
-log_section "Step 6: Timing Results Summary"
-
-set timing_file "\$output_dir/timing_summary.rpt"
-if {[file exists \$timing_file]} {
-    set fp [open \$timing_file r]
-    set content [read \$fp]
-    close \$fp
-    
-    set wns "N/A"
-    set tns "N/A"
-    set whs "N/A"
-    set ths "N/A"
-    set failing_endpoints 0
-    set total_endpoints 0
-    
-    if {[regexp {WNS\\(ns\\)\\s+WHS\\(ns\\)\\s+TNS\\(ns\\)\\s+THS\\(ns\\).*?[-]+\\s+([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)} \$content match wns_val whs_val tns_val ths_val]} {
-        set wns \$wns_val
-        set whs \$whs_val
-        set tns \$tns_val
-        set ths \$ths_val
-    }
-    
-    if {[regexp {(\\d+)\\s+Failing Endpoints} \$content match count]} {
-        set failing_endpoints \$count
-    }
-    if {[regexp {(\\d+)\\s+Total Endpoints} \$content match count]} {
-        set total_endpoints \$count
-    }
-    
-    puts ""
-    puts "  TIMING ANALYSIS RESULTS"
-    puts "  Target Clock Period:  \${clock_period_ns} ns"
-    puts "  Target Frequency:     [format "%.2f" \$target_freq_mhz] MHz"
-    puts ""
-    puts "  Setup Timing (Max Delay):"
-    puts "    WNS (Worst Slack):  \$wns ns"
-    puts "    TNS (Total Slack):  \$tns ns"
-    puts ""
-    puts "  Hold Timing (Min Delay):"
-    puts "    WHS (Worst Slack):  \$whs ns"
-    puts "    THS (Total Slack):  \$ths ns"
-    puts ""
-    puts "  Endpoints:"
-    puts "    Total:              \$total_endpoints"
-    puts "    Failing:            \$failing_endpoints"
-    puts ""
-    
-    if {\$wns != "N/A" && [string is double \$wns]} {
-        set actual_period [expr {\$clock_period_ns - \$wns}]
-        set achievable_freq [expr {1000.0 / \$actual_period}]
-        
-        puts "  Achievable Frequency: [format "%.2f" \$achievable_freq] MHz"
-        puts "  Critical Path Delay:  [format "%.3f" \$actual_period] ns"
-        puts ""
-        
-        if {\$wns >= 0} {
-            set margin_pct [expr {100.0 * \$wns / \$clock_period_ns}]
-            log_success "TIMING MET with [format "%.1f" \$margin_pct]% slack"
-        } else {
-            set violation_pct [expr {100.0 * abs(\$wns) / \$clock_period_ns}]
-            log_error "TIMING VIOLATED by [format "%.1f" \$violation_pct]%"
-            puts ""
-            puts "  Recommendations:"
-            puts "    • Review critical paths in timing_setup_detail.rpt"
-            puts "    • Consider pipeline insertion"
-            puts "    • Reduce target frequency"
-            puts "    • Apply synthesis optimizations"
-            puts "    • Check high_fanout_nets.rpt for bottlenecks"
-        }
-        
-        puts ""
-        puts "  FREQUENCY TARGET ANALYSIS"
-        
-        foreach freq {50 100 125 150 200 250 300} {
-            if {\$achievable_freq >= \$freq} {
-                set margin [expr {100.0 * (\$achievable_freq - \$freq) / \$freq}]
-                puts "  ✓ \${freq} MHz - PASS ([format "%.1f" \$margin]% margin)"
-            } else {
-                set deficit [expr {100.0 * (\$freq - \$achievable_freq) / \$freq}]
-                puts "  ✗ \${freq} MHz - FAIL ([format "%.1f" \$deficit]% deficit)"
-            }
-        }
-    }
-} else {
-    log_error "Could not find timing summary report"
-}
-
-log_section "Step 7: Resource Utilization Summary"
-
-puts ""
-puts "  RESOURCE UTILIZATION"
-
-set util_file "\$output_dir/utilization_summary.rpt"
-if {[file exists \$util_file]} {
-    set fp [open \$util_file r]
-    set content [read \$fp]
-    close \$fp
-    
-    if {[regexp {Slice LUTs.*?\\|\\s*(\\d+)\\s*\\|.*?\\|\\s*(\\d+)} \$content match used avail]} {
-        set util_pct [expr {100.0 * \$used / \$avail}]
-        puts "  LUTs:                 \$used / \$avail ([format "%.1f" \$util_pct]%)"
-    }
-    if {[regexp {Slice Registers.*?\\|\\s*(\\d+)\\s*\\|.*?\\|\\s*(\\d+)} \$content match used avail]} {
-        set util_pct [expr {100.0 * \$used / \$avail}]
-        puts "  Registers:            \$used / \$avail ([format "%.1f" \$util_pct]%)"
-    }
-    if {[regexp {Block RAM Tile.*?\\|\\s*(\\d+)\\s*\\|.*?\\|\\s*(\\d+)} \$content match used avail]} {
-        set util_pct [expr {100.0 * \$used / \$avail}]
-        puts "  BRAM Tiles:           \$used / \$avail ([format "%.1f" \$util_pct]%)"
-    }
-    if {[regexp {DSPs.*?\\|\\s*(\\d+)\\s*\\|.*?\\|\\s*(\\d+)} \$content match used avail]} {
-        set util_pct [expr {100.0 * \$used / \$avail}]
-        puts "  DSP Blocks:           \$used / \$avail ([format "%.1f" \$util_pct]%)"
-    }
-    if {[regexp {BUFG.*?\\|\\s*(\\d+)\\s*\\|.*?\\|\\s*(\\d+)} \$content match used avail]} {
-        puts "  Global Buffers:       \$used / \$avail"
-    }
-}
-
-log_section "Step 8: Power Analysis Summary"
-
-puts ""
-puts "  POWER ESTIMATION"
-
-set power_file "\$output_dir/power_summary.rpt"
-if {[file exists \$power_file]} {
-    set fp [open \$power_file r]
-    set content [read \$fp]
-    close \$fp
-    
-    if {[regexp {Total On-Chip Power \\(W\\)\\s*\\|\\s*([\\d.]+)} \$content match total_power]} {
-        puts "  Total Power:          \$total_power W"
-    }
-    if {[regexp {Dynamic \\(W\\)\\s*\\|\\s*([\\d.]+)} \$content match dynamic_power]} {
-        puts "  Dynamic Power:        \$dynamic_power W"
-    }
-    if {[regexp {Device Static \\(W\\)\\s*\\|\\s*([\\d.]+)} \$content match static_power]} {
-        puts "  Static Power:         \$static_power W"
-    }
-    if {[regexp {Confidence Level\\s*\\|\\s*(\\w+)} \$content match confidence]} {
-        puts "  Confidence:           \$confidence"
-    }
-}
-
-log_section "Step 9: Critical Path Analysis"
-
-set worst_path [get_timing_paths -max_paths 1 -setup]
-if {[llength \$worst_path] > 0} {
-    log_info "Critical path details:"
-    
-    report_timing \\
-        -of_objects \$worst_path \\
-        -input_pins \\
-        -routable_nets \\
-        -significant_digits 3 \\
-        -file "\$output_dir/critical_path_detailed.rpt"
-    
-    set startpoint [get_property STARTPOINT_PIN \$worst_path]
-    set endpoint [get_property ENDPOINT_PIN \$worst_path]
-    set slack [get_property SLACK \$worst_path]
-    
-    puts "  Start Point: \$startpoint"
-    puts "  End Point:   \$endpoint"
-    puts "  Slack:       [format "%.3f" \$slack] ns"
-    
-    log_success "Detailed critical path analysis saved"
-} else {
-    log_info "No timing paths found"
-}
-
 log_section "Analysis Complete"
 
 puts ""
@@ -552,11 +373,9 @@ puts ""
 puts "  Utilization Reports:"
 puts "    • utilization_summary.rpt      - Resource summary"
 puts "    • utilization_hierarchical.rpt - Hierarchical breakdown"
-puts "    • utilization_cells.rpt        - Cell-level usage"
 puts ""
 puts "  Power Reports:"
 puts "    • power_summary.rpt            - Power estimation"
-puts "    • power_hierarchical.rpt       - Power by hierarchy"
 puts ""
 puts "  Analysis Reports:"
 puts "    • high_fanout_nets.rpt         - High fanout analysis"
