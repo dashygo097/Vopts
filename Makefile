@@ -8,6 +8,7 @@ COCOTB_DIR = $(SIM_DIR)/cocotb
 
 LIB ?= app
 FZF ?= false
+STA_TOOL ?= yosys
 
 .PHONY: pre fmt build run clean update localpublish tb cocotb sta-xc7
 
@@ -60,10 +61,19 @@ cocotb: pre
 		bash $(SCRIPTS_DIR)/cocotb.sh; \
 	fi
 
-sta-xc7: pre
+sta-yosys: pre
 	@if [ "$(FZF)" = "true" ] ; then \
-		FZF=true bash $(SCRIPTS_DIR)/sta_yosys_xc7.sh ; \
+		FZF=true bash $(SCRIPTS_DIR)/sta_yosys.sh ; \
 	else \
-		bash $(SCRIPTS_DIR)/sta_yosys_xc7.sh ; \
+		bash $(SCRIPTS_DIR)/sta_yosys.sh ; \
 	fi
+
+sta-vivado: pre
+	@if [ "$(FZF)" = "true" ] ; then \
+		FZF=true bash $(SCRIPTS_DIR)/sta_vivado.sh ; \
+	else \
+		bash $(SCRIPTS_DIR)/sta_vivado.sh ; \
+	fi
+
+sta: sta-$(STA_TOOL)
 
