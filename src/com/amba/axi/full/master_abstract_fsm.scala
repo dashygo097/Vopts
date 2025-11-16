@@ -206,7 +206,7 @@ abstract class AXIFullMasterOutOfOrder(addrWidth: Int, dataWidth: Int, idWidth: 
   // Parameters
   protected val addr_lsb   = log2Ceil(dataWidth / 8)
   protected val strb_width = dataWidth / 8
-  protected val entries = pow(2, idWidth).toInt
+  protected val entries    = pow(2, idWidth).toInt
 
   // Signals
 
