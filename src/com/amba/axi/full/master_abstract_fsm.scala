@@ -3,7 +3,7 @@ package com.amba
 import chisel3._
 import chisel3.util._
 
-abstract class AXIFullMaster(
+abstract class AXIFullMasterBaseFSM(
   val addrWidth: Int,
   val dataWidth: Int,
   val idWidth: Int,
