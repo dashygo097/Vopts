@@ -69,7 +69,7 @@ class AXILiteSlaveDMA(
   val reg_burst_size = RegInit(1.U(8.W))
   val reg_priority   = RegInit(0.U(3.W))
 
-  val bytes_xfer   = RegInit(0.U(32.W))
+  val bytes_xfer   = RegInit(0.U(dataWidth.W))
   val done_sticky  = RegInit(false.B)
   val error_sticky = RegInit(false.B)
 
@@ -95,7 +95,7 @@ class AXILiteSlaveDMA(
   dma.io.descriptor.dstAddr   := reg_dst_addr
   dma.io.descriptor.length    := reg_length
   dma.io.descriptor.burstSize := reg_burst_size
-  dma.io.descriptor.prity     := reg_priority
+  dma.io.descriptor.priority  := reg_priority
   dma.io.descriptor.enable    := reg_enable
   dma.io.descriptor.interrupt := reg_int_enable
 
@@ -113,15 +113,11 @@ class AXILiteSlaveDMA(
   // W
   when(axi_will_write) {
     when(writeAccess("DMA_CTRL")) {
-      when(axi.w.bits.data(0)) {
-        ready_pulse := true.B
-        done_sticky := false.B // start W1P
-      }
-      when(axi.w.bits.data(1)) {
-        soft_reset_pulse := true.B // soft reset W1P
-      }
-      reg_enable     := axi.w.bits.data(2)
-      reg_int_enable := axi.w.bits.data(3)
+      ready_pulse      := axi.w.bits.data(0)
+      done_sticky      := !axi.w.bits.data(0)
+      soft_reset_pulse := axi.w.bits.data(1)
+      reg_enable       := axi.w.bits.data(2)
+      reg_int_enable   := axi.w.bits.data(3)
     }.elsewhen(writeAccess("DMA_SRC_ADDR")) {
       reg_src_addr := axi.w.bits.data
     }.elsewhen(writeAccess("DMA_DST_ADDR")) {
@@ -159,107 +155,145 @@ class AXILiteSlaveDMA(
   val beatBytes = dataWidth / 8
   val sizeBits  = log2Ceil(beatBytes)
 
+  // Signals
+  val axi_mem_awaddr   = RegInit(0.U(addrWidth.W))
+  val axi_mem_awid     = RegInit(0.U(idWidth.W))
+  val axi_mem_awlen    = RegInit(0.U(8.W))
+  val axi_mem_awsize   = RegInit(sizeBits.U(3.W))
+  val axi_mem_awburst  = RegInit(1.U(2.W))
+  val axi_mem_awlock   = RegInit(0.U(1.W))
+  val axi_mem_awcache  = RegInit(0.U(4.W))
+  val axi_mem_awprot   = RegInit(0.U(3.W))
+  val axi_mem_awqos    = RegInit(0.U(4.W))
+  val axi_mem_awregion = RegInit(0.U(4.W))
+  val axi_mem_awuser   = RegInit(0.U(userWidth.W))
+  val axi_mem_awvalid  = RegInit(false.B)
+
+  val axi_mem_wdata  = RegInit(0.U(dataWidth.W))
+  val axi_mem_wstrb  = RegInit(Fill(beatBytes, 1.U(1.W)))
+  val axi_mem_wlast  = RegInit(true.B)
+  val axi_mem_wuser  = RegInit(0.U(userWidth.W))
+  val axi_mem_wvalid = RegInit(false.B)
+
+  val axi_mem_bready = RegInit(false.B)
+
+  val axi_mem_araddr   = RegInit(0.U(addrWidth.W))
+  val axi_mem_arid     = RegInit(0.U(idWidth.W))
+  val axi_mem_arlen    = RegInit(0.U(8.W))
+  val axi_mem_arsize   = RegInit(sizeBits.U(3.W))
+  val axi_mem_arburst  = RegInit(1.U(2.W))
+  val axi_mem_arlock   = RegInit(0.U(1.W))
+  val axi_mem_arcache  = RegInit(0.U(4.W))
+  val axi_mem_arprot   = RegInit(0.U(3.W))
+  val axi_mem_arqos    = RegInit(0.U(4.W))
+  val axi_mem_arregion = RegInit(0.U(4.W))
+  val axi_mem_aruser   = RegInit(0.U(userWidth.W))
+  val axi_mem_arvalid  = RegInit(false.B)
+
+  val axi_mem_rready = RegInit(false.B)
+
+  val wr_aw_done  = RegInit(false.B) // AW completed
+  val wr_w_done   = RegInit(false.B) // W completed
+  val wr_inflight = RegInit(false.B) // waiting for B
+
+  val rd_inflight = RegInit(false.B) // waiting for R
+
   // Default assignments
-  axi_mem.ar.bits.id     := 0.U(idWidth.W)
-  axi_mem.ar.bits.addr   := 0.U(addrWidth.W)
-  axi_mem.ar.bits.len    := 0.U(8.W) // single beat
-  axi_mem.ar.bits.size   := sizeBits.U(3.W)
-  axi_mem.ar.bits.burst  := 1.U(2.W) // INCR
-  axi_mem.ar.bits.lock   := 0.U
-  axi_mem.ar.bits.cache  := 0.U
-  axi_mem.ar.bits.prot   := 0.U
-  axi_mem.ar.bits.qos    := 0.U
-  axi_mem.ar.bits.user   := 0.U(userWidth.W)
-  axi_mem.ar.bits.region := 0.U(4.W)
-  axi_mem.ar.valid       := false.B
-  axi_mem.r.ready        := false.B
+  axi_mem.aw.bits.addr   := axi_mem_awaddr
+  axi_mem.aw.bits.id     := axi_mem_awid
+  axi_mem.aw.bits.len    := axi_mem_awlen
+  axi_mem.aw.bits.size   := axi_mem_awsize
+  axi_mem.aw.bits.burst  := axi_mem_awburst
+  axi_mem.aw.bits.lock   := axi_mem_awlock
+  axi_mem.aw.bits.cache  := axi_mem_awcache
+  axi_mem.aw.bits.prot   := axi_mem_awprot
+  axi_mem.aw.bits.qos    := axi_mem_awqos
+  axi_mem.aw.bits.user   := axi_mem_awuser
+  axi_mem.aw.bits.region := axi_mem_awregion
+  axi_mem.aw.valid       := axi_mem_awvalid
 
-  axi_mem.aw.bits.id     := 0.U(idWidth.W)
-  axi_mem.aw.bits.addr   := 0.U(addrWidth.W)
-  axi_mem.aw.bits.len    := 0.U(8.W) // single beat
-  axi_mem.aw.bits.size   := sizeBits.U(3.W)
-  axi_mem.aw.bits.burst  := 1.U(2.W)
-  axi_mem.aw.bits.lock   := 0.U
-  axi_mem.aw.bits.cache  := 0.U
-  axi_mem.aw.bits.prot   := 0.U
-  axi_mem.aw.bits.qos    := 0.U
-  axi_mem.aw.bits.user   := 0.U(userWidth.W)
-  axi_mem.aw.bits.region := 0.U(4.W)
-  axi_mem.aw.valid       := false.B
+  axi_mem.w.bits.data := axi_mem_wdata
+  axi_mem.w.bits.id   := axi_mem_awid
+  axi_mem.w.bits.strb := axi_mem_wstrb
+  axi_mem.w.bits.last := axi_mem_wlast
+  axi_mem.w.bits.user := axi_mem_wuser
+  axi_mem.w.valid     := axi_mem_wvalid
 
-  axi_mem.w.bits.id   := 0.U(idWidth.W)
-  axi_mem.w.bits.data := 0.U(dataWidth.W)
-  axi_mem.w.bits.strb := Fill(beatBytes, 1.U(1.W))
-  axi_mem.w.bits.last := true.B
-  axi_mem.w.bits.user := 0.U(userWidth.W)
-  axi_mem.w.valid     := false.B
+  axi_mem.b.ready := axi_mem_bready
 
-  axi_mem.b.ready := false.B
+  axi_mem.ar.bits.addr   := axi_mem_araddr
+  axi_mem.ar.bits.id     := axi_mem_arid
+  axi_mem.ar.bits.len    := axi_mem_arlen
+  axi_mem.ar.bits.size   := axi_mem_arsize
+  axi_mem.ar.bits.burst  := axi_mem_arburst
+  axi_mem.ar.bits.lock   := axi_mem_arlock
+  axi_mem.ar.bits.cache  := axi_mem_arcache
+  axi_mem.ar.bits.prot   := axi_mem_arprot
+  axi_mem.ar.bits.qos    := axi_mem_arqos
+  axi_mem.ar.bits.user   := axi_mem_aruser
+  axi_mem.ar.bits.region := axi_mem_arregion
+  axi_mem.ar.valid       := axi_mem_arvalid
 
-  // Read path bridge - FIXED: prevent deadlock
-  val rd_ar_valid_q = RegInit(false.B)
-  val rd_addr_q     = Reg(UInt(addrWidth.W))
-  val rd_inflight   = RegInit(false.B)
+  axi_mem.r.ready := axi_mem_rready
 
-  dma.io.readAddr.ready := !rd_ar_valid_q && !rd_inflight
-  when(dma.io.readAddr.fire) {
-    rd_addr_q     := dma.io.readAddr.bits
-    rd_ar_valid_q := true.B
-  }
+  dma.io.writeAddr.ready := !axi_mem_awvalid && !wr_aw_done
+  axi_mem_wvalid         := wr_aw_done && dma.io.writeData.valid && !wr_w_done
+  axi_mem_wdata          := dma.io.writeData.bits
+  axi_mem_wlast          := true.B
+  dma.io.writeData.ready := wr_aw_done && axi_mem.w.ready && !wr_w_done
 
-  axi_mem.ar.bits.addr := rd_addr_q
-  axi_mem.ar.valid     := rd_ar_valid_q
-  when(axi_mem.ar.ready && rd_ar_valid_q) {
-    rd_ar_valid_q := false.B
-    rd_inflight   := true.B
-  }
+  dma.io.writeResp.valid := wr_inflight && axi_mem.b.valid
+  dma.io.writeResp.bits  := (axi_mem.b.bits.resp === 0.U)
+  axi_mem_bready         := wr_inflight && dma.io.writeResp.ready
+
+  dma.io.readAddr.ready := !axi_mem_arvalid && !rd_inflight
 
   dma.io.readData.valid := rd_inflight && axi_mem.r.valid
   dma.io.readData.bits  := axi_mem.r.bits.data
-  axi_mem.r.ready       := rd_inflight && dma.io.readData.ready
-  when(rd_inflight && axi_mem.r.valid && dma.io.readData.ready && axi_mem.r.bits.last) {
-    rd_inflight := false.B
-  }
+  axi_mem_rready        := rd_inflight && dma.io.readData.ready
 
-  // Write path bridge - FIXED: prevent deadlock
-  val wr_aw_valid_q = RegInit(false.B)
-  val wr_addr_q     = Reg(UInt(addrWidth.W))
-  val wr_aw_done    = RegInit(false.B) // AW completed
-  val wr_w_done     = RegInit(false.B) // W completed
-  val wr_inflight   = RegInit(false.B) // waiting for B
+  interrupt := dma.io.interrupt && reg_int_enable
 
-  dma.io.writeAddr.ready := !wr_aw_valid_q && !wr_aw_done
+  // AW
   when(dma.io.writeAddr.fire) {
-    wr_addr_q     := dma.io.writeAddr.bits
-    wr_aw_valid_q := true.B
+    axi_mem_awaddr  := dma.io.writeAddr.bits
+    axi_mem_awvalid := true.B
   }
 
-  axi_mem.aw.bits.addr := wr_addr_q
-  axi_mem.aw.valid     := wr_aw_valid_q
-  when(axi_mem.aw.ready && wr_aw_valid_q) {
-    wr_aw_valid_q := false.B
-    wr_aw_done    := true.B
+  when(axi_mem.aw.ready && axi_mem_awvalid) {
+    axi_mem_awvalid := false.B
+    wr_aw_done      := true.B
   }
 
-  axi_mem.w.valid        := wr_aw_done && dma.io.writeData.valid && !wr_w_done
-  axi_mem.w.bits.data    := dma.io.writeData.bits
-  axi_mem.w.bits.last    := true.B
-  dma.io.writeData.ready := wr_aw_done && axi_mem.w.ready && !wr_w_done
-  when(wr_aw_done && axi_mem.w.ready && dma.io.writeData.valid && !wr_w_done) {
+  // W
+  when(axi_mem.w.ready && axi_mem_wvalid) {
     wr_w_done   := true.B
     wr_inflight := true.B
   }
 
-  dma.io.writeResp.valid := wr_inflight && axi_mem.b.valid
-  dma.io.writeResp.bits  := (axi_mem.b.bits.resp === 0.U)
-  axi_mem.b.ready        := wr_inflight && dma.io.writeResp.ready
+  // B
   when(dma.io.writeResp.fire) {
     wr_aw_done  := false.B
     wr_w_done   := false.B
     wr_inflight := false.B
   }
 
-  interrupt := dma.io.interrupt && reg_int_enable
+  // AR
+  when(dma.io.readAddr.fire) {
+    axi_mem_araddr  := dma.io.readAddr.bits
+    axi_mem_arvalid := true.B
+  }
+
+  when(axi_mem.ar.ready && axi_mem_arvalid) {
+    axi_mem_arvalid := false.B
+    rd_inflight     := true.B
+  }
+
+  // R
+  when(axi_mem.r.valid && axi_mem_rready && axi_mem.r.bits.last) {
+    rd_inflight := false.B
+  }
+
   ext_axi_mem.connect(axi_mem)
 
   def connect(intf: AXIFullSlaveExternalIO): Unit =

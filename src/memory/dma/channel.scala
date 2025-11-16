@@ -28,7 +28,7 @@ class DMAChannel(addrWidth: Int, dataWidth: Int) extends Module {
     val busy       = Output(Bool())
     val error      = Output(Bool())
     val done       = Output(Bool())
-    val bytes      = Output(UInt(32.W))
+    val bytes      = Output(UInt(dataWidth.W))
 
     val readAddr = Decoupled(UInt(addrWidth.W))
     val readData = Flipped(Decoupled(UInt(dataWidth.W)))
@@ -47,7 +47,7 @@ class DMAChannel(addrWidth: Int, dataWidth: Int) extends Module {
   val srcAddr          = RegInit(0.U(addrWidth.W))
   val dstAddr          = RegInit(0.U(addrWidth.W))
   val bytesRemaining   = RegInit(0.U(addrWidth.W))
-  val bytesTransferred = RegInit(0.U(32.W))
+  val bytesTransferred = RegInit(0.U(dataWidth.W))
   val burstSize        = RegInit(1.U(8.W))
   val priority         = RegInit(0.U(3.W))
   val dataBuffer       = Reg(UInt(dataWidth.W))
@@ -56,7 +56,7 @@ class DMAChannel(addrWidth: Int, dataWidth: Int) extends Module {
   // Burst tracking
   val currentBurstBeats = RegInit(0.U(8.W))
   val beatsInBurst      = RegInit(0.U(8.W))
-  val bytesPerBeat      = (dataWidth / 8).U(32.W)
+  val bytesPerBeat      = (dataWidth / 8).U
 
   // Interrupt output
   val interruptReg = RegInit(false.B)
@@ -89,7 +89,7 @@ class DMAChannel(addrWidth: Int, dataWidth: Int) extends Module {
         bytesRemaining    := io.descriptor.length
         bytesTransferred  := 0.U
         burstSize         := Mux(io.descriptor.burstSize === 0.U, 1.U, io.descriptor.burstSize)
-        priority          := io.descriptor.prity
+        priority          := io.descriptor.priority
         errorReg          := false.B
         currentBurstBeats := 0.U
 
