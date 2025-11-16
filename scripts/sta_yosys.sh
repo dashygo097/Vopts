@@ -9,6 +9,7 @@ RED='\033[1;31m'
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
+MAGENTA='\033[1;35m'
 CYAN='\033[1;36m'
 GRAY='\033[1;37m'
 NC='\033[0m'
@@ -17,15 +18,15 @@ DIM='\033[2m'
 
 show_header() {
     echo -e "${BLUE}"
-    echo " ██╗   ██╗██╗██╗   ██╗ █████╗ ██████╗  ██████╗ "
-    echo " ██║   ██║██║██║   ██║██╔══██╗██╔══██╗██╔═══██╗"
-    echo " ██║   ██║██║██║   ██║███████║██║  ██║██║   ██║"
-    echo " ╚██╗ ██╔╝██║╚██╗ ██╔╝██╔══██║██║  ██║██║   ██║"
-    echo "  ╚████╔╝ ██║ ╚████╔╝ ██║  ██║██████╔╝╚██████╔╝"
-    echo "   ╚═══╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚═════╝  ╚═════╝ "
+    echo " ███████╗████████╗ █████╗   "
+    echo " ██╔════╝╚══██╔══╝██╔══██╗  "
+    echo " ███████╗   ██║   ███████║  "
+    echo " ╚════██║   ██║   ██╔══██║  "
+    echo " ███████║   ██║   ██║  ██║  "
+    echo " ╚══════╝   ╚═╝   ╚═╝  ╚═╝  "
     echo -e "${NC}"
-    echo -e "${DIM}Vivado Static Timing Analysis Tool${NC}"
-    echo -e "${DIM}────────────────────────────────────────────────${NC}"
+    echo -e "${DIM}Synthesis & Timing Analysis Tool${NC}"
+    echo -e "${DIM}──────────────────────────────────────────────────────────${NC}"
     echo
 }
 
@@ -35,7 +36,7 @@ show_status() {
     case $status in
         "info")    echo -e "${DIM}│ ${message}${NC}" >&2;;
         "success") echo -e "${GREEN}✔ ${message}${NC}" >&2;;
-        "warning") echo -e "${YELLOW}⚠ ${message}${NC}" >&2;;
+        "warning") echo -e "${YELLOW}│ ${message}${NC}" >&2;;
         "error")   echo -e "${RED}✖ ${message}${NC}" >&2;;
         *)         echo -e "${DIM}│ ${message}${NC}" >&2;;
     esac
@@ -43,6 +44,7 @@ show_status() {
 
 select_module() {
     if [[ "$FZF" == "true" ]]; then
+        # FZF mode
         echo -e "${DIM}◇ Select a module:${NC}" >&2
         
         local module_file=$(find "$BUILD_DIR" -type f \( -name "*.v" -o -name "*.sv" \) | sed "s|^$BUILD_DIR/||" | fzf --height=40% --prompt="Fuzzy Search: " --header="Use arrow keys to navigate, Enter to select")
@@ -55,11 +57,11 @@ select_module() {
         echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$module_file")${NC}" >&2
         echo "$module_file"
     else
+        # Manual selection mode
         echo -e "${DIM}◇ Available modules:${NC}" >&2
         local module_files=()
         while IFS= read -r -d $'\0' file; do
-            local rel_path="${file#$BUILD_DIR/}"
-            module_files+=("$rel_path")
+            module_files+=("$file")
         done < <(find "$BUILD_DIR" -type f \( -name "*.sv" -o -name "*.v" \) -print0)
 
         if [ ${#module_files[@]} -eq 0 ]; then
@@ -89,7 +91,7 @@ select_module() {
 
         local module_file="${module_files[$((selected-1))]}"
         echo -e "\033[1A\033[2K${GREEN}◆ Selected: $(basename "$module_file")${NC}" >&2
-        echo "$module_file"
+        echo "$(basename "$module_file")"
     fi
 }
 
@@ -121,408 +123,211 @@ fetch_clock_period() {
     echo "$clock_period"
 }
 
-fetch_clock_port() {
-    local default_port="clk"
-    echo -ne "${DIM}│ Enter clock port name (default: ${default_port}): ${NC}" >&2
-    read -r clock_port
-    if [[ -z "$clock_port" ]]; then
-        clock_port=$default_port
-    fi
-    show_status "success" "Clock port set to: ${clock_port}"
-    echo "$clock_port"
-}
-
-fetch_fpga_part() {
-    local default_part="xc7a100tcsg324-1"
-    echo -ne "${DIM}│ Enter FPGA part (default: ${default_part}): ${NC}" >&2
-    read -r fpga_part
-    if [[ -z "$fpga_part" ]]; then
-        fpga_part=$default_part
-    fi
-    show_status "success" "FPGA part set to: ${fpga_part}"
-    echo "$fpga_part"
-}
-
 run_sta() {
     show_header
     
     module_file="$(select_module)"
     top_module="$(fetch_top_module)"
     clock_period="$(fetch_clock_period)"
-    clock_port="$(fetch_clock_port)"
-    fpga_part="$(fetch_fpga_part)"
     
-    target_freq=$(awk "BEGIN {printf \"%.2f\", 1000.0 / $clock_period}")
+    mkdir -p "$SYNTH_DIR/yosys_${top_module}"
+    cd "$SYNTH_DIR/yosys_${top_module}" || exit 1
     
-    mkdir -p "$SYNTH_DIR/vivado_${top_module}"
-    cd "$SYNTH_DIR/vivado_${top_module}" || exit 1
+    show_status "info" "Generating optimized synthesis script..."
     
-    relative_design_file="../../build/${module_file}"
+    local clock_period_ps=$((clock_period * 1000))
     
-    show_status "info" "Generating Vivado TCL script..."
-    show_status "info" "Design file (relative): $relative_design_file"
-    
-    cat > "sta_vivado.tcl" << 'EOF'
-# Vivado Static Timing Analysis Script (Auto-generated)
-# Configuration
-set design_file "DESIGN_FILE_PLACEHOLDER"
-set top_module "TOP_MODULE_PLACEHOLDER"
-set fpga_part "FPGA_PART_PLACEHOLDER"
-set clock_period_ns CLOCK_PERIOD_PLACEHOLDER
-set clock_port "CLOCK_PORT_PLACEHOLDER"
+    cat > "synth_sta.ys" << EOF
+# Read design
+read_verilog -sv $BUILD_DIR/${module_file}
 
-# Directories
-set output_dir "./reports"
-set project_dir "./project"
+# Hierarchy check
+hierarchy -check -top ${top_module}
 
-# Helper Procedures
-proc log_info {msg} {
-    puts "\[INFO\] $msg"
-}
+# High-level synthesis optimizations
+proc; opt; fsm; opt; memory; opt
 
-proc log_success {msg} {
-    puts "\[SUCCESS\] $msg"
-}
+# Technology mapping for Xilinx 7-series
+synth_xilinx -family xc7 -top ${top_module} -flatten -abc9 -nobram -nodsp
 
-proc log_error {msg} {
-    puts "\[ERROR\] $msg"
-}
+# Apply timing constraints
+# Clock period: ${clock_period}ns = ${clock_period_ps}ps
+select -module ${top_module}
+setattr -set sta_clock_period ${clock_period_ps} w:clock
+select -clear
 
-proc log_section {title} {
-    puts ""
-    puts "========================================="
-    puts "  $title"
-    puts "========================================="
-}
+# Static Timing Analysis (single run to avoid "No timing paths" warning)
+tee -o timing_report.txt sta
 
-# Main Flow
-log_section "Vivado Synthesis + Timing Analysis"
+# Design quality checks
+scc
 
-# Create output directory
-file mkdir $output_dir
-log_success "Created output directory: $output_dir"
+# Generate statistics
+stat
+stat -tech xilinx
+stat -width
 
-set target_freq_mhz [expr {1000.0 / $clock_period_ns}]
-log_info "Design File: $design_file"
-log_info "Top Module: $top_module"
-log_info "FPGA Part: $fpga_part"
-log_info "Target Clock: ${clock_period_ns}ns ([format "%.2f" $target_freq_mhz] MHz)"
-log_info "Clock Port: $clock_port"
+# Clean up before writing outputs
+clean
+opt_clean
 
-# Step 1: Create Project
-log_section "Step 1: Project Setup"
+# Write output files
+write_verilog -noattr synth_${top_module}.v
 
-if {[file exists $project_dir]} {
-    file delete -force $project_dir
-}
-
-create_project -force sta_project $project_dir -part $fpga_part
-log_success "Created project"
-
-# Add design files
-if {[file exists $design_file]} {
-    add_files $design_file
-    set_property top $top_module [current_fileset]
-    log_success "Added design file and set top module"
-} else {
-    log_error "Design file not found: $design_file"
-    log_error "Current working directory: [pwd]"
-    exit 1
-}
-
-# Step 2: Read RTL (without constraints yet)
-log_section "Step 2: Read Design"
-
-# Read the RTL to prepare for constraint creation
-read_verilog $design_file
-log_success "Read design files"
-
-# Step 3: Create Timing Constraints
-log_section "Step 3: Timing Constraints"
-
-# Create XDC file with proper escaping for TCL
-set xdc_file "$project_dir/timing_constraints.xdc"
-set fp [open $xdc_file w]
-puts $fp "# Auto-generated timing constraints"
-puts $fp "# Clock constraint"
-puts $fp "create_clock -period $clock_period_ns -name sys_clk \[get_ports $clock_port\]"
-puts $fp ""
-puts $fp "# Relax I/O timing for internal path analysis"
-puts $fp "set_input_delay -clock sys_clk 0 \[all_inputs\]"
-puts $fp "set_output_delay -clock sys_clk 0 \[all_outputs\]"
-close $fp
-
-read_xdc $xdc_file
-log_success "Created and loaded timing constraints"
-
-# Step 4: Run Synthesis
-log_section "Step 4: Synthesis"
-
-log_info "Running synthesis (this may take a few minutes)..."
-
-synth_design \
-    -top $top_module \
-    -part $fpga_part \
-    -mode out_of_context \
-    -flatten_hierarchy rebuilt \
-    -keep_equivalent_registers \
-    -resource_sharing off \
-    -no_lc \
-    -shreg_min_size 5
-
-log_success "Synthesis completed"
-
-# Step 5: Generate Timing Reports
-log_section "Step 5: Post-Synthesis Timing Analysis"
-
-# Report clock networks
-log_info "Analyzing clock networks..."
-report_clocks -file "$output_dir/clocks.rpt"
-
-# Check timing constraints
-log_info "Checking timing constraints..."
-check_timing -verbose -file "$output_dir/check_timing.rpt"
-
-# Timing summary report
-log_info "Generating timing summary..."
-report_timing_summary \
-    -delay_type max \
-    -report_unconstrained \
-    -check_timing_verbose \
-    -max_paths 10 \
-    -input_pins \
-    -routable_nets \
-    -file "$output_dir/timing_summary.rpt"
-
-# Detailed timing report
-log_info "Analyzing critical paths..."
-report_timing \
-    -delay_type max \
-    -max_paths 20 \
-    -sort_by slack \
-    -input_pins \
-    -routable_nets \
-    -name timing_1 \
-    -file "$output_dir/timing_detail.rpt"
-
-# Design analysis
-log_info "Generating design analysis..."
-report_design_analysis \
-    -timing \
-    -max_paths 10 \
-    -file "$output_dir/design_analysis.rpt"
-
-# Utilization report
-log_info "Generating utilization report..."
-report_utilization \
-    -hierarchical \
-    -file "$output_dir/utilization.rpt"
-
-# Step 6: Parse and Display Results
-log_section "Step 6: Timing Results Summary"
-
-set timing_file "$output_dir/timing_summary.rpt"
-if {[file exists $timing_file]} {
-    set fp [open $timing_file r]
-    set content [read $fp]
-    close $fp
-    
-    # Extract key metrics
-    set wns "N/A"
-    set tns "N/A"
-    set whs "N/A"
-    set failing_endpoints 0
-    set total_endpoints 0
-    
-    # Parse WNS (Worst Negative Slack)
-    if {[regexp {WNS\(ns\)\s+WHS\(ns\)\s+TNS\(ns\)\s+THS\(ns\)\s+WPWS\(ns\)\s+TPWS\(ns\)\s+[-]+\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)} $content match wns_val whs_val tns_val]} {
-        set wns $wns_val
-        set whs $whs_val
-        set tns $tns_val
-    }
-    
-    # Parse endpoint counts
-    if {[regexp {(\d+)\s+Failing Endpoints} $content match count]} {
-        set failing_endpoints $count
-    }
-    if {[regexp {(\d+)\s+Total Endpoints} $content match count]} {
-        set total_endpoints $count
-    }
-    
-    # Display results
-    puts ""
-    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    puts "  TIMING ANALYSIS RESULTS"
-    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    puts "  Target Clock Period:  ${clock_period_ns} ns"
-    puts "  Target Frequency:     [format "%.2f" $target_freq_mhz] MHz"
-    puts ""
-    puts "  Setup Timing (Max Delay):"
-    puts "    WNS (Worst Slack):  $wns ns"
-    puts "    TNS (Total Slack):  $tns ns"
-    puts ""
-    puts "  Hold Timing (Min Delay):"
-    puts "    WHS (Worst Slack):  $whs ns"
-    puts ""
-    puts "  Endpoints:"
-    puts "    Total:              $total_endpoints"
-    puts "    Failing:            $failing_endpoints"
-    puts ""
-    
-    # Calculate achievable frequency
-    if {$wns != "N/A" && [string is double $wns]} {
-        set actual_period [expr {$clock_period_ns - $wns}]
-        set achievable_freq [expr {1000.0 / $actual_period}]
-        
-        puts "  Achievable Frequency: [format "%.2f" $achievable_freq] MHz"
-        puts "  Critical Path Delay:  [format "%.3f" $actual_period] ns"
-        puts ""
-        
-        # Timing status
-        if {$wns >= 0} {
-            set margin_pct [expr {100.0 * $wns / $clock_period_ns}]
-            log_success "TIMING MET with [format "%.1f" $margin_pct]% slack"
-        } else {
-            set violation_pct [expr {100.0 * abs($wns) / $clock_period_ns}]
-            log_error "TIMING VIOLATED by [format "%.1f" $violation_pct]%"
-            puts ""
-            puts "  Recommendations:"
-            puts "    • Review critical paths in timing_detail.rpt"
-            puts "    • Consider pipeline insertion"
-            puts "    • Reduce target frequency"
-            puts "    • Apply synthesis optimizations"
-        }
-        
-        # Frequency targets check
-        puts ""
-        puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        puts "  FREQUENCY TARGET ANALYSIS"
-        puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
-        foreach freq {50 100 125 150 200 250 300} {
-            if {$achievable_freq >= $freq} {
-                set margin [expr {100.0 * ($achievable_freq - $freq) / $freq}]
-                puts "  ✓ ${freq} MHz - PASS ([format "%.1f" $margin]% margin)"
-            } else {
-                set deficit [expr {100.0 * ($freq - $achievable_freq) / $freq}]
-                puts "  ✗ ${freq} MHz - FAIL ([format "%.1f" $deficit]% deficit)"
-            }
-        }
-    }
-    puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-} else {
-    log_error "Could not find timing summary report"
-}
-
-# Step 7: Critical Path Details
-log_section "Step 7: Critical Path Analysis"
-
-set worst_path [get_timing_paths -max_paths 1 -setup]
-if {[llength $worst_path] > 0} {
-    log_info "Critical path details:"
-    
-    report_timing \
-        -of_objects $worst_path \
-        -input_pins \
-        -routable_nets \
-        -significant_digits 3 \
-        -file "$output_dir/critical_path_detailed.rpt"
-    
-    set startpoint [get_property STARTPOINT_PIN $worst_path]
-    set endpoint [get_property ENDPOINT_PIN $worst_path]
-    set slack [get_property SLACK $worst_path]
-    
-    puts "  Start Point: $startpoint"
-    puts "  End Point:   $endpoint"
-    puts "  Slack:       [format "%.3f" $slack] ns"
-    
-    log_success "Detailed critical path analysis saved"
-} else {
-    log_info "No timing paths found"
-}
-
-# Step 8: Resource Utilization Summary
-log_section "Step 8: Resource Utilization"
-
-puts ""
-puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-puts "  RESOURCE UTILIZATION"
-puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Parse utilization from report
-set util_file "$output_dir/utilization.rpt"
-if {[file exists $util_file]} {
-    set fp [open $util_file r]
-    set content [read $fp]
-    close $fp
-    
-    # Extract key resources
-    if {[regexp {Slice LUTs\s+\|\s+(\d+)} $content match luts]} {
-        puts "  LUTs:                 $luts"
-    }
-    if {[regexp {Slice Registers\s+\|\s+(\d+)} $content match regs]} {
-        puts "  Registers:            $regs"
-    }
-    if {[regexp {Block RAM Tile\s+\|\s+(\d+)} $content match bram]} {
-        puts "  BRAM Tiles:           $bram"
-    }
-    if {[regexp {DSPs\s+\|\s+(\d+)} $content match dsp]} {
-        puts "  DSP Blocks:           $dsp"
-    }
-}
-puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Summary
-log_section "Analysis Complete"
-
-puts ""
-puts "Reports generated in: $output_dir/"
-puts ""
-puts "Key Files:"
-puts "  • timing_summary.rpt         - Overall timing summary"
-puts "  • timing_detail.rpt          - Top 20 critical paths"
-puts "  • critical_path_detailed.rpt - Detailed critical path"
-puts "  • design_analysis.rpt        - Design analysis"
-puts "  • utilization.rpt            - Resource utilization"
-puts "  • check_timing.rpt           - Constraint validation"
-puts "  • clocks.rpt                 - Clock network analysis"
-puts ""
-
-log_success "Vivado STA analysis complete!"
-
-exit 0
+# Print final stats
+stat
 EOF
 
-    sed -i "s|DESIGN_FILE_PLACEHOLDER|$relative_design_file|g" sta_vivado.tcl
-    sed -i "s|TOP_MODULE_PLACEHOLDER|$top_module|g" sta_vivado.tcl
-    sed -i "s|FPGA_PART_PLACEHOLDER|$fpga_part|g" sta_vivado.tcl
-    sed -i "s|CLOCK_PERIOD_PLACEHOLDER|$clock_period|g" sta_vivado.tcl
-    sed -i "s|CLOCK_PORT_PLACEHOLDER|$clock_port|g" sta_vivado.tcl
+    show_status "info" "Running Yosys synthesis and timing analysis..."
+    
+    if yosys -s "synth_sta.ys" > "synthesis.log" 2>&1; then
+        show_status "success" "Synthesis completed successfully"
+    else
+        show_status "error" "Synthesis failed - check synthesis.log"
+        exit 1
+    fi
 
-    show_status "success" "TCL script generated: sta_vivado.tcl"
-    echo
-    show_status "info" "Running Vivado in batch mode..."
-    echo
+    echo -e "${CYAN}◆ Logic Loop Detection (SCC)${NC}"
     
-    echo
+    if [ -f synthesis.log ]; then
+        local scc_found=$(grep "Found [0-9]* SCCs in module" synthesis.log | tail -1)
+        local total_sccs=$(grep "^Found [0-9]* SCCs\.$" synthesis.log | tail -1 | awk '{print $2}')
+        
+        if [ ! -z "$total_sccs" ]; then
+            if [ "$total_sccs" -eq 0 ]; then
+                echo -e "${DIM}│${NC} ${GREEN}✔ No combinational loops detected${NC}"
+            else
+                echo -e "${DIM}│${NC} ${RED}✖ Found $total_sccs strongly connected components${NC}"
+                echo -e "${DIM}│${NC} ${YELLOW}  (Indicates potential combinational loops)${NC}"
+            fi
+            
+            if [ ! -z "$scc_found" ]; then
+                echo -e "${DIM}│${NC} ${DIM}  $scc_found${NC}"
+            fi
+        else
+            echo -e "${DIM}│${NC} ${YELLOW}SCC analysis not found in log${NC}"
+        fi
+    fi
+    
+    echo -e "${CYAN}◆ Resource Utilization${NC}"
+    
+    echo -e "${DIM}│${NC} ${YELLOW}Logic:${NC}"
+    local total_luts=0
+    for i in {2..6}; do
+        local line=$(grep "LUT$i" synthesis.log | grep -v "LUTRAM" | tail -1)
+        local count=$(grep -E "^\s*[0-9]+\s+LUT${i}\s*$" synthesis.log | tail -1 | awk '{print $1}')
+        printf "${DIM}│${NC}   %-22s %d\n" "LUT$i:" "$count"
+        total_luts=$((total_luts + count))
+    done
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+    printf "${DIM}│${NC}   %-22s %d\n" "Total LUTs:" "$total_luts"
+
+    echo -e "${DIM}│${NC} ${YELLOW}Flip-Flops:${NC}"
+    local count_fdre=$(grep -E "^\s*[0-9]+\s+FDRE\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_fdse=$(grep -E "^\s*[0-9]+\s+FDSE\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_fdce=$(grep -E "^\s*[0-9]+\s+FDCE\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    printf "${DIM}│${NC}   %-22s %d\n" "FDRE:" "${count_fdre:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "FDSE:" "${count_fdse:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "FDCE:" "${count_fdce:-0}"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+    local total_dffs=$(( ${count_fdre:-0} + ${count_fdse:-0} + ${count_fdce:-0} ))
+    printf "${DIM}│${NC}   %-22s %d\n" "Total DFFs:" "$total_dffs"
+
+    echo -e "${DIM}│${NC} ${YELLOW}IO:${NC}"
+    local count_ibuf=$(grep -E "^\s*[0-9]+\s+IBUF\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_obuf=$(grep -E "^\s*[0-9]+\s+OBUF\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    printf "${DIM}│${NC}   %-22s %d\n" "IBUF:" "${count_ibuf:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "OBUF:" "${count_obuf:-0}"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+
+    echo -e "${DIM}│${NC} ${YELLOW}Clock & Other:${NC}"
+    local count_bufg=$(grep -E "^\s*[0-9]+\s+BUFG\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    local count_carry=$(grep -E "^\s*[0-9]+\s+CARRY4\s*$" synthesis.log | tail -1 | awk '{print $1}')
+    printf "${DIM}│${NC}   %-22s %d\n" "BUFG (Clock):" "${count_bufg:-0}"
+    printf "${DIM}│${NC}   %-22s %d\n" "CARRY4:" "${count_carry:-0}"
+    echo -e "${DIM}│${NC}   ──────────────────────────"
+
+    local estimated_lc=$(grep "Estimated number of LCs" synthesis.log | tail -1 | awk '{print $6}')
+    if [ ! -z "$estimated_lc" ]; then
+        echo -e "${DIM}│${NC}"
+        echo -e "${DIM}│${NC} ${YELLOW}Estimated Logic Cells:${NC} $estimated_lc"
+    fi
+
+    echo -e "${CYAN}◆ Timing Analysis Results${NC}"
+    
+    if [ -f timing_report.txt ]; then
+        local max_delay=$(grep "Latest arrival time in" timing_report.txt | sed -n "s/.*is \([0-9]*\):.*/\1/p" | head -1)
+        
+        if [ ! -z "$max_delay" ] && [ "$max_delay" -gt "0" ] 2>/dev/null; then
+            local fmax_mhz=$(awk "BEGIN {printf \"%.2f\", 1000000 / $max_delay}")
+            local target_mhz=$(awk "BEGIN {printf \"%.2f\", 1000 / $clock_period}")
+            local period_ns=$(awk "BEGIN {printf \"%.3f\", $max_delay / 1000}")
+            
+            echo -e "${DIM}│${NC} ${YELLOW}Critical Path Delay:${NC}   ${max_delay} ps (${period_ns} ns)"
+            echo -e "${DIM}│${NC} ${YELLOW}Achievable Fmax:${NC}      ${fmax_mhz} MHz"
+            echo -e "${DIM}│${NC} ${YELLOW}Target Frequency:${NC}     ${target_mhz} MHz (${clock_period}ns period)"
+            echo -e "${DIM}│${NC}"
+            
+            if (( $(echo "$fmax_mhz >= $target_mhz" | bc -l) )); then
+                local slack=$(awk "BEGIN {printf \"%.1f\", ($fmax_mhz - $target_mhz) / $target_mhz * 100}")
+                echo -e "${DIM}│${NC} ${GREEN}✔ Timing constraints MET (${slack}% margin)${NC}"
+            else
+                local deficit=$(awk "BEGIN {printf \"%.1f\", ($target_mhz - $fmax_mhz) / $target_mhz * 100}")
+                echo -e "${DIM}│${NC} ${RED}✖ Timing constraints VIOLATED (${deficit}% deficit)${NC}"
+            fi
+
+        else
+            echo -e "${DIM}│${NC} ${RED}Could not parse timing data${NC}"
+            echo -e "${DIM}│${NC} ${YELLOW}Debug: max_delay='$max_delay'${NC}"
+            echo -e "${DIM}│${NC} ${YELLOW}First few lines of timing_report.txt:${NC}"
+            head -3 timing_report.txt | sed "s/^/${DIM}│${NC} /"
+        fi
+    else
+        echo -e "${DIM}│${NC} ${RED}Timing report not generated${NC}"
+    fi
+    
+    if [ -f timing_report.txt ]; then
+        local max_delay=$(grep "Latest arrival time in" timing_report.txt | sed -n "s/.*is \([0-9]*\):.*/\1/p" | head -1)
+        if [ ! -z "$max_delay" ] && [ "$max_delay" -gt "0" ] 2>/dev/null; then
+            local fmax_mhz=$(awk "BEGIN {printf \"%.2f\", 1000000 / $max_delay}")
+            
+            echo -e "${CYAN}◆ Frequency Targets${NC}"
+            
+            for target in 50 100 125 150 200 250 300 400 500; do
+                if (( $(echo "$fmax_mhz >= $target" | bc -l) )); then
+                    local margin=$(awk "BEGIN {printf \"%.1f\", ($fmax_mhz - $target) / $target * 100}")
+                    echo -e "${DIM}│${NC} ${GREEN}✔${NC} ${target} MHz (${margin}% timing margin)"
+                else
+                    local deficit=$(awk "BEGIN {printf \"%.1f\", ($target - $fmax_mhz) / $target * 100}")
+                    echo -e "${DIM}│${NC} ${RED}✖${NC} ${target} MHz (${deficit}% too fast)"
+                fi
+            done
+        fi
+    fi
+
     echo -e "${GREEN}◆ Files Generated${NC}"
-    echo -e "${DIM}├─${NC} sta_vivado.tcl           (TCL script)"
-    echo -e "${DIM}├─${NC} vivado_run.log           (Vivado output log)"
-    echo -e "${DIM}└─${NC} reports/                 (All analysis reports)"
+    echo -e "${DIM}├─${NC} synthesis.log            (Full synthesis log)"
+    echo -e "${DIM}├─${NC} timing_report.txt        (Timing analysis)"
+    echo -e "${DIM}├─${NC} synth_${top_module}.v       (Synthesized netlist)"
+    echo -e "${DIM}└─${NC} synth_sta.ys            (Yosys script)"
     echo
     
-    show_status "success" "All outputs saved in: $SYNTH_DIR/vivado_${top_module}/"
-    
+    show_status "success" "All outputs saved in: $SYNTH_DIR/${top_module}/"
+
     echo ""
     echo "╔════════════════════════════════════════════════════════════════════╗"
-    echo "║ NOTE: Vivado Post-Synthesis Timing Results                         ║"
+    echo "║ WARNING: Yosys STA results are OPTIMISTIC                          ║"
     echo "║                                                                    ║"
-    echo "║ For final timing closure, run full Place & Route in Vivado!        ║"
+    echo "║ Yosys STA assumes:                                                 ║"
+    echo "║   • Zero routing delay                                             ║"
+    echo "║   • Ideal placement                                                ║"
+    echo "║   • Generic delay models (not Xilinx 7-series specific)            ║"
+    echo "║                                                                    ║"
+    echo "║ Expected Vivado results: 1.5x - 3.0x slower than Yosys estimate    ║"
+    echo "║                                                                    ║"
+    echo "║ For accurate timing, use Vivado synthesis + STA!                   ║"
     echo "╚════════════════════════════════════════════════════════════════════╝"
     echo ""
-
-    echo "Run the following command to start Vivado manually:"
-    echo -e "${CYAN}vivado -mode batch -source sta_vivado.tcl${NC}"
 }
 
 # Main execution
