@@ -5,10 +5,6 @@ import chisel3.util._
 
 class AXIFullMasterIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
-  val aWidth = addrWidth
-  val dWidth = dataWidth
-  val iWidth = idWidth
-  val uWidth = userWidth
 
   val aw = Decoupled(new AXIFullAddrIO(addrWidth, idWidth, userWidth))
   val w  = Decoupled(new AXIFullWriteIO(dataWidth, idWidth, userWidth))
