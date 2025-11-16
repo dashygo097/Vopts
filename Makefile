@@ -10,7 +10,7 @@ LIB ?= app
 FZF ?= false
 STA_TOOL ?= yosys
 
-.PHONY: pre fmt build run clean update localpublish tb cocotb sta-xc7
+.PHONY: pre fmt build run clean update localpublish tb cocotb sta sta-yosys sta-vivado
 
 pre:
 	@mkdir -p $(BUILD_DIR)
