@@ -2,26 +2,26 @@ package com.ahb
 
 import chisel3._
 
-class AHBSubordinateIO(addrWidth: Int, dataWidth: Int, selSize: Int) extends Bundle {
-  val sel = Input(UInt(selSize.W))
+class AHBSubordinateIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+  val sel = Input(Bool())
   val hrBus = Flipped(AHBHRBusIO(addrWidth, dataWidth))
   val hwBus = Flipped(AHBHWBusIO(addrWidth, dataWidth))
 
   override def clone =
-    new AHBSubordinateIO(addrWidth, dataWidth, selSize).asInstanceOf[this.type]
+    new AHBSubordinateIO(addrWidth, dataWidth).asInstanceOf[this.type]
 }
 
 object AHBSubordinateIO {
-  def apply(addrWidth: Int, dataWidth: Int, selSize: Int): AHBSubordinateIO =
-    new AHBSubordinateIO(addrWidth, dataWidth, selSize)
+  def apply(addrWidth: Int, dataWidth: Int): AHBSubordinateIO =
+    new AHBSubordinateIO(addrWidth, dataWidth)
 }
 
-class AHBSubordinateExternalIO(addrWidth: Int, dataWidth: Int, selSize: Int) extends Bundle {
+class AHBSubordinateExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val S_AHB_HREADYOUT = Output(Bool())
   val S_AHB_HRESP = Output(Bool())
   val S_AHB_HRDATA = Output(UInt(dataWidth.W))
 
-  val S_AHB_HSEL = Input(UInt(selSize.W))
+  val S_AHB_HSEL = Input(Bool())
   val S_AHB_HADDR = Input(UInt(addrWidth.W))
   val S_AHB_HTRANS = Input(UInt(2.W))
   val S_AHB_HWRITE = Input(Bool())
