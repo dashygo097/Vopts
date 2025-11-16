@@ -20,11 +20,9 @@ class AXILiteInterconnect(
   val ext_slave = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val slave     = Wire(AXILiteSlaveIO(addrWidth, dataWidth))
 
-  val ext_masters = Seq.fill(addressMap.length)(IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)))
+  val ext_masters =
+    IO(Vec(addressMap.length, new AXILiteMasterExternalIO(addrWidth, dataWidth))).suggestName("M_AXI")
   val masters     = Seq.fill(addressMap.length)(Wire(AXILiteMasterIO(addrWidth, dataWidth)))
-
-  for (i <- 0 until addressMap.length)
-    ext_masters(i).suggestName(s"M_AXI_$i")
 
   def decodeAddress(addr: UInt): UInt = {
     val slaveSelect = Wire(UInt(log2Ceil(addressMap.length).W))
