@@ -1,5 +1,6 @@
 package com.amba
 
+import scala.math._
 import chisel3._
 import chisel3.util._
 
@@ -193,4 +194,20 @@ abstract class AXIFullMasterBaseFSM(
   }
 
   ext_axi.connect(axi)
+}
+
+abstract class AXIFullMasterOutOfOrder(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int) extends Module {
+  protected def getExtAXIName: String = "M_AXI"
+
+  val ext_axi = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))
+    .suggestName(getExtAXIName)
+  val axi     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
+
+  // Parameters
+  protected val addr_lsb   = log2Ceil(dataWidth / 8)
+  protected val strb_width = dataWidth / 8
+  protected val entries = pow(2, idWidth).toInt
+
+  // Signals
+
 }
