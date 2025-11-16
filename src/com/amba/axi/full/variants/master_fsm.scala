@@ -4,14 +4,14 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class AXIFullMasterRW(
+class AXIFullMasterFSM(
   addrWidth: Int,
   dataWidth: Int,
   idWidth: Int,
   userWidth: Int = 0
-) extends AXIFullMaster(addrWidth, dataWidth, idWidth, userWidth) {
+) extends AXIFullMasterBaseFSM(addrWidth, dataWidth, idWidth, userWidth) {
   override def desiredName: String =
-    s"axifull_master_rw_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
+    s"axifull_master_fsm_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
 
   // User Interface
   val write_data  = IO(Input(UInt(dataWidth.W))).suggestName("W_DATA")
@@ -95,9 +95,9 @@ class AXIFullMasterRW(
   setup()
 }
 
-object TestAXIFullMasterRW extends App {
+object TestAXIFullMasterFSM extends App {
   VerilogEmitter.parse(
-    new AXIFullMasterRW(32, 32, 4, 1),
+    new AXIFullMasterFSM(32, 32, 4, 1),
     "axifull_master_rw.sv",
     info = true
   )
