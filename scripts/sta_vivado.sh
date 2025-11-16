@@ -394,8 +394,6 @@ EOF
 
     show_status "success" "TCL script generated: sta_vivado.tcl"
     echo
-    show_status "info" "Running Vivado in batch mode..."
-    echo
     
     echo
     echo -e "${GREEN}◆ Files Generated${NC}"
