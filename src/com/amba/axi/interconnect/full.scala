@@ -23,12 +23,9 @@ class AXIFullInterconnect(
   val slave     = Wire(AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
   val ext_masters =
-    IO(Vec(addressMap.length, new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth)))
+    IO(Vec(addressMap.length, new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))).suggestName("M_AXI")
   val masters     =
     Seq.fill(addressMap.length)(Wire(AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth)))
-
-  for (i <- 0 until addressMap.length)
-    ext_masters(i).suggestName(s"M_AXI_$i")
 
   def decodeAddress(addr: UInt): UInt = {
     val slaveSelect = Wire(UInt(log2Ceil(addressMap.length).W))
