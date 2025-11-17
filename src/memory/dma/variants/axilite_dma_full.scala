@@ -110,7 +110,7 @@ class AXILiteSlaveDMA(
   // AW
 
   // W
-  when(axi_will_write) {
+  when(axi_last_write) {
     when(writeAccess("DMA_CTRL")) {
       ready_pulse      := axi.w.bits.data(0)
       done_sticky      := !axi.w.bits.data(0)
