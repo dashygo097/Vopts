@@ -37,14 +37,13 @@ class DMACSR(override val baseAddr: BigInt) extends CSRMMap {
 class AXILiteSlaveDMA(
   addrWidth: Int,
   dataWidth: Int,
-  ctrlAddrWidth: Int,
   idWidth: Int,
   userWidth: Int,
   baseAddr: BigInt
 ) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new DMACSR(baseAddr)) {
   override protected def getExtAXIName: String = "S_AXI_CTRL"
   override def desiredName: String             =
-    s"axilite_slave_dma_${addrWidth}x${dataWidth}_ctrl${ctrlAddrWidth}_i${idWidth}_u$userWidth"
+    s"axilite_slave_dma_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
 
   // AXI Full Master (to memory)
   val ext_axi_mem = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))
@@ -305,7 +304,6 @@ object TestAXILiteSlaveDMA extends App {
     new AXILiteSlaveDMA(
       addrWidth = 32,
       dataWidth = 32,
-      ctrlAddrWidth = 32,
       idWidth = 4,
       userWidth = 1,
       baseAddr = 0x80000000L
