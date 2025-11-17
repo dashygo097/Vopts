@@ -3,19 +3,21 @@ package com.amba
 import chisel3._
 import chisel3.util._
 
-class AXIStreamSlaveIO(dataWidth: Int, idWidth: Int, userWidth: Int) extends Bundle {
+class AXIStreamSlaveIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) extends Bundle {
   val dWidth = dataWidth
   val iWidth = idWidth
+  val deWidth = destWidth
   val uWidth = userWidth
 
-  val t = Flipped(Decoupled(new AXIStreamIO(dataWidth, idWidth, userWidth)))
+  val t = Flipped(Decoupled(new AXIStreamIO(dataWidth, idWidth, destWidth, userWidth)))
 
-  override def clone = new AXIStreamSlaveIO(dataWidth, idWidth, userWidth).asInstanceOf[this.type]
+  override def clone = new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth).asInstanceOf[this.type]
 }
 
-class AXIStreamSlaveExternalIO(dataWidth: Int, idWidth: Int, userWidth: Int) extends Bundle {
+class AXIStreamSlaveExternalIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) extends Bundle {
   val dWidth = dataWidth
   val iWidth = idWidth
+  val deWidth = destWidth
   val uWidth = userWidth
 
   val TDATA = Input(UInt(dataWidth.W))
@@ -29,8 +31,10 @@ class AXIStreamSlaveExternalIO(dataWidth: Int, idWidth: Int, userWidth: Int) ext
   val TREADY = Output(Bool())
 
   def connect(intf: AXIStreamSlaveIO): Unit = {
-    require(intf.dWidth == dataWidth && intf.iWidth == idWidth && intf.uWidth == userWidth,
-      s"Data width, ID width, and user width must match: $dataWidth, $idWidth, $userWidth")
+    require(intf.dWidth == this.dWidth, "Data width mismatch")
+    require(intf.iWidth == this.iWidth, "ID width mismatch")
+    require(intf.deWidth == this.deWidth, "Dest width mismatch")
+    require(intf.uWidth == this.uWidth, "User width mismatch")
 
     intf.t.bits.data := TDATA
     intf.t.bits.strb := TSTRB
