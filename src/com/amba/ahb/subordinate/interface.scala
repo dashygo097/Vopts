@@ -38,16 +38,14 @@ class AHBSubordinateExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val S_AHB_HMASTLOCK = Input(Bool())
 
   def connect(intf: AHBSubordinateIO): Unit = {
-    require(intf.aWidth == addrWidth,
-      s"Address width mismatch: intf.aWidth=${intf.aWidth}, addrWidth=$addrWidth")
-    require(intf.dWidth == dataWidth,
-      s"Data width mismatch: intf.dWidth=${intf.dWidth}, dataWidth=$dataWidth")
+    require(intf.aWidth == addrWidth, s"Address width mismatch: intf.aWidth=${intf.aWidth}, addrWidth=$addrWidth")
+    require(intf.dWidth == dataWidth, s"Data width mismatch: intf.dWidth=${intf.dWidth}, dataWidth=$dataWidth")
 
     this.S_AHB_HREADYOUT := intf.hrBus.ready
     this.S_AHB_HRESP     := intf.hrBus.resp
     this.S_AHB_HRDATA    := intf.hrBus.rdata
 
-    intf.sel             := this.S_AHB_HSEL
+    intf.sel            := this.S_AHB_HSEL
     intf.hwBus.addr     := this.S_AHB_HADDR
     intf.hwBus.trans    := this.S_AHB_HTRANS
     intf.hwBus.write    := this.S_AHB_HWRITE

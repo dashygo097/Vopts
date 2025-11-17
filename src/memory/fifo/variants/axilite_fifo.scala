@@ -5,7 +5,7 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class AXILiteSlaveFIFOCSR(override val baseAddr: BigInt) extends CSRMMap {
+class FIFOCSR(override val baseAddr: BigInt) extends CSRMMap {
   override def registers: Seq[Register] = Seq(
     Register("FIFO_DATA", baseAddr + 0x00),
     Register("FIFO_STATUS", baseAddr + 0x04),
@@ -13,13 +13,13 @@ class AXILiteSlaveFIFOCSR(override val baseAddr: BigInt) extends CSRMMap {
   )
 }
 
-class AXILiteSlaveSyncFIFO(
+class AXILiteSlaveFIFO(
   addrWidth: Int,
   dataWidth: Int,
   depth: Int,
   baseAddr: BigInt
-) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new AXILiteSlaveFIFOCSR(baseAddr)) {
-  override def desiredName: String = s"axilite_syncfifo_${addrWidth}x${dataWidth}_d$depth"
+) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new FIFOCSR(baseAddr)) {
+  override def desiredName: String = s"axilite_fifo_${addrWidth}x${dataWidth}_d$depth"
 
   val fifo = Module(new SyncFIFO(UInt(dataWidth.W), depth))
 
@@ -52,9 +52,9 @@ class AXILiteSlaveSyncFIFO(
   }
 }
 
-object TestAXILiteSlaveSyncFIFO extends App {
+object TestAXILiteSlaveFIFO extends App {
   VerilogEmitter.parse(
-    new AXILiteSlaveSyncFIFO(32, 32, 64, 0x80000000L),
+    new AXILiteSlaveFIFO(32, 32, 64, 0x80000000L),
     "axilite_slave_fifo.sv",
     info = true
   )
