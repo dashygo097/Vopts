@@ -1,8 +1,11 @@
-package com.ahb
+package com.amba
 
 import chisel3._
 
 class AHBManagerIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+  val aWidth = addrWidth
+  val dWidth = dataWidth
+
   val hrBus = AHBHRBusIO(addrWidth, dataWidth)
   val hwBus = AHBHWBusIO(addrWidth, dataWidth)
 
@@ -16,6 +19,9 @@ object AHBManagerIO {
 }
 
 class AHBManagerExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+  val aWidth = addrWidth
+  val dWidth = dataWidth
+
   val M_AHB_HREADY = Input(Bool())
   val M_AHB_HRESP  = Input(Bool())
   val M_AHB_HRDATA = Input(UInt(dataWidth.W))
@@ -30,17 +36,22 @@ class AHBManagerExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val M_AHB_HMASTLOCK = Output(Bool())
 
   def connect(intf: AHBManagerIO): Unit = {
-    intf.hrBus.hready := M_AHB_HREADY
-    intf.hrBus.hresp  := M_AHB_HRESP
-    intf.hrBus.hrdata := M_AHB_HRDATA
+    require(intf.aWidth == addrWidth,
+      s"Address width mismatch: intf.aWidth=${intf.aWidth}, addrWidth=$addrWidth")
+    require(intf.dWidth == dataWidth,
+      s"Data width mismatch: intf.dWidth=${intf.dWidth}, dataWidth=$dataWidth")
 
-    M_AHB_HADDR     := intf.hwBus.haddr
-    M_AHB_HTRANS    := intf.hwBus.htrans
-    M_AHB_HWRITE    := intf.hwBus.hwrite
-    M_AHB_HSIZE     := intf.hwBus.hsize
-    M_AHB_HBURST    := intf.hwBus.hburst
-    M_AHB_HPROT     := intf.hwBus.hprot
-    M_AHB_HWDATA    := intf.hwBus.hwdata
-    M_AHB_HMASTLOCK := intf.hwBus.hmastlock
+    intf.hrBus.ready := this.M_AHB_HREADY
+    intf.hrBus.resp  := this.M_AHB_HRESP
+    intf.hrBus.rdata := this.M_AHB_HRDATA
+
+    this.M_AHB_HADDR     := intf.hwBus.addr
+    this.M_AHB_HTRANS    := intf.hwBus.trans
+    this.M_AHB_HWRITE    := intf.hwBus.write
+    this.M_AHB_HSIZE     := intf.hwBus.size
+    this.M_AHB_HBURST    := intf.hwBus.burst
+    this.M_AHB_HPROT     := intf.hwBus.prot
+    this.M_AHB_HWDATA    := intf.hwBus.wdata
+    this.M_AHB_HMASTLOCK := intf.hwBus.mastlock
   }
 }
