@@ -32,6 +32,4 @@ abstract class AXILiteSlaveWithCSR(
     when(readAccess(name)) {
       axi_rdata := value
     }
-
-  axi_rdata := 0.U
 }
