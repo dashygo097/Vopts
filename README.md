@@ -18,7 +18,7 @@
 
 - gtkwave / surfer (waveform visualization)
 - verilator (generating executable files for testbench)
-- fzf(optional)
+- fzf (optional)
 
 ##### For cocotb autotest impled in python:
 
@@ -67,10 +67,10 @@ Similarly, make sure that the py scripts are located in **sims/cocotb** and make
 
 ## Run STA
 
-Run sta using **Yosys** through **./sta-yosys-xc7.sh** with Xilinx toolchain.
+Run sta using **Yosys** or **Vivaod** through **./sta-yosys.sh** with Xilinx toolchain.
 
 > ```bash
-> make sta-xc7 # (FZF=true)
+> make sta # (FZF=true STA_TOOL=tosys(vivado))
 > ```
 
 ## References
