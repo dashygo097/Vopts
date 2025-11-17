@@ -33,7 +33,7 @@ class SyncFIFO[T <: Data](gen: T, depth: Int) extends Module {
   io.deq.valid := !empty
   io.full      := full
   io.empty     := empty
-  io.count    := count
+  io.count     := count
 
   // W
   when(io.enq.fire) {

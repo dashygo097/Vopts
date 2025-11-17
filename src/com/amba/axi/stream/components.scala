@@ -7,7 +7,7 @@ class AXIStreamIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) 
   val strb = UInt((dataWidth / 8).W)
   val keep = UInt((dataWidth / 8).W)
   val last = Bool()
-  val id  = UInt(idWidth.W)
+  val id   = UInt(idWidth.W)
   val dest = UInt(destWidth.W)
   val user = UInt(userWidth.W)
 

@@ -36,10 +36,8 @@ class AHBManagerExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val M_AHB_HMASTLOCK = Output(Bool())
 
   def connect(intf: AHBManagerIO): Unit = {
-    require(intf.aWidth == addrWidth,
-      s"Address width mismatch: intf.aWidth=${intf.aWidth}, addrWidth=$addrWidth")
-    require(intf.dWidth == dataWidth,
-      s"Data width mismatch: intf.dWidth=${intf.dWidth}, dataWidth=$dataWidth")
+    require(intf.aWidth == addrWidth, s"Address width mismatch: intf.aWidth=${intf.aWidth}, addrWidth=$addrWidth")
+    require(intf.dWidth == dataWidth, s"Data width mismatch: intf.dWidth=${intf.dWidth}, dataWidth=$dataWidth")
 
     intf.hrBus.ready := this.M_AHB_HREADY
     intf.hrBus.resp  := this.M_AHB_HRESP

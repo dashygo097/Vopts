@@ -4,10 +4,10 @@ import chisel3._
 import chisel3.util._
 
 class AXIStreamSlaveIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) extends Bundle {
-  val dWidth = dataWidth
-  val iWidth = idWidth
+  val dWidth  = dataWidth
+  val iWidth  = idWidth
   val deWidth = destWidth
-  val uWidth = userWidth
+  val uWidth  = userWidth
 
   val t = Flipped(Decoupled(new AXIStreamIO(dataWidth, idWidth, destWidth, userWidth)))
 
@@ -15,18 +15,18 @@ class AXIStreamSlaveIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: 
 }
 
 class AXIStreamSlaveExternalIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) extends Bundle {
-  val dWidth = dataWidth
-  val iWidth = idWidth
+  val dWidth  = dataWidth
+  val iWidth  = idWidth
   val deWidth = destWidth
-  val uWidth = userWidth
+  val uWidth  = userWidth
 
-  val TDATA = Input(UInt(dataWidth.W))
-  val TKEEP = Input(UInt((dataWidth / 8).W))
-  val TSTRB = Input(UInt((dataWidth / 8).W))
-  val TLAST = Input(Bool())
-  val TID   = Input(UInt(idWidth.W))
-  val TDEST = Input(UInt(idWidth.W))
-  val TUSER = Input(UInt(userWidth.W))
+  val TDATA  = Input(UInt(dataWidth.W))
+  val TKEEP  = Input(UInt((dataWidth / 8).W))
+  val TSTRB  = Input(UInt((dataWidth / 8).W))
+  val TLAST  = Input(Bool())
+  val TID    = Input(UInt(idWidth.W))
+  val TDEST  = Input(UInt(idWidth.W))
+  val TUSER  = Input(UInt(userWidth.W))
   val TVALID = Input(Bool())
   val TREADY = Output(Bool())
 
@@ -43,7 +43,7 @@ class AXIStreamSlaveExternalIO(dataWidth: Int, idWidth: Int, destWidth: Int, use
     intf.t.bits.id   := TID
     intf.t.bits.dest := TDEST
     intf.t.bits.user := TUSER
-    intf.t.valid    := TVALID
-    TREADY         := intf.t.ready
+    intf.t.valid     := TVALID
+    TREADY           := intf.t.ready
   }
-} 
+}
