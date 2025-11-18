@@ -5,14 +5,9 @@ import com.amba._
 import chisel3._
 import chisel3.util._
 
-class AXIStreamFIFO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int) extends Module {
+class AXIStreamFIFO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int) 
+  extends AXIStreamChannel(dataWidth, idWidth, destWidth, userWidth) {
   override def desiredName: String = s"axis_syncfifo_${dataWidth}x$depth"
-
-  // AXI-Stream Interface
-  val ext_axis_master = IO(new AXIStreamMasterExternalIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("M_AXIS")
-  val axis_master     = Wire(new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth))
-  val ext_axis_slave  = IO(new AXIStreamSlaveExternalIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("S_AXIS")
-  val axis_slave      = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
   val empty = IO(Output(Bool())).suggestName("EMPTY")
   val full  = IO(Output(Bool())).suggestName("FULL")
@@ -33,12 +28,10 @@ class AXIStreamFIFO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int
   count := fifo.io.count
   full  := fifo.io.full
   empty := fifo.io.empty
-
-  ext_axis_master.connect(axis_master)
-  ext_axis_slave.connect(axis_slave)
 }
 
-class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int, baseAddr: BigInt) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new FIFOCSR(baseAddr)) {
+class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int, baseAddr: BigInt) 
+  extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new FIFOCSR(baseAddr)) {
   override def desiredName: String = s"axilite_axis_fifo_${dataWidth}x$depth"
 
   // AXI-Stream Interface
