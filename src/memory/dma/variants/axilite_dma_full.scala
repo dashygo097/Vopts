@@ -113,7 +113,9 @@ class AXILiteSlaveDMA(
   when(axi_last_write) {
     when(writeAccess("DMA_CTRL")) {
       ready_pulse      := axi.w.bits.data(0)
-      done_sticky      := !axi.w.bits.data(0)
+      when(axi.w.bits.data(0)) {
+        done_sticky := false.B
+      }
       soft_reset_pulse := axi.w.bits.data(1)
       reg_enable       := axi.w.bits.data(2)
       reg_int_enable   := axi.w.bits.data(3)

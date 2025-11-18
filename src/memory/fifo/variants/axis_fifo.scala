@@ -1,12 +1,10 @@
 package mem.fifo
 
-import utils._
 import com.amba._
 import chisel3._
 import chisel3.util._
 
-class AXIStreamFIFO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int) 
-  extends AXIStreamChannel(dataWidth, idWidth, destWidth, userWidth) {
+class AXIStreamFIFO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int) extends AXIStreamChannel(dataWidth, idWidth, destWidth, userWidth) {
   override def desiredName: String = s"axis_syncfifo_${dataWidth}x$depth"
 
   val empty = IO(Output(Bool())).suggestName("EMPTY")
@@ -30,8 +28,7 @@ class AXIStreamFIFO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int
   empty := fifo.io.empty
 }
 
-class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int, baseAddr: BigInt) 
-  extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new FIFOCSR(baseAddr)) {
+class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int, depth: Int, baseAddr: BigInt) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new FIFOCSR(baseAddr)) {
   override def desiredName: String = s"axilite_axis_fifo_${dataWidth}x$depth"
 
   // AXI-Stream Interface
@@ -104,20 +101,4 @@ class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWid
 
   ext_axis_master.connect(axis_master)
   ext_axis_slave.connect(axis_slave)
-}
-
-object TestAXIStreamFIFO extends App {
-  VerilogEmitter.parse(
-    new AXIStreamFIFO(32, 8, 8, 0, 64),
-    "axis_fifo.sv",
-    info = true
-  )
-}
-
-object TestAXILiteAXIStreamFIFO extends App {
-  VerilogEmitter.parse(
-    new AXILiteAXIStreamFIFO(32, 32, 8, 8, 0, 64, 0x80000000L),
-    "axilite_axis_fifo.sv",
-    info = true
-  )
 }
