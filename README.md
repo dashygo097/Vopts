@@ -77,4 +77,4 @@ Run sta using **Yosys** or **Vivaod** through **./sta-yosys.sh** with Xilinx too
 
 #### Some code references:
 
-> [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br> [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git) <br> [AXI-IF](https://github.com/maltanar/axi-in-chisel)
+> [chisel-template](https://github.com/chipsalliance/chisel-template.git) <br> [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git) <br> [AXI-IF](https://github.com/maltanar/axi-in-chisel) <br> [hardfloat](https://github.com/ucb-bar/berkeley-hardfloat)
