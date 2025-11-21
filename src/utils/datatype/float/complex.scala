@@ -16,16 +16,12 @@ class FloatComplex(expWidth: Int, sigWidth: Int) extends Bundle with FloatComple
   def newInstance(): FloatComplex = Wire(new FloatComplex(expWidth, sigWidth))
   
   def fromDouble(realVal: Double, imagVal: Double): FloatComplex = {
-    val fpc = this.newInstance()
+    val fpc = Wire(this.newInstance())
     val realFloat = createFloat(realVal)
     val imagFloat = createFloat(imagVal)
     fpc.real := realFloat.value
     fpc.imag := imagFloat.value
     fpc
-  }
-  
-  def fromInt(realVal: Int, imagVal: Int): FloatComplex = {
-    fromDouble(realVal.toDouble, imagVal.toDouble)
   }
   
   private def createFloat(value: Double): Float = {
@@ -46,14 +42,14 @@ class FloatComplex(expWidth: Int, sigWidth: Int) extends Bundle with FloatComple
   }
   
   def Zero(): FloatComplex = {
-    val fpc = this.newInstance()
+    val fpc = Wire(this.newInstance())
     fpc.real := 0.U
     fpc.imag := 0.U
     fpc
   }
   
   def NaN(): FloatComplex = {
-    val fpc = this.newInstance()
+    val fpc = Wire(this.newInstance())
     val nanVal = Cat(0.U(1.W), ((1 << expWidth) - 1).U(expWidth.W), 1.U(sigWidth.W))
     fpc.real := nanVal
     fpc.imag := nanVal
@@ -72,6 +68,14 @@ class FloatComplex(expWidth: Int, sigWidth: Int) extends Bundle with FloatComple
       s"FloatComplex operations require matching formats: " +
         s"FloatComplex(${this.expWidth()}, ${this.sigWidth()}) vs FloatComplex(${that.expWidth()}, ${that.sigWidth()})"
     )
+}
+
+object FloatComplex {
+  def apply(expWidth: Int, sigWidth: Int): FloatComplex = new FloatComplex(expWidth, sigWidth)
+  def apply(expWidth: Int, sigWidth: Int, real: Double, imag: Double): FloatComplex = {
+    val fpc = new FloatComplex(expWidth, sigWidth)
+    fpc.fromDouble(real, imag)
+  }
 }
 
 trait FloatComplexOps {
@@ -98,7 +102,7 @@ trait FloatComplexOps {
   
   def +(that: FloatComplex): FloatComplex = {
     this.requireCompatible(that)
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     
     val realAdder = Module(new AddRecFN(expWidth(), sigWidth()))
     realAdder.io.subOp := false.B
@@ -126,7 +130,7 @@ trait FloatComplexOps {
   
   def -(that: FloatComplex): FloatComplex = {
     this.requireCompatible(that)
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     
     val realAdder = Module(new AddRecFN(expWidth(), sigWidth()))
     realAdder.io.subOp := true.B
@@ -154,7 +158,7 @@ trait FloatComplexOps {
   
   def *(that: FloatComplex): FloatComplex = {
     this.requireCompatible(that)
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     
     val acMul = Module(new MulRecFN(expWidth(), sigWidth()))
     acMul.io.a := this.real
@@ -235,7 +239,7 @@ trait FloatComplexOps {
   }
   
   def conjugate(): FloatComplex = {
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     result.real := this.real
     val signBit = !this.imag(totalWidth() - 1)
     result.imag := Cat(signBit, this.imag(totalWidth() - 2, 0))
