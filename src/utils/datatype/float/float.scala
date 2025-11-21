@@ -38,7 +38,7 @@ class Float(expWidth: Int, sigWidth: Int) extends Bundle with FloatOps {
   def newInstance(): Float = new Float(expWidth, sigWidth)
   
   def fromDouble(value: Double): Float = {
-    val fl = this.newInstance()
+    val fl = Wire(this.newInstance())
     val signBit = (value < 0).B
     if (value == 0.0) {
       fl.value := 0.U
@@ -57,21 +57,33 @@ class Float(expWidth: Int, sigWidth: Int) extends Bundle with FloatOps {
   }
   
   def Zero(): Float = {
-    val fl = this.newInstance()
+    val fl = Wire(this.newInstance())
     fl.value := 0.U
     fl
   }
   
   def NaN(): Float = {
-    val fl = this.newInstance()
+    val fl = Wire(this.newInstance())
     fl.value := Cat(0.U(1.W), ((1 << expWidth) - 1).U(expWidth.W), 1.U(sigWidth.W))
     fl
   }
   
   def Inf(): Float = {
-    val fl = this.newInstance()
+    val fl = Wire(this.newInstance())
     fl.value := Cat(0.U(1.W), ((1 << expWidth) - 1).U(expWidth.W), 0.U(sigWidth.W))
     fl
+  }
+}
+
+object Float {
+  def apply(expWidth: Int, sigWidth: Int): Float = new Float(expWidth, sigWidth)
+  def apply(expWidth: Int, sigWidth: Int, value: Int): Float = {
+    val fl = new Float(expWidth, sigWidth)
+    fl.fromInt(value)
+  }
+  def apply(expWidth: Int, sigWidth: Int, value: Double): Float = {
+    val fl = new Float(expWidth, sigWidth)
+    fl.fromDouble(value)
   }
 }
 
@@ -96,7 +108,7 @@ trait FloatOps {
     require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(),
       s"Float operations require matching formats: " +
       s"Float(${this.expWidth()}, ${this.sigWidth()}) vs Float(${that.expWidth()}, ${that.sigWidth()})")
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     val adder = Module(new AddRecFN(expWidth(), sigWidth()))
     adder.io.subOp := false.B
     adder.io.a := this.value
@@ -112,7 +124,7 @@ trait FloatOps {
   def -(that: Float): Float = {
     require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(),
       s"Float operations require matching formats")
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     val adder = Module(new AddRecFN(expWidth(), sigWidth()))
     adder.io.subOp := true.B
     adder.io.a := this.value
@@ -128,7 +140,7 @@ trait FloatOps {
   def *(that: Float): Float = {
     require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(),
       s"Float operations require matching formats")
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     val multiplier = Module(new MulRecFN(expWidth(), sigWidth()))
     multiplier.io.a := this.value
     multiplier.io.b := that.value
@@ -143,7 +155,7 @@ trait FloatOps {
   def /(that: Float): Float = {
     require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(),
       s"Float operations require matching formats")
-    val result = this.newInstance()
+    val result = Wire(this.newInstance())
     val divider = Module(new DivSqrtRecFN_small(expWidth(), sigWidth(), 0))
     divider.io.inValid := true.B
     divider.io.sqrtOp := false.B

@@ -39,7 +39,7 @@ object AnalogInstances {
     def fromDouble(x: FP, y: Double): FP        = new FP(x.dw(), x.bp()).fromDouble(y)
   }
 
-  implicit val floatAnalog: Arithmetic[Float] = new Arithmetic[Float] {
+  implicit val floatAnalog: Analog[Float] = new Analog[Float] {
     def apply(idx: Int)(x: Float): Bool            = x(idx)
     def apply(high: Int, low: Int)(x: Float): UInt = x.value(high, low)
     def add(x: Float, y: Float): Float             = x + y

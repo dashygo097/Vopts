@@ -24,7 +24,7 @@ class FPComplex(dw: Int, bp: Int) extends Bundle with FPComplexOps {
   def newInstance(): FPComplex = new FPComplex(dw, bp)
   
   def fromDouble(realVal: Double, imagVal: Double): FPComplex = {
-    val fpc = this.newInstance()
+    val fpc = Wire(this.newInstance())
     fpc.real := (realVal * scale()).toInt.S
     fpc.imag := (imagVal * scale()).toInt.S
     fpc
@@ -43,7 +43,7 @@ trait FPComplexOps {
   
   def +(that: FPComplex): FPComplex = {
     this.requireCompatible(that)
-    val fpc = this.newInstance().fromDouble(0.0, 0.0)
+    val fpc = Wire(this.newInstance())
     fpc.real := this.real + that.real
     fpc.imag := this.imag + that.imag
     fpc
@@ -54,7 +54,7 @@ trait FPComplexOps {
   
   def -(that: FPComplex): FPComplex = {
     this.requireCompatible(that)
-    val fpc = this.newInstance().fromDouble(0.0, 0.0)
+    val fpc = Wire(this.newInstance())
     fpc.real := this.real - that.real
     fpc.imag := this.imag - that.imag
     fpc
@@ -68,7 +68,7 @@ trait FPComplexOps {
   // real = k1 - k3, imag = k1 + k2
   def *(that: FPComplex): FPComplex = {
     this.requireCompatible(that)
-    val fpc = this.newInstance().fromDouble(0.0, 0.0)
+    val fpc = Wire(this.newInstance())
     val k1 = that.real * (this.real + this.imag)
     val k2 = this.real * (that.imag - that.real)
     val k3 = this.imag * (that.real + that.imag)
@@ -97,21 +97,21 @@ trait FPComplexOps {
     this =/= FPComplex(dw(), bp(), real, imag)
   
   def conjugate(): FPComplex = {
-    val fpc = this.newInstance().fromDouble(0.0, 0.0)
+    val fpc = Wire(this.newInstance())
     fpc.real := this.real
     fpc.imag := -this.imag
     fpc
   }
   
   def shiftleft(that: UInt): FPComplex = {
-    val fpc = this.newInstance().fromDouble(0.0, 0.0)
+    val fpc = Wire(this.newInstance())
     fpc.real := this.real << that
     fpc.imag := this.imag << that
     fpc
   }
   
   def shiftright(that: UInt): FPComplex = {
-    val fpc = this.newInstance().fromDouble(0.0, 0.0)
+    val fpc = Wire(this.newInstance())
     fpc.real := this.real >> that
     fpc.imag := this.imag >> that
     fpc

@@ -38,13 +38,13 @@ class FP(dw: Int, bp: Int) extends Bundle with FPOps {
   def newInstance(): FP = new FP(dw, bp)
 
   def fromInt(value: Int): FP = {
-    val fp = this.newInstance()
+    val fp = Wire(this.newInstance())
     fp.value := (value * scale()).toInt.S
     fp
   }
 
   def fromDouble(value: Double): FP = {
-    val fp = this.newInstance()
+    val fp = Wire(this.newInstance())
     fp.value := (value * scale()).toInt.S
     fp
   }
@@ -62,7 +62,7 @@ trait FPOps {
   self: FP =>
   def +(that: FP): FP     = {
     this.requireCompatible(that)
-    val fl = this.newInstance().fromInt(0)
+    val fl = Wire(this.newInstance())
     fl.value := this.value + that.value
     fl
   }
@@ -71,7 +71,7 @@ trait FPOps {
 
   def -(that: FP): FP     = {
     this.requireCompatible(that)
-    val fl = this.newInstance().fromInt(0)
+    val fl = Wire(this.newInstance())
     fl.value := this.value - that.value
     fl
   }
@@ -80,7 +80,7 @@ trait FPOps {
 
   def *(that: FP): FP     = {
     this.requireCompatible(that)
-    val fl = this.newInstance().fromInt(0)
+    val fl = Wire(this.newInstance())
     fl.value := (this.value * that.value) >> bp()
     fl
   }
@@ -89,7 +89,7 @@ trait FPOps {
 
   def /(that: FP): FP     = {
     this.requireCompatible(that)
-    val fl = this.newInstance().fromInt(0)
+    val fl = Wire(this.newInstance())
     fl.value := (this.value << bp()) / that.value
     fl
   }
@@ -97,13 +97,13 @@ trait FPOps {
   def /(that: Double): FP = this / FP(dw(), bp(), that)
 
   def shiftleft(that: UInt): FP = {
-    val fl = this.newInstance().fromInt(0)
+    val fl = Wire(this.newInstance())
     fl.value := this.value << that
     fl
   }
 
   def shiftright(that: UInt): FP = {
-    val fl = this.newInstance().fromInt(0)
+    val fl = Wire(this.newInstance())
     fl.value := this.value >> that
     fl
   }
