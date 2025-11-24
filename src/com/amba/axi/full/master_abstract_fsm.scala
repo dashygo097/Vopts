@@ -8,7 +8,7 @@ abstract class AXIFullMasterBaseFSM(
   val addrWidth: Int,
   val dataWidth: Int,
   val idWidth: Int,
-  val userWidth: Int = 0
+  val userWidth: Int
 ) extends Module {
   protected def getExtAXIName: String = "M_AXI"
 
