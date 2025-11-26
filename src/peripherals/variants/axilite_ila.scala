@@ -96,19 +96,3 @@ class AXILiteSlaveILA(
     axi_rresp := Mux(fifo.io.empty && read_from_fifo, 2.U, 0.U) // SLVERR if FIFO empty
   }
 }
-
-// Test object
-object TestAXILiteSlaveILA extends App {
-  VerilogEmitter.parse(
-    new AXILiteSlaveILA(
-      addrWidth = 32,
-      dataWidth = 32,
-      baseAddr = 0x80000000L,
-      fifoDepth = 256,
-      probeWidth = 8,
-      numProbes = 4
-    ),
-    "axilite_ila.sv",
-    info = true
-  )
-}
