@@ -1,5 +1,6 @@
 package perip
 
+import mem.fifo._
 import com.amba._
 import utils._
 import chisel3._
