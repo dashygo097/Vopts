@@ -1,4 +1,4 @@
-package dds.trig
+package dsp.dds
 
 import scala.math._
 import utils._
@@ -32,5 +32,6 @@ class LiteTrigDDS[T <: Data](gen: T, freq: Long, phaseWidth: Int, lutWidth: Int,
   phase := phase + io.phaseDelta + poff
 
   lutAddr := phase(phaseWidth - 1, phaseWidth - log2Ceil(lutWidth))
+  // FIXME: Multiplier IP Should be used for better timing
   io.out  := sine_rom(lutAddr) * io.mag
 }

@@ -1,7 +1,6 @@
-package mod.fm
+package dsp.mod 
 
-import dds.trig._
-
+import dsp.dds._
 import scala.math._
 import utils._
 import chisel3._

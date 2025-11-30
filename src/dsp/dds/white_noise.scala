@@ -1,4 +1,4 @@
-package dds.noise
+package dsp.dds 
 
 import utils._
 import chisel3._
