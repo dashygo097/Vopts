@@ -1,4 +1,4 @@
-package dds.trig
+package dsp.dds
 
 import scala.math._
 import utils._

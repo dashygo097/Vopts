@@ -1,4 +1,4 @@
-package dds.pwm
+package dsp.dds
 
 import chisel3._
 import chisel3.util._

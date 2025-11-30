@@ -31,16 +31,6 @@ lazy val utils = (project in file("src/utils"))
     ),
   )
 
-lazy val dds = (project in file("src/dds"))
-  .dependsOn(utils)
-  .settings(
-    name := "dds",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin(
-      "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
-    ),
-  )
-
 lazy val math = (project in file("src/math"))
   .dependsOn(utils)
   .settings(
@@ -101,18 +91,8 @@ lazy val net = (project in file("src/network"))
     ),
   )
 
-lazy val mod = (project in file("src/modulation"))
-  .dependsOn(utils, dds, dsp, math)
-  .settings(
-    name := "mod",
-    Compile / unmanagedSourceDirectories += baseDirectory.value,
-    addCompilerPlugin(
-      "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
-    ),
-  )
-
 lazy val app = (project in file("app"))
-  .dependsOn(utils, perip, dds, dsp, mem, com, mod, net, math)
+  .dependsOn(utils, perip, dsp, mem, com, net, math)
   .settings(
     name := "app",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
@@ -122,4 +102,4 @@ lazy val app = (project in file("app"))
   )
 
 lazy val root = (project in file("."))
-  .aggregate(utils, dds, math, com, dsp, mem, perip, net, mod)
+  .aggregate(utils, math, com, dsp, mem, perip, net)
