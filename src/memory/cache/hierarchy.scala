@@ -9,9 +9,9 @@ object MemoryOp extends ChiselEnum {
 }
 
 object MemoryResp extends ChiselEnum {
-  val OKAY    = Value(0.U(2.W))
-  val SLVERR  = Value(2.U(2.W))
-  val DECERR  = Value(3.U(2.W))
+  val OKAY   = Value(0.U(2.W))
+  val SLVERR = Value(2.U(2.W))
+  val DECERR = Value(3.U(2.W))
 }
 
 class MemoryHierarchyReq(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int) extends Bundle {
@@ -30,7 +30,7 @@ class UnifiedMemoryIO(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int, word
 }
 
 object MemoryHierarchyReq {
-  def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int) = new MemoryHierarchyReq(addrWidth, dataWidth,  wordsPerRequest)
+  def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int) = new MemoryHierarchyReq(addrWidth, dataWidth, wordsPerRequest)
 }
 
 object MemoryHierarchyResp {
@@ -38,6 +38,6 @@ object MemoryHierarchyResp {
 }
 
 object UnifiedMemoryIO {
-  def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int, wordsPerRespond: Int) = 
+  def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int, wordsPerRespond: Int) =
     new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerRequest, wordsPerRespond)
 }

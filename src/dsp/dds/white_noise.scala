@@ -1,4 +1,4 @@
-package dsp.dds 
+package dsp.dds
 
 import utils._
 import chisel3._

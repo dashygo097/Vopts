@@ -9,17 +9,15 @@ class CacheEntry(tagWidth: Int) extends Bundle {
 }
 
 class CacheIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends Bundle {
-  val upper      = Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, 1))
-  val lower      = new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine)
-  val flush      = Input(Bool())
-  val invalidate = Input(Bool())
-  val miss       = Output(Bool())
+  val upper = Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, wordsPerLine))
+  val lower = new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine)
+  val miss  = Output(Bool())
 }
 
 class CacheExternalIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends Bundle {
   // Upper (CPU) side request
   val UADDR  = Input(UInt(addrWidth.W))
-  val UDATA  = Input(UInt((dataWidth * wordsPerLine).W))
+  val UDATA  = Input(UInt(dataWidth.W))
   val UOP    = Input(MemoryOp())
   val UVALID = Input(Bool())
   val UREADY = Output(Bool())
@@ -42,9 +40,7 @@ class CacheExternalIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends
   val LRREADY = Output(Bool())
 
   // CSRs
-  val FLUSH      = Input(Bool())
-  val INVALIDATE = Input(Bool())
-  val MISS       = Output(Bool())
+  val MISS = Output(Bool())
 
   def connect(intf: CacheIO): Unit = {
     // Upper side request
@@ -72,8 +68,6 @@ class CacheExternalIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends
     this.LRREADY              := intf.lower.resp.ready
 
     // Control signals
-    intf.flush      := this.FLUSH
-    intf.invalidate := this.INVALIDATE
-    this.MISS       := intf.miss
+    this.MISS := intf.miss
   }
 }

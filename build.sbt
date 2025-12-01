@@ -5,7 +5,7 @@ ThisBuild / publishTo    := Some(
   Resolver.file("local-ivy", file(Path.userHome + "/.ivy2/local"))
 )
 
-val chiselVersion = "7.0.0"
+val chiselVersion    = "7.0.0"
 val hardfloatVersion = "1.5-SNAPSHOT"
 
 ThisBuild / scalacOptions ++= Seq(
@@ -22,8 +22,8 @@ lazy val utils = (project in file("src/utils"))
   .settings(
     name := "utils",
     libraryDependencies ++= Seq(
-      "org.chipsalliance" %% "chisel" % chiselVersion,
-      "edu.berkeley.cs" %% "hardfloat" % hardfloatVersion,
+      "org.chipsalliance" %% "chisel"    % chiselVersion,
+      "edu.berkeley.cs"   %% "hardfloat" % hardfloatVersion,
     ),
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin(
