@@ -11,7 +11,7 @@ class AXIStreamDMA(
   destWidth: Int,
   userWidth: Int
 ) extends AXIStreamChannel(dataWidth, idWidth, destWidth, userWidth) {
-  override def desiredName: String = s"axis_dma_${dataWidth}_i${idWidth}_d${destWidth}_u${userWidth}"
+  override def desiredName: String = s"axis_dma_${dataWidth}_i${idWidth}_d${destWidth}_u$userWidth"
 
   val busy      = IO(Output(Bool())).suggestName("BUSY")
   val error     = IO(Output(Bool())).suggestName("ERROR")
@@ -19,11 +19,11 @@ class AXIStreamDMA(
   val bytes     = IO(Output(UInt(dataWidth.W))).suggestName("BYTES")
   val interrupt = IO(Output(Bool())).suggestName("INTERRUPT")
 
-  val enable    = IO(Input(Bool())).suggestName("ENABLE")
-  val ready     = IO(Input(Bool())).suggestName("READY")
-  val int_en    = IO(Input(Bool())).suggestName("INT_EN")
-  val length    = IO(Input(UInt(32.W))).suggestName("LENGTH")
-  val priority  = IO(Input(UInt(3.W))).suggestName("PRIORITY")
+  val enable   = IO(Input(Bool())).suggestName("ENABLE")
+  val ready    = IO(Input(Bool())).suggestName("READY")
+  val int_en   = IO(Input(Bool())).suggestName("INT_EN")
+  val length   = IO(Input(UInt(32.W))).suggestName("LENGTH")
+  val priority = IO(Input(UInt(3.W))).suggestName("PRIORITY")
 
   // DMA Stream Channel
   val dma = Module(new DMAStreamChannel(32, dataWidth, idWidth, destWidth, userWidth))
@@ -59,17 +59,17 @@ class AXILiteAXIStreamDMA(
   baseAddr: BigInt
 ) extends AXILiteSlaveWithCSR(addrWidth, dataWidth, new DMACSR(baseAddr)) {
   override protected def getExtAXIName: String = "S_AXI_CTRL"
-  override def desiredName: String =
-    s"axilite_axis_dma_${addrWidth}x${dataWidth}_i${idWidth}_d${destWidth}_u${userWidth}"
+  override def desiredName: String             =
+    s"axilite_axis_dma_${addrWidth}x${dataWidth}_i${idWidth}_d${destWidth}_u$userWidth"
 
   // AXI-Stream Interface
   val ext_axis_master = IO(new AXIStreamMasterExternalIO(dataWidth, idWidth, destWidth, userWidth))
     .suggestName("M_AXIS")
-  val axis_master = Wire(new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth))
+  val axis_master     = Wire(new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth))
 
   val ext_axis_slave = IO(new AXIStreamSlaveExternalIO(dataWidth, idWidth, destWidth, userWidth))
     .suggestName("S_AXIS")
-  val axis_slave = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
+  val axis_slave     = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
   // External interrupt
   val interrupt = IO(Output(Bool())).suggestName("INTERRUPT")
@@ -117,7 +117,7 @@ class AXILiteAXIStreamDMA(
   dma.io.descriptor.enable    := reg_enable
   dma.io.descriptor.interrupt := reg_int_enable
 
-  dma.io.ready                := ready_pulse || soft_reset_pulse
+  dma.io.ready := ready_pulse || soft_reset_pulse
 
   // Local soft reset behavior
   when(soft_reset_pulse) {
@@ -138,7 +138,7 @@ class AXILiteAXIStreamDMA(
   // W
   when(axi_last_write) {
     when(writeAccess("DMA_CTRL")) {
-      ready_pulse := axi.w.bits.data(0)
+      ready_pulse      := axi.w.bits.data(0)
       when(axi.w.bits.data(0)) {
         done_sticky := false.B
       }

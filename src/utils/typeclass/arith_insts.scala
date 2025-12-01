@@ -50,7 +50,7 @@ object ArithmeticInstances {
     }
   }
 
-  implicit val fpArithmetic: Arithmetic[FP]     = new Arithmetic[FP] {
+  implicit val fpArithmetic: Arithmetic[FP] = new Arithmetic[FP] {
     def apply(idx: Int)(x: FP): Bool            = x(idx)
     def apply(high: Int, low: Int)(x: FP): UInt = x.value(high, low)
     def add(x: FP, y: FP): FP                   = x + y

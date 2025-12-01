@@ -25,9 +25,9 @@ object PartialOrderedInstances {
   }
 
   implicit val floatPartialOrdered: PartialOrdered[Float] = new PartialOrdered[Float] {
-    def lt(x: Float, y: Float): Bool = x < y
-    def le(x: Float, y: Float): Bool = x <= y
-    def min(x: Float, y: Float): Float  = Mux(x < y, x, y)
-    def max(x: Float, y: Float): Float  = Mux(x > y, x, y)
+    def lt(x: Float, y: Float): Bool   = x < y
+    def le(x: Float, y: Float): Bool   = x <= y
+    def min(x: Float, y: Float): Float = Mux(x < y, x, y)
+    def max(x: Float, y: Float): Float = Mux(x > y, x, y)
   }
 }

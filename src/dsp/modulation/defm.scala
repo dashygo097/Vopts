@@ -1,4 +1,4 @@
-package dsp.mod 
+package dsp.mod
 
 import dsp.filter._
 import math._

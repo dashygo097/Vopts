@@ -1,4 +1,4 @@
-package dsp.mod 
+package dsp.mod
 
 import dsp.dds._
 import utils._
