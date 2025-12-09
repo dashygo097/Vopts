@@ -29,7 +29,7 @@ class DirectMappedCache(
   // FSM state
   val state = RegInit(CacheFSMState.IDLE)
 
-  // Registers for holding request information
+  // Registers
   val reqAddr       = RegInit(0.U(addrWidth.W))
   val reqData       = RegInit(0.U(dataWidth.W))
   val reqOp         = RegInit(MemoryOp.READ)
@@ -37,14 +37,16 @@ class DirectMappedCache(
   val reqIndex      = RegInit(0.U(indexWidth.W))
   val reqTag        = RegInit(0.U(tagWidth.W))
 
-  // Current line data - valid one cycle after read
+  // Current line data
   val currentLineData = Reg(UInt(lineWidth.W))
 
-  // Write forwarding - track last write to avoid SyncReadMem read-after-write hazard
+  // Write forwarding
   val lastWriteValid = RegInit(false.B)
   val lastWriteIndex = Reg(UInt(indexWidth.W))
   val lastWriteTag   = Reg(UInt(tagWidth.W))
   val lastWriteData  = Reg(UInt(lineWidth.W))
+
+  val memReqSent = RegInit(false.B)
 
   // Address parsing helper function
   def parseAddr(addr: UInt) = new {
@@ -89,11 +91,16 @@ class DirectMappedCache(
   // Track if we need to wait for SyncReadMem data
   val waitingForRead = RegInit(false.B)
 
+  // Track if we used forwarded data (no memory read needed)
+  val usedForwardedData = RegInit(false.B)
+
   // FSM
   switch(state) {
     is(CacheFSMState.IDLE) {
       io.upper.req.ready := true.B
       waitingForRead     := false.B
+      usedForwardedData  := false.B
+      memReqSent         := false.B
 
       when(io.upper.req.valid && io.upper.req.ready) {
         val parsed = parseAddr(io.upper.req.bits.addr)
@@ -104,19 +111,20 @@ class DirectMappedCache(
         reqIndex      := parsed.index
         reqTag        := parsed.tag
 
-        // Check for write forwarding - MUST match both index AND tag
         val useForwardedData = lastWriteValid &&
           (lastWriteIndex === parsed.index) &&
           (lastWriteTag === parsed.tag)
 
         when(useForwardedData) {
           // Use forwarded data instead of reading from memory
-          currentLineData := lastWriteData
-          waitingForRead  := false.B
+          currentLineData   := lastWriteData
+          usedForwardedData := true.B
+          waitingForRead    := false.B
         }.otherwise {
           // Issue synchronous read - data will be ready NEXT cycle
-          currentLineData := dataArray.read(parsed.index)
-          waitingForRead  := true.B
+          currentLineData   := dataArray.read(parsed.index)
+          waitingForRead    := true.B
+          usedForwardedData := false.B
         }
 
         state := CacheFSMState.COMPARE_TAG
@@ -156,7 +164,7 @@ class DirectMappedCache(
             }
           }
         }.otherwise {
-          // Cache miss - clear write forwarding for this line if it's being evicted
+          // Cache miss
           when(lastWriteValid && (lastWriteIndex === reqIndex)) {
             lastWriteValid := false.B
           }
@@ -190,14 +198,21 @@ class DirectMappedCache(
     is(CacheFSMState.ALLOCATE) {
       val currParsed = parseAddr(reqAddr)
 
-      // Read new line from memory
-      io.lower.req.valid     := true.B
-      io.lower.req.bits.op   := MemoryOp.READ
-      io.lower.req.bits.addr := currParsed.lineAddr
-      io.lower.req.bits.data := 0.U
-      io.lower.resp.ready    := true.B
+      when(!memReqSent) {
+        io.lower.req.valid     := true.B
+        io.lower.req.bits.op   := MemoryOp.READ
+        io.lower.req.bits.addr := currParsed.lineAddr
+        io.lower.req.bits.data := 0.U
 
-      when(io.lower.resp.valid) {
+        when(io.lower.req.ready) {
+          memReqSent := true.B
+        }
+      }
+
+      // Always assert ready to accept response
+      io.lower.resp.ready := true.B
+
+      when(memReqSent && io.lower.resp.valid && io.lower.resp.ready) {
         val newLineData = Wire(UInt(lineWidth.W))
 
         when(reqOp === MemoryOp.WRITE) {
@@ -214,6 +229,8 @@ class DirectMappedCache(
         metaArray(reqIndex).valid := true.B
         metaArray(reqIndex).tag   := reqTag
 
+        currentLineData := newLineData
+
         // Update write forwarding
         lastWriteValid := true.B
         lastWriteIndex := reqIndex
@@ -229,7 +246,8 @@ class DirectMappedCache(
         }
 
         when(io.upper.resp.ready) {
-          state := CacheFSMState.IDLE
+          state      := CacheFSMState.IDLE
+          memReqSent := false.B
         }
       }
     }
