@@ -74,6 +74,14 @@ Run sta using **Yosys** or **Vivado** through **sta-yosys.sh(sta-vivado.sh)** wi
 > make sta # (FZF=true STA_TOOL=yosys(vivado))
 > ```
 
+## Install This Package Locally
+
+```bash
+make localpublish
+```
+
+or just use sbt to install is also ok.
+
 ## References
 
 #### Some code references:
