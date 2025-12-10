@@ -68,7 +68,7 @@ Similarly, make sure that the py scripts are located in **sims/cocotb** and make
 
 ## Run STA
 
-Run sta using **Yosys** or **Vivado** through **./sta-yosys.sh** with Xilinx toolchain.
+Run sta using **Yosys** or **Vivado** through **sta-yosys.sh(sta-vivado.sh)** with Xilinx toolchain.
 
 > ```bash
 > make sta # (FZF=true STA_TOOL=yosys(vivado))
