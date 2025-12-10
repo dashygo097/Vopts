@@ -27,7 +27,8 @@
 
 #### Synthesis and STA:
 
-- Use the updated yosys(Yosys 0.58+162)
+- Use Vivado (precise)
+- Pls use the **updated** yosys or there might be problems.(rough)
 
 ## How to use
 
