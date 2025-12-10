@@ -6,15 +6,15 @@
 
 ## Prerequisite
 
-#### For code generation:
+#### Code Generation:
 
 - sbt version in this project: 1.10.11 (see **project/build.properties**)
 - see chisel/scala version in **build.sbt**
 - For FIR/IIR, scipy is used.
 
-#### For autotest:
+#### Autotest:
 
-##### For regular autotest impled in verilog:
+##### regular autotest impled in verilog:
 
 - gtkwave / surfer (waveform visualization)
 - verilator (generating executable files for testbench)
@@ -25,7 +25,7 @@
 - icarus & cocotb (only tested under cocotb 1.9.2)
 - fzf (optional)
 
-#### For Synthesis and STA:
+#### Synthesis and STA:
 
 - Use the updated yosys(Yosys 0.58+162)
 
@@ -67,10 +67,10 @@ Similarly, make sure that the py scripts are located in **sims/cocotb** and make
 
 ## Run STA
 
-Run sta using **Yosys** or **Vivaod** through **./sta-yosys.sh** with Xilinx toolchain.
+Run sta using **Yosys** or **Vivado** through **./sta-yosys.sh** with Xilinx toolchain.
 
 > ```bash
-> make sta # (FZF=true STA_TOOL=tosys(vivado))
+> make sta # (FZF=true STA_TOOL=yosys(vivado))
 > ```
 
 ## References
