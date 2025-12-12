@@ -23,7 +23,7 @@ class FullyAssociativeCache(
   val tagWidth        = addrWidth - wordOffsetWidth - byteOffsetWidth
   val lineWidth       = dataWidth * wordsPerLine
 
-  // Cache storage - fully associative means ALL lines can hold ANY address
+  // Cache storage
   val dataArray = SyncReadMem(numLines, UInt(lineWidth.W))
   val metaArray = RegInit(VecInit(Seq.fill(numLines)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
 
@@ -71,17 +71,18 @@ class FullyAssociativeCache(
 
   // Update word in cache line (BIG ENDIAN)
   def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
-    val words = Wire(Vec(wordsPerLine, UInt(dataWidth.W)))
+    val wordsPerLineWidth = log2Ceil(wordsPerLine)
+    val words             = Wire(Vec(wordsPerLine, UInt(dataWidth.W)))
     for (i <- 0 until wordsPerLine)
       words(i) := lineData((i + 1) * dataWidth - 1, i * dataWidth)
-    words(wordsPerLine.U - 1.U - wordOffset) := newWord
+    words((wordsPerLine.U - 1.U - wordOffset)(wordsPerLineWidth - 1, 0)) := newWord
     words.asUInt
   }
 
-  // Fully associative tag comparison - check ALL lines
+  // Fully associative tag comparison
   val tagMatches = VecInit(metaArray.map(meta => meta.valid && (meta.tag === reqTag)))
-  val hit        = tagMatches.asUInt.orR       // Hit if ANY line matches
-  val hitIndex   = PriorityEncoder(tagMatches) // Index of first matching line
+  val hit        = tagMatches.asUInt.orR
+  val hitIndex   = PriorityEncoder(tagMatches)
 
   // Find if there's an invalid (empty) line
   val invalidLines = VecInit(metaArray.map(!_.valid))
@@ -119,7 +120,7 @@ class FullyAssociativeCache(
         reqWordOffset := parsed.wordOffset
         reqTag        := parsed.tag
 
-        // Check all lines for tag match using COMBINATIONAL comparison
+        // Check all lines for tag match
         val tagMatchesNow = VecInit(metaArray.map(meta => meta.valid && (meta.tag === parsed.tag)))
         val hitNow        = tagMatchesNow.asUInt.orR
         val hitIndexNow   = PriorityEncoder(tagMatchesNow)
@@ -185,11 +186,11 @@ class FullyAssociativeCache(
 
           // Determine victim line
           when(hasInvalid) {
-            // Use an invalid line (no eviction needed)
+            // Use an invalid line
             victimIndex := invalidIndex
             state       := CacheFSMState.ALLOCATE
           }.otherwise {
-            // Need to evict - use replacement policy
+            // Need to evict
             victimIndex := replacementState.getVictim()
 
             // Clear forwarding if evicting that line
