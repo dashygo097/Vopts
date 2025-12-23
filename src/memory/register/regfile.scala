@@ -4,7 +4,7 @@ import utils._
 import chisel3._
 import chisel3.util._
 
-class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq()) extends Module {
+class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = Seq(), isBypass: Boolean = false) extends Module {
   override def desiredName: String = s"dual_port_regfile_b${dataWidth}_r$numRegs"
 
   val rs1_addr   = IO(Input(UInt(log2Ceil(numRegs).W))).suggestName("RS1_ADDR")
@@ -42,8 +42,19 @@ class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = S
   val rs1_raw = regs(rs1_addr)
   val rs2_raw = regs(rs2_addr)
 
-  rs1_data := Mux(readableVec(rs1_addr), rs1_raw, 0.U)
-  rs2_data := Mux(readableVec(rs2_addr), rs2_raw, 0.U)
+  if (isBypass) {
+    val rs1_is_write_target = (rs1_addr === write_addr) && write_en && writableVec(write_addr)
+    val rs2_is_write_target = (rs2_addr === write_addr) && write_en && writableVec(write_addr)
+
+    val rs1_bypass = Mux(rs1_is_write_target, write_data, rs1_raw)
+    val rs2_bypass = Mux(rs2_is_write_target, write_data, rs2_raw)
+
+    rs1_data := Mux(readableVec(rs1_addr), rs1_bypass, 0.U)
+    rs2_data := Mux(readableVec(rs2_addr), rs2_bypass, 0.U)
+  } else {
+    rs1_data := Mux(readableVec(rs1_addr), rs1_raw, 0.U)
+    rs2_data := Mux(readableVec(rs2_addr), rs2_raw, 0.U)
+  }
 }
 
 object TestDualPortRegFile extends App {
