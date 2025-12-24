@@ -6,7 +6,7 @@ import chisel3.util._
 abstract class AXIFullSlave(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int, memSize: Int) extends Module {
   protected def getExtAXIName: String = "M_AXI"
   // AXI Interface
-  val ext_axi                         = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
+  val axi_ext                         = IO(new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val axi                             = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
   // Parameters
@@ -155,5 +155,5 @@ abstract class AXIFullSlave(addrWidth: Int, dataWidth: Int, idWidth: Int, userWi
     axi_rlast  := false.B
   }
 
-  ext_axi.connect(axi)
+  axi_ext.connect(axi)
 }

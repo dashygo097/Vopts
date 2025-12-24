@@ -32,9 +32,9 @@ class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWid
   override def desiredName: String = s"axilite_axis_fifo_${dataWidth}x$depth"
 
   // AXI-Stream Interface
-  val ext_axis_master = IO(new AXIStreamMasterExternalIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("M_AXIS")
+  val axis_master_ext = IO(new AXIStreamMasterExtIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("M_AXIS")
   val axis_master     = Wire(new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth))
-  val ext_axis_slave  = IO(new AXIStreamSlaveExternalIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("S_AXIS")
+  val axis_slave_ext  = IO(new AXIStreamSlaveExtIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("S_AXIS")
   val axis_slave      = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
   // Module
@@ -99,6 +99,6 @@ class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWid
     axi_rresp := Mux(fifo.io.empty && read_from_fifo, 2.U, 0.U) // SLVERR if empty
   }
 
-  ext_axis_master.connect(axis_master)
-  ext_axis_slave.connect(axis_slave)
+  axis_master_ext.connect(axis_master)
+  axis_slave_ext.connect(axis_slave)
 }

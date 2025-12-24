@@ -8,10 +8,10 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
     s"axifull2lite_no_burst_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
 
-  val ext_slave = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
+  val slave_ext = IO(new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val slave     = Wire(AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
-  val ext_master = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)).suggestName("M_AXI")
+  val master_ext = IO(new AXILiteMasterExtIO(addrWidth, dataWidth)).suggestName("M_AXI")
   val master     = Wire(AXILiteMasterIO(addrWidth, dataWidth))
 
   // Unsupported feature detection registers
@@ -74,11 +74,8 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
   slave.r.valid     := master.r.valid || (slave.ar.valid && unsupportedRead)
   master.r.ready    := slave.r.ready && !unsupportedRead
 
-  ext_slave.connect(slave)
-  ext_master.connect(master)
-
-  def connect(intf: AXIFullMasterExternalIO): Unit = intf <> ext_slave
-  def connect(intf: AXILiteSlaveExternalIO): Unit  = intf <> ext_master
+  slave_ext.connect(slave)
+  master_ext.connect(master)
 }
 
 object AXIFull2LiteBridgeNoBurst {

@@ -22,7 +22,7 @@ object AXILiteSlaveIO {
     new AXILiteSlaveIO(addrWidth, dataWidth)
 }
 
-class AXILiteSlaveExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+class AXILiteSlaveExtIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val AWADDR  = Input(UInt(addrWidth.W))
   val AWPROT  = Input(UInt(3.W))
   val AWVALID = Input(Bool())

@@ -19,11 +19,11 @@ class AXIFullInterconnect(
   for (i <- 0 until addressMap.length)
     require(addressMap(i)._1 < addressMap(i)._2, s"Invalid address range for slave $i")
 
-  val ext_slave = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
+  val slave_ext = IO(new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val slave     = Wire(AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
-  val ext_masters =
-    IO(Vec(addressMap.length, new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))).suggestName("M_AXI")
+  val masters_ext =
+    IO(Vec(addressMap.length, new AXIFullMasterExtIO(addrWidth, dataWidth, idWidth, userWidth))).suggestName("M_AXI")
   val masters     =
     Seq.fill(addressMap.length)(Wire(AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth)))
 
@@ -101,15 +101,9 @@ class AXIFullInterconnect(
     }
   )
 
-  ext_slave.connect(slave)
+  slave_ext.connect(slave)
   for (i <- 0 until addressMap.length)
-    ext_masters(i).connect(masters(i))
-
-  def connect(intf: AXIFullMasterExternalIO): Unit          = intf <> ext_slave
-  def connect(intf: AXIFullSlaveExternalIO, idx: Int): Unit = {
-    require(idx >= 0 && idx < masters.length, "Invalid master index")
-    intf <> ext_masters(idx)
-  }
+    masters_ext(i).connect(masters(i))
 }
 
 object AXIFullInterconnect {

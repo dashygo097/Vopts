@@ -46,11 +46,11 @@ class AXILiteSlaveDMA(
     s"axilite_slave_dma_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
 
   // AXI Full Master (to memory)
-  val ext_axi_mem = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))
+  val axi_mem_ext = IO(new AXIFullMasterExtIO(addrWidth, dataWidth, idWidth, userWidth))
     .suggestName("M_AXI_MEM")
   val axi_mem     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
-  // External interrupt
+  // Ext interrupt
   val interrupt = IO(Output(Bool())).suggestName("INTERRUPT")
 
   // Submodule: DMA Channel
@@ -295,10 +295,7 @@ class AXILiteSlaveDMA(
     rd_inflight := false.B
   }
 
-  ext_axi_mem.connect(axi_mem)
-
-  def connect(intf: AXIFullSlaveExternalIO): Unit =
-    intf <> ext_axi_mem
+  axi_mem_ext.connect(axi_mem)
 }
 
 object TestAXILiteSlaveDMA extends App {

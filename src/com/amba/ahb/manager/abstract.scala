@@ -5,7 +5,7 @@ import chisel3._
 abstract class AHBManager(addrWidth: Int, dataWidth: Int) extends Module {
   protected def getExtAHBName: String = "M_AHB"
 
-  val ext_ahb = IO(new AHBManagerExternalIO(addrWidth, dataWidth)).suggestName(getExtAHBName)
+  val ahb_ext = IO(new AHBManagerExtIO(addrWidth, dataWidth)).suggestName(getExtAHBName)
   val ahb     = Wire(new AHBManagerIO(addrWidth, dataWidth))
 
   // State Encoding

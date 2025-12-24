@@ -19,7 +19,7 @@ object AHBSubordinateIO {
     new AHBSubordinateIO(addrWidth, dataWidth)
 }
 
-class AHBSubordinateExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+class AHBSubordinateExtIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val aWidth = addrWidth
   val dWidth = dataWidth
 

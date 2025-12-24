@@ -9,7 +9,7 @@ abstract class AXILiteMaster(
 ) extends Module {
   protected def getExtAXIName: String = "M_AXI"
 
-  val ext_axi = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth))
+  val axi_ext = IO(new AXILiteMasterExtIO(addrWidth, dataWidth))
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXILiteMasterIO(addrWidth, dataWidth))
 
@@ -121,5 +121,5 @@ abstract class AXILiteMaster(
     handleAdditionalStates()
   }
 
-  ext_axi.connect(axi)
+  axi_ext.connect(axi)
 }

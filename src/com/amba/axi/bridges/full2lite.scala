@@ -7,19 +7,16 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
   override def desiredName: String =
     s"axi_full2lite_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
 
-  val ext_slave = IO(new AXIFullSlaveExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
+  val slave_ext = IO(new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val slave     = Wire(AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
-  val ext_master = IO(new AXILiteMasterExternalIO(addrWidth, dataWidth)).suggestName("M_AXI")
+  val master_ext = IO(new AXILiteMasterExtIO(addrWidth, dataWidth)).suggestName("M_AXI")
   val master     = Wire(AXILiteMasterIO(addrWidth, dataWidth))
 
   // To be implemented: AXI Full to AXI Lite bridge logic
 
-  ext_slave.connect(slave)
-  ext_master.connect(master)
-
-  def connect(intf: AXIFullMasterExternalIO): Unit = intf <> ext_slave
-  def connect(intf: AXILiteSlaveExternalIO): Unit  = intf <> ext_master
+  slave_ext.connect(slave)
+  master_ext.connect(master)
 }
 
 object AXIFull2LiteBridge {

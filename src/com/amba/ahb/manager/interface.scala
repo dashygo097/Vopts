@@ -18,7 +18,7 @@ object AHBManagerIO {
     new AHBManagerIO(addrWidth, dataWidth)
 }
 
-class AHBManagerExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+class AHBManagerExtIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val aWidth = addrWidth
   val dWidth = dataWidth
 
