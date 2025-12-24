@@ -14,7 +14,7 @@ class AXIStreamMasterIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth:
   override def clone = new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth).asInstanceOf[this.type]
 }
 
-class AXIStreamMasterExternalIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) extends Bundle {
+class AXIStreamMasterExtIO(dataWidth: Int, idWidth: Int, destWidth: Int, userWidth: Int) extends Bundle {
   val dWidth  = dataWidth
   val iWidth  = idWidth
   val deWidth = destWidth

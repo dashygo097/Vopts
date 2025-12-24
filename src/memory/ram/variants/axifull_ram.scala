@@ -45,8 +45,6 @@ class AXIFullSlaveRAM(
   when(axi_on_read) {
     axi_rresp := Mux(ar_addr_valid, 0.U, 2.U)
   }
-
-  ext_axi.connect(axi)
 }
 
 object TestAXIFullSlaveRAM extends App {

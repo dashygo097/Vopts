@@ -63,15 +63,15 @@ class AXILiteAXIStreamDMA(
     s"axilite_axis_dma_${addrWidth}x${dataWidth}_i${idWidth}_d${destWidth}_u$userWidth"
 
   // AXI-Stream Interface
-  val ext_axis_master = IO(new AXIStreamMasterExternalIO(dataWidth, idWidth, destWidth, userWidth))
+  val axis_master_ext = IO(new AXIStreamMasterExtIO(dataWidth, idWidth, destWidth, userWidth))
     .suggestName("M_AXIS")
   val axis_master     = Wire(new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth))
 
-  val ext_axis_slave = IO(new AXIStreamSlaveExternalIO(dataWidth, idWidth, destWidth, userWidth))
+  val axis_slave_ext = IO(new AXIStreamSlaveExtIO(dataWidth, idWidth, destWidth, userWidth))
     .suggestName("S_AXIS")
   val axis_slave     = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
-  // External interrupt
+  // Ext interrupt
   val interrupt = IO(Output(Bool())).suggestName("INTERRUPT")
 
   // Submodule: DMA Stream Channel
@@ -173,9 +173,9 @@ class AXILiteAXIStreamDMA(
     axi_rresp := Mux(dma.io.error, 2.U, 0.U) // SLVERR if error
   }
 
-  // External interface connections
-  ext_axis_master.connect(axis_master)
-  ext_axis_slave.connect(axis_slave)
+  // Ext interface connections
+  axis_master_ext.connect(axis_master)
+  axis_slave_ext.connect(axis_slave)
 }
 
 object TestAXILiteAXIStreamDMA extends App {

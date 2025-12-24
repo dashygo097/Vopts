@@ -7,11 +7,11 @@ abstract class AXIStreamChannel(dataWidth: Int, idWidth: Int, destWidth: Int, us
   protected def getExtMAXIName: String = "M_AXIS"
 
   // AXI-Stream Interface
-  val ext_axis_master = IO(new AXIStreamMasterExternalIO(dataWidth, idWidth, destWidth, userWidth)).suggestName(getExtMAXIName)
+  val axis_master_ext = IO(new AXIStreamMasterExtIO(dataWidth, idWidth, destWidth, userWidth)).suggestName(getExtMAXIName)
   val axis_master     = Wire(new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth))
-  val ext_axis_slave  = IO(new AXIStreamSlaveExternalIO(dataWidth, idWidth, destWidth, userWidth)).suggestName(getExtSAXIName)
+  val axis_slave_ext  = IO(new AXIStreamSlaveExtIO(dataWidth, idWidth, destWidth, userWidth)).suggestName(getExtSAXIName)
   val axis_slave      = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
-  ext_axis_master.connect(axis_master)
-  ext_axis_slave.connect(axis_slave)
+  axis_master_ext.connect(axis_master)
+  axis_slave_ext.connect(axis_slave)
 }

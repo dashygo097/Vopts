@@ -26,7 +26,7 @@ object AXIFullSlaveIO {
     new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth)
 }
 
-class AXIFullSlaveExternalIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
+class AXIFullSlaveExtIO(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Bundle {
   val AWADDR   = Input(UInt(addrWidth.W))
   val AWPROT   = Input(UInt(3.W))
   val AWVALID  = Input(Bool())

@@ -9,10 +9,10 @@ class AXILite2FullBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
     s"axilite2full_${addrWidth}x${dataWidth}_i${idWidth}_u$userWidth"
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
 
-  val ext_slave = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
+  val slave_ext = IO(new AXILiteSlaveExtIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val slave     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
-  val ext_master = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("M_AXI")
+  val master_ext = IO(new AXIFullMasterExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("M_AXI")
   val master     =
     Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
@@ -66,11 +66,8 @@ class AXILite2FullBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
   slave.r.valid     := master.r.valid
   master.r.ready    := slave.r.ready
 
-  ext_slave.connect(slave)
-  ext_master.connect(master)
-
-  def connect(intf: AXILiteMasterExternalIO): Unit = intf <> ext_slave
-  def connect(intf: AXIFullSlaveExternalIO): Unit  = intf <> ext_master
+  slave_ext.connect(slave)
+  master_ext.connect(master)
 }
 
 object AXILite2FullBridge {

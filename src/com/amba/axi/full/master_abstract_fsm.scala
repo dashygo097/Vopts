@@ -12,7 +12,7 @@ abstract class AXIFullMasterBaseFSM(
 ) extends Module {
   protected def getExtAXIName: String = "M_AXI"
 
-  val ext_axi = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))
+  val axi_ext = IO(new AXIFullMasterExtIO(addrWidth, dataWidth, idWidth, userWidth))
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
@@ -193,13 +193,13 @@ abstract class AXIFullMasterBaseFSM(
     handleAdditionalStates()
   }
 
-  ext_axi.connect(axi)
+  axi_ext.connect(axi)
 }
 
 abstract class AXIFullMasterOutOfOrder(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int) extends Module {
   protected def getExtAXIName: String = "M_AXI"
 
-  val ext_axi = IO(new AXIFullMasterExternalIO(addrWidth, dataWidth, idWidth, userWidth))
+  val axi_ext = IO(new AXIFullMasterExtIO(addrWidth, dataWidth, idWidth, userWidth))
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 

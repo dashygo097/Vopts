@@ -17,11 +17,11 @@ class AXILiteInterconnect(
   for (i <- 0 until addressMap.length)
     require(addressMap(i)._1 < addressMap(i)._2, s"Invalid address range for slave $i")
 
-  val ext_slave = IO(new AXILiteSlaveExternalIO(addrWidth, dataWidth)).suggestName("S_AXI")
+  val slave_ext = IO(new AXILiteSlaveExtIO(addrWidth, dataWidth)).suggestName("S_AXI")
   val slave     = Wire(AXILiteSlaveIO(addrWidth, dataWidth))
 
-  val ext_masters =
-    IO(Vec(addressMap.length, new AXILiteMasterExternalIO(addrWidth, dataWidth))).suggestName("M_AXI")
+  val masters_ext =
+    IO(Vec(addressMap.length, new AXILiteMasterExtIO(addrWidth, dataWidth))).suggestName("M_AXI")
   val masters     = Seq.fill(addressMap.length)(Wire(AXILiteMasterIO(addrWidth, dataWidth)))
 
   def decodeAddress(addr: UInt): UInt = {
@@ -99,15 +99,9 @@ class AXILiteInterconnect(
     }
   )
 
-  ext_slave.connect(slave)
+  slave_ext.connect(slave)
   for (i <- 0 until addressMap.length)
-    ext_masters(i).connect(masters(i))
-
-  def connect(intf: AXILiteMasterExternalIO): Unit          = intf <> ext_slave
-  def connect(intf: AXILiteSlaveExternalIO, idx: Int): Unit = {
-    require(idx >= 0 && idx < masters.length, "Invalid master index")
-    intf <> ext_masters(idx)
-  }
+    masters_ext(i).connect(masters(i))
 }
 
 object AXILiteInterconnect {

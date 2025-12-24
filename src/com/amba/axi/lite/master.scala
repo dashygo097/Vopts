@@ -22,7 +22,7 @@ object AXILiteMasterIO {
     new AXILiteMasterIO(addrWidth, dataWidth)
 }
 
-class AXILiteMasterExternalIO(addrWidth: Int, dataWidth: Int) extends Bundle {
+class AXILiteMasterExtIO(addrWidth: Int, dataWidth: Int) extends Bundle {
   val AWADDR  = Output(UInt(addrWidth.W))
   val AWPROT  = Output(UInt(3.W))
   val AWVALID = Output(Bool())
