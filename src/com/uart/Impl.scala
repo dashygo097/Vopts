@@ -21,6 +21,11 @@ class UartRxIO extends Bundle {
   val error   = Output(Bool())
 }
 
+class UartIO extends Bundle {
+  val tx = new UartTxIO
+  val rx = new UartRxIO
+}
+
 class UartTx(baudRate: Int, clkFreq: Int) extends Module {
   override def desiredName: String = s"uart_tx_b${baudRate}_f$clkFreq"
   val io                           = IO(new UartTxIO).suggestName("UART_Tx")
@@ -138,10 +143,7 @@ class UartRx(baudRate: Int, clkFreq: Int) extends Module {
 
 class Uart(baudRate: Int, clkFreq: Int) extends Module {
   override def desiredName: String = s"uart_b${baudRate}_f$clkFreq"
-  val io                           = IO(new Bundle {
-    val tx = new UartTxIO
-    val rx = new UartRxIO
-  }).suggestName("UART")
+  val io                           = IO(new UartIO).suggestName("UART")
 
   val tx = Module(new UartTx(baudRate, clkFreq))
   val rx = Module(new UartRx(baudRate, clkFreq))
