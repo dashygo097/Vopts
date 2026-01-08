@@ -75,4 +75,30 @@ class AXILiteSlaveExtIO(addrWidth: Int, dataWidth: Int) extends Bundle {
     this.RVALID  := inst.r.valid
     inst.r.ready := this.RREADY
   }
+
+  def connect(inst: AXILiteMasterExtIO): Unit = {
+    inst.AWADDR  := this.AWADDR
+    inst.AWPROT  := this.AWPROT
+    inst.AWVALID := this.AWVALID
+    this.AWREADY := inst.AWREADY
+
+    inst.WDATA  := this.WDATA
+    inst.WSTRB  := this.WSTRB
+    inst.WVALID := this.WVALID
+    this.WREADY := inst.WREADY
+
+    this.BRESP  := inst.BRESP
+    this.BVALID := inst.BVALID
+    inst.BREADY := this.BREADY
+
+    inst.ARADDR  := this.ARADDR
+    inst.ARPROT  := this.ARPROT
+    inst.ARVALID := this.ARVALID
+    this.ARREADY := inst.ARREADY
+
+    this.RDATA  := inst.RDATA
+    this.RRESP  := inst.RRESP
+    this.RVALID := inst.RVALID
+    inst.RREADY := this.RREADY
+  }
 }

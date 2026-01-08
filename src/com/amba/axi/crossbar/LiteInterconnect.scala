@@ -13,7 +13,6 @@ class AXILiteInterconnect(
     s"axilite_interconnect${addressMap.length}_${addrWidth}x$dataWidth"
 
   require(addressMap.length > 0, "Address map must have at least one slave")
-  require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
   for (i <- 0 until addressMap.length)
     require(addressMap(i)._1 < addressMap(i)._2, s"Invalid address range for slave $i")
 
