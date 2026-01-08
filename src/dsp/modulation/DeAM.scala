@@ -1,9 +1,9 @@
-package dsp.mod
+package vopts.dsp.mod
 
-import dsp.dds._
-import dsp.filter._
-import math._
-import utils._
+import vopts.dsp.dds._
+import vopts.dsp.filter._
+import vopts.math._
+import vopts.utils._
 import chisel3._
 
 class AnalogSyncDetectorIO[T <: Data](gen: T) extends Bundle {

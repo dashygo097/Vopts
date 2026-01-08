@@ -1,4 +1,4 @@
-package mem.shift
+package vopts.mem.shift
 
 import chisel3._
 import chisel3.util._

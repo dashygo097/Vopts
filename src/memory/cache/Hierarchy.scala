@@ -1,4 +1,4 @@
-package mem.cache
+package vopts.mem.cache
 
 import chisel3._
 import chisel3.util._

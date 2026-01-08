@@ -1,4 +1,4 @@
-package utils
+package vopts.utils
 
 import hardfloat._
 import scala.math._

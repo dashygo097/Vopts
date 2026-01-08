@@ -1,9 +1,9 @@
-package dsp.fft
+package vopts.dsp.fft
 
-import scala.math._
-import utils._
+import vopts.utils._
 import chisel3._
 import chisel3.util._
+import scala.math._
 
 class R2MDCFFTIO(dw: Int, bp: Int) extends Bundle {
   val in        = Input(new FPComplex(dw, bp))

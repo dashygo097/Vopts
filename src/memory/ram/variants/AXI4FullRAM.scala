@@ -1,7 +1,7 @@
-package mem.ram
+package vopts.mem.ram
 
-import com.amba._
-import utils._
+import vopts.com.amba._
+import vopts.utils._
 import chisel3._
 
 class AXIFullSlaveRAM(

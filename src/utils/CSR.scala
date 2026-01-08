@@ -1,4 +1,4 @@
-package utils
+package vopts.utils
 
 case class Register(
   name: String,

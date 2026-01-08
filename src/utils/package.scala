@@ -1,3 +1,5 @@
+package vopts
+
 package object utils {
   import scala.language.implicitConversions
   import chisel3._

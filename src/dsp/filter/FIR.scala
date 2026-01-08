@@ -1,8 +1,8 @@
-package dsp.filter
+package vopts.dsp.filter
 
-import scala.sys.process._
-import utils._
+import vopts.utils._
 import chisel3._
+import scala.sys.process._
 
 class FIRFilter[T <: Data](
   gen: T,

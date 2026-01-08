@@ -1,6 +1,6 @@
-package math
+package vopts.math
 
-import utils._
+import vopts.utils._
 import chisel3._
 
 class Abs[T <: Data](gen: T)(implicit ord: PartialOrdered[T], ev: Arithmetic[T]) extends Module {

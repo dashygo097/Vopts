@@ -1,7 +1,7 @@
-package dsp.mod
+package vopts.dsp.mod
 
-import dsp.dds._
-import utils._
+import vopts.dsp.dds._
+import vopts.utils._
 import chisel3._
 
 class FSKIO[T <: Data](gen: T) extends Bundle {

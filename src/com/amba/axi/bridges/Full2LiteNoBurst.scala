@@ -1,6 +1,6 @@
-package com.amba
+package vopts.com.amba
 
-import utils._
+import vopts.utils._
 import chisel3._
 
 class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth: Int = 0) extends Module {

@@ -1,6 +1,6 @@
-package mem.dma
+package vopts.mem.dma
 
-import com.amba._
+import vopts.com.amba._
 import chisel3._
 import chisel3.util._
 

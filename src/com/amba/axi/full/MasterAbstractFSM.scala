@@ -1,8 +1,8 @@
-package com.amba
+package vopts.com.amba
 
-import scala.math._
 import chisel3._
 import chisel3.util._
+import scala.math._
 
 abstract class AXIFullMasterBaseFSM(
   val addrWidth: Int,

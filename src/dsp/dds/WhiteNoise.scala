@@ -1,6 +1,6 @@
-package dsp.dds
+package vopts.dsp.dds
 
-import utils._
+import vopts.utils._
 import chisel3._
 import chisel3.util.random._
 

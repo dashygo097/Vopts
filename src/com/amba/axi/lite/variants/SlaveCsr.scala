@@ -1,6 +1,6 @@
-package com.amba
+package vopts.com.amba
 
-import utils._
+import vopts.utils._
 import chisel3._
 
 abstract class AXILiteSlaveWithCSR(

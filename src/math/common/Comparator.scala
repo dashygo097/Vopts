@@ -1,6 +1,6 @@
-package math
+package vopts.math
 
-import utils._
+import vopts.utils._
 import chisel3._
 
 class ComparatorIO[T <: Data](gen: T) extends Bundle {
