@@ -1,4 +1,4 @@
-package utils
+package vopts.utils
 
 import scala.math._
 import chisel3._

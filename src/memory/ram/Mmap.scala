@@ -1,4 +1,4 @@
-package mem.ram
+package vopts.mem.ram
 
 import chisel3._
 import chisel3.util._

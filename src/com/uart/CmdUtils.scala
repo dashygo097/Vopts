@@ -1,4 +1,4 @@
-package com.uart
+package vopts.com.uart
 
 import chisel3._
 

@@ -1,8 +1,8 @@
-package dsp.filter
+package vopts.dsp.filter
 
-import utils._
-import sys.process._
+import vopts.utils._
 import chisel3._
+import sys.process._
 
 class LMSFilterIO[T <: Data](gen: T) extends Bundle {
   val x       = Input(gen)
@@ -22,7 +22,7 @@ class LMSFilter[T <: Data](
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"lms_o${order}_${cutoff.mkString("_")}"
-  val pyPath               = "src/dsp/filter/fir.py"
+  val pyPath               = "src/vopts.dsp.filter/fir.py"
   val command              = Seq(
     "python3",
     pyPath,

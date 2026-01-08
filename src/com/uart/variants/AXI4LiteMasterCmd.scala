@@ -1,7 +1,7 @@
-package com.uart
+package vopts.com.uart
 
-import com.amba._
-import utils._
+import vopts.com.amba._
+import vopts.utils._
 import chisel3._
 
 class AXILiteMasterUartCmd(addrWidth: Int, dataWidth: Int, clkFreq: Int, baudRate: Int, endianness: String) extends AXILiteMaster(addrWidth, dataWidth) {

@@ -1,6 +1,6 @@
-package dsp.resample
+package vopts.dsp.resample
 
-import utils._
+import vopts.utils._
 import chisel3._
 import chisel3.util._
 

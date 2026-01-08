@@ -1,7 +1,7 @@
-package mem.register
+package vopts.mem.register
 
-import com.amba._
-import utils._
+import vopts.com.amba._
+import vopts.utils._
 import chisel3._
 
 class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) extends AXILiteSlave(addrWidth, dataWidth) {

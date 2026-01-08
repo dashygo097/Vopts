@@ -1,6 +1,6 @@
-package math
+package vopts.math
 
-import utils._
+import vopts.utils._
 import chisel3._
 
 class Derivator[T <: Data](gen: T)(implicit ev: Arithmetic[T]) extends Module {

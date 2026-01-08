@@ -1,6 +1,6 @@
-package math
+package vopts.math
 
-import utils._
+import vopts.utils._
 import chisel3._
 
 class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T]) extends Bundle with MatrixOps[T] {

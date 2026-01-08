@@ -1,4 +1,4 @@
-package mem.dma
+package vopts.mem.dma
 
 import chisel3._
 

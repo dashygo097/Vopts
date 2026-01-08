@@ -1,9 +1,9 @@
-package dsp.dds
+package vopts.dsp.dds
 
-import scala.math._
-import utils._
+import vopts.utils._
 import chisel3._
 import chisel3.util._
+import scala.math._
 
 class LiteTrigIO[T <: Data](gen: T, phaseWidth: Int) extends Bundle {
   val mag        = Input(gen)

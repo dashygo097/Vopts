@@ -1,4 +1,4 @@
-package mem.fifo
+package vopts.mem.fifo
 
 import chisel3._
 import chisel3.util._

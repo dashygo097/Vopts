@@ -1,6 +1,6 @@
-package net.arp
+package vopts.net.arp
 
-import net.eth._
+import vopts.net.eth._
 import chisel3._
 import chisel3.util._
 

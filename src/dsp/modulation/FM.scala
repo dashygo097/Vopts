@@ -1,9 +1,9 @@
-package dsp.mod
+package vopts.dsp.mod
 
-import dsp.dds._
-import scala.math._
-import utils._
+import vopts.dsp.dds._
+import vopts.utils._
 import chisel3._
+import scala.math._
 
 class FM[T <: Data](
   gen: T,

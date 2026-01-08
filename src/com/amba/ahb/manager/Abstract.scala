@@ -1,4 +1,4 @@
-package com.amba
+package vopts.com.amba
 
 import chisel3._
 
