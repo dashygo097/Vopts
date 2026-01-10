@@ -11,7 +11,7 @@ class AXILiteSlaveMMapRegs(addrWidth: Int, dataWidth: Int, mmap: Seq[Register]) 
   val mmap_regs = Module(new MMapRegisters(addrWidth, dataWidth, mmap))
 
   // I/O Connections
-  mmap_regs.io.write_en   := axi_will_write
+  mmap_regs.io.write_en   := axi_last_write
   mmap_regs.io.write_addr := axi_awaddr
   mmap_regs.io.write_data := axi.w.bits.data
   mmap_regs.io.write_strb := axi.w.bits.strb
