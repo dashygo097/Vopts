@@ -13,8 +13,10 @@ class AXIFull2LiteBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
   val master_ext = IO(new AXILiteMasterExtIO(addrWidth, dataWidth)).suggestName("M_AXI")
   val master     = Wire(AXILiteMasterIO(addrWidth, dataWidth))
 
-  // To be implemented: AXI Full to AXI Lite bridge logic
+  dontTouch(slave_ext)
+  dontTouch(master_ext)
 
+  // To be implemented: AXI Full to AXI Lite bridge logic
   slave_ext.connect(slave)
   master_ext.connect(master)
 }

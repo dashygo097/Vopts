@@ -37,6 +37,9 @@ class AXILiteAXIStreamFIFO(addrWidth: Int, dataWidth: Int, idWidth: Int, destWid
   val axis_slave_ext  = IO(new AXIStreamSlaveExtIO(dataWidth, idWidth, destWidth, userWidth)).suggestName("S_AXIS")
   val axis_slave      = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
+  dontTouch(axis_master_ext)
+  dontTouch(axis_slave_ext)
+
   // Module
   val fifo = Module(new SyncFIFO(new AXIStreamIO(dataWidth, idWidth, destWidth, userWidth), depth))
 

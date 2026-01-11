@@ -22,6 +22,8 @@ class AXIFullInterconnect(
   val slave_ext = IO(new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val slave     = Wire(AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
+  dontTouch(slave_ext)
+
   val masters_ext =
     IO(Vec(addressMap.length, new AXIFullMasterExtIO(addrWidth, dataWidth, idWidth, userWidth))).suggestName("M_AXI")
   val masters     =

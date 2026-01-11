@@ -12,6 +12,9 @@ abstract class AXIStreamChannel(dataWidth: Int, idWidth: Int, destWidth: Int, us
   val axis_slave_ext  = IO(new AXIStreamSlaveExtIO(dataWidth, idWidth, destWidth, userWidth)).suggestName(getExtSAXIName)
   val axis_slave      = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
+  dontTouch(axis_master_ext)
+  dontTouch(axis_slave_ext)
+
   axis_master_ext.connect(axis_master)
   axis_slave_ext.connect(axis_slave)
 }

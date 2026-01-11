@@ -16,6 +16,9 @@ class AXILite2FullBridge(addrWidth: Int, dataWidth: Int, idWidth: Int, userWidth
   val master     =
     Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
+  dontTouch(slave_ext)
+  dontTouch(master_ext)
+
   // Write Address Channel
   master.aw.bits.addr   := slave.aw.bits.addr
   master.aw.bits.prot   := slave.aw.bits.prot

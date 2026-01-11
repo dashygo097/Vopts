@@ -16,6 +16,8 @@ abstract class AXIFullMasterBaseFSM(
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
+  dontTouch(axi_ext)
+
   // State Encoding
   protected val IDLE       = 0.U(3.W)
   protected val WRITE_ADDR = 1.U(3.W)

@@ -50,6 +50,8 @@ class AXILiteSlaveDMA(
     .suggestName("M_AXI_MEM")
   val axi_mem     = Wire(new AXIFullMasterIO(addrWidth, dataWidth, idWidth, userWidth))
 
+  dontTouch(axi_mem_ext)
+
   // Ext interrupt
   val interrupt = IO(Output(Bool())).suggestName("INTERRUPT")
 

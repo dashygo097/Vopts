@@ -9,6 +9,8 @@ abstract class AXILiteSlave(protected val addrWidth: Int, val dataWidth: Int) ex
   val axi_ext = IO(new AXILiteSlaveExtIO(addrWidth, dataWidth)).suggestName(getExtAXIName)
   val axi     = Wire(new AXILiteSlaveIO(addrWidth, dataWidth))
 
+  dontTouch(axi_ext)
+
   // Parameters
   protected val addr_lsb = log2Ceil(dataWidth / 8)
 

@@ -23,6 +23,9 @@ class AXILiteInterconnect(
     IO(Vec(addressMap.length, new AXILiteMasterExtIO(addrWidth, dataWidth))).suggestName("M_AXI")
   val masters     = Seq.fill(addressMap.length)(Wire(AXILiteMasterIO(addrWidth, dataWidth)))
 
+  dontTouch(slave_ext)
+  dontTouch(masters_ext)
+
   def decodeAddress(addr: UInt): UInt = {
     val slaveSelect = Wire(UInt(log2Ceil(addressMap.length).W))
     slaveSelect := 0.U

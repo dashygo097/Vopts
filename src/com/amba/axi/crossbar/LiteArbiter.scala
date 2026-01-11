@@ -21,6 +21,9 @@ class AXILiteArbiter(
   val master_ext = IO(new AXILiteMasterExtIO(addrWidth, dataWidth)).suggestName("M_AXI")
   val master     = Wire(AXILiteMasterIO(addrWidth, dataWidth))
 
+  dontTouch(slaves_ext)
+  dontTouch(master_ext)
+
   // Arbitration state
   val selected_master_aw = RegInit(0.U(log2Ceil(numMasters).W))
   val selected_master_ar = RegInit(0.U(log2Ceil(numMasters).W))

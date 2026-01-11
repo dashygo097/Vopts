@@ -14,6 +14,9 @@ class AXIFull2LiteBridgeNoBurst(addrWidth: Int, dataWidth: Int, idWidth: Int, us
   val master_ext = IO(new AXILiteMasterExtIO(addrWidth, dataWidth)).suggestName("M_AXI")
   val master     = Wire(AXILiteMasterIO(addrWidth, dataWidth))
 
+  dontTouch(slave)
+  dontTouch(master)
+
   // Unsupported feature detection registers
   val unsupportedWrite      = WireDefault(false.B)
   val unsupportedWriteBurst = WireDefault(false.B)
