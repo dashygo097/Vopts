@@ -27,6 +27,9 @@ class DMAStreamChannel(addrWidth: Int, dataWidth: Int, idWidth: Int, destWidth: 
     val m_axis = new AXIStreamMasterIO(dataWidth, idWidth, destWidth, userWidth)
   })
 
+  dontTouch(io.s_axis)
+  dontTouch(io.m_axis)
+
   // State machine
   val state = RegInit(DMAStreamState.IDLE)
 

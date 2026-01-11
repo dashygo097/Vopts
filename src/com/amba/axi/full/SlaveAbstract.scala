@@ -9,6 +9,8 @@ abstract class AXIFullSlave(addrWidth: Int, dataWidth: Int, idWidth: Int, userWi
   val axi_ext                         = IO(new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth)).suggestName("S_AXI")
   val axi                             = Wire(new AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth))
 
+  dontTouch(axi_ext)
+
   // Parameters
   protected val addr_lsb      = log2Ceil(dataWidth / 8)
   protected val opt_mem_width = log2Ceil(memSize)

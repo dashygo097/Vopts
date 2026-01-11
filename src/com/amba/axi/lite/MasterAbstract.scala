@@ -13,6 +13,8 @@ abstract class AXILiteMaster(
     .suggestName(getExtAXIName)
   val axi     = Wire(new AXILiteMasterIO(addrWidth, dataWidth))
 
+  dontTouch(axi_ext)
+
   // State Encoding
   protected val IDLE       = 0.U(3.W)
   protected val WRITE_ADDR = 1.U(3.W)

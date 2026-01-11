@@ -71,6 +71,9 @@ class AXILiteAXIStreamDMA(
     .suggestName("S_AXIS")
   val axis_slave     = Wire(new AXIStreamSlaveIO(dataWidth, idWidth, destWidth, userWidth))
 
+  dontTouch(axis_master_ext)
+  dontTouch(axis_slave_ext)
+
   // Ext interrupt
   val interrupt = IO(Output(Bool())).suggestName("INTERRUPT")
 

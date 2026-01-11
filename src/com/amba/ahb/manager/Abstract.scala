@@ -8,6 +8,8 @@ abstract class AHBManager(addrWidth: Int, dataWidth: Int) extends Module {
   val ahb_ext = IO(new AHBManagerExtIO(addrWidth, dataWidth)).suggestName(getExtAHBName)
   val ahb     = Wire(new AHBManagerIO(addrWidth, dataWidth))
 
+  dontTouch(ahb_ext)
+
   // State Encoding
   protected val IDLE     = 0.U(2.W)
   protected val REQUEST  = 1.U(2.W)

@@ -23,6 +23,9 @@ class AXILiteCrossbar(
   val masters_ext =
     IO(Vec(numMasters, Flipped(new AXILiteMasterExtIO(addrWidth, dataWidth)))).suggestName("S_AXI")
 
+  dontTouch(slaves_ext)
+  dontTouch(masters_ext)
+
   // Instantiate arbiters (one per slave)
   val arbiters = Seq.fill(numSlaves)(Module(new AXILiteArbiter(addrWidth, dataWidth, numMasters)))
 
