@@ -4,13 +4,13 @@ import vopts.utils._
 import chisel3._
 import chisel3.util._
 
-class AXILiteInterconnect(
+class AXILiteDecoder(
   addrWidth: Int,
   dataWidth: Int,
   addressMap: Seq[(Long, Long)] // (baseAddr, endAddr) for each slave
 ) extends Module {
   override def desiredName: String =
-    s"axilite_interconnect${addressMap.length}_${addrWidth}x$dataWidth"
+    s"axilite_decoder${addressMap.length}_${addrWidth}x$dataWidth"
 
   require(addressMap.length > 0, "Address map must have at least one slave")
   for (i <- 0 until addressMap.length)
@@ -106,18 +106,18 @@ class AXILiteInterconnect(
     masters_ext(i).connect(masters(i))
 }
 
-object AXILiteInterconnect {
+object AXILiteDecoder {
   def apply(
     addrWidth: Int,
     dataWidth: Int,
     addressMap: Seq[(Long, Long)]
-  ): AXILiteInterconnect =
-    Module(new AXILiteInterconnect(addrWidth, dataWidth, addressMap))
+  ): AXILiteDecoder =
+    Module(new AXILiteDecoder(addrWidth, dataWidth, addressMap))
 }
 
-object TestAXILiteInterconnect extends App {
+object TestAXILiteDecoder extends App {
   VerilogEmitter.parse(
-    new AXILiteInterconnect(
+    new AXILiteDecoder(
       32,
       32,
       Seq(
@@ -125,7 +125,7 @@ object TestAXILiteInterconnect extends App {
         (0x80010000L, 0x8001ffffL)
       )
     ),
-    "axilite_interconnect.sv",
+    "axilite_decoder.sv",
     info = true
   )
 }
