@@ -4,7 +4,7 @@ import vopts.utils._
 import chisel3._
 import chisel3.util._
 
-class AXIFullInterconnect(
+class AXIFullDecoder(
   addrWidth: Int,
   dataWidth: Int,
   idWidth: Int,
@@ -12,7 +12,7 @@ class AXIFullInterconnect(
   addressMap: Seq[(Long, Long)] // (baseAddr, endAddr) for each slave
 ) extends Module {
   override def desiredName: String =
-    s"axifull_interconnect${addressMap.length}_${addrWidth}x$dataWidth"
+    s"axifull_decoder${addressMap.length}_${addrWidth}x$dataWidth"
 
   require(addressMap.length > 0, "Address map must have at least one slave")
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
@@ -108,20 +108,20 @@ class AXIFullInterconnect(
     masters_ext(i).connect(masters(i))
 }
 
-object AXIFullInterconnect {
+object AXIFullDecoder {
   def apply(
     addrWidth: Int,
     dataWidth: Int,
     idWidth: Int,
     userWidth: Int,
     addressMap: Seq[(Long, Long)]
-  ): AXIFullInterconnect =
-    Module(new AXIFullInterconnect(addrWidth, dataWidth, idWidth, userWidth, addressMap))
+  ): AXIFullDecoder =
+    Module(new AXIFullDecoder(addrWidth, dataWidth, idWidth, userWidth, addressMap))
 }
 
-object TestAXIFullInterconnect extends App {
+object TestAXIFullDecoder extends App {
   VerilogEmitter.parse(
-    new AXIFullInterconnect(
+    new AXIFullDecoder(
       32,
       32,
       4,
@@ -131,7 +131,7 @@ object TestAXIFullInterconnect extends App {
         (0x80010000L, 0x8001ffffL)
       )
     ),
-    "axifull_interconnect.sv",
+    "axifull_decoder.sv",
     info = true
   )
 }

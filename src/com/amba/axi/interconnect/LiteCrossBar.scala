@@ -30,7 +30,7 @@ class AXILiteCrossbar(
   val arbiters = Seq.fill(numSlaves)(Module(new AXILiteArbiter(addrWidth, dataWidth, numMasters)))
 
   // Instantiate interconnects (one per master)
-  val interconnects = Seq.fill(numMasters)(Module(new AXILiteInterconnect(addrWidth, dataWidth, addressMap)))
+  val interconnects = Seq.fill(numMasters)(Module(new AXILiteDecoder(addrWidth, dataWidth, addressMap)))
 
   for (i <- 0 until numMasters)
     for (j <- 0 until numSlaves)
