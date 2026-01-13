@@ -7,7 +7,8 @@ class AXILiteCrossbar(
   addrWidth: Int,
   dataWidth: Int,
   numMasters: Int,
-  addressMap: Seq[(Long, Long)]
+  addressMap: Seq[(Long, Long)],
+  arbiterFifoDepth: Int = 4
 ) extends Module {
   override def desiredName: String =
     s"axilite_crossbar_${numMasters}x${addressMap.length}_${addrWidth}x$dataWidth"
@@ -27,7 +28,7 @@ class AXILiteCrossbar(
   dontTouch(masters_ext)
 
   // Instantiate arbiters (one per slave)
-  val arbiters = Seq.fill(numSlaves)(Module(new AXILiteArbiter(addrWidth, dataWidth, numMasters)))
+  val arbiters = Seq.fill(numSlaves)(Module(new AXILiteArbiter(addrWidth, dataWidth, numMasters, arbiterFifoDepth)))
 
   // Instantiate interconnects (one per master)
   val interconnects = Seq.fill(numMasters)(Module(new AXILiteDecoder(addrWidth, dataWidth, addressMap)))
@@ -48,9 +49,10 @@ object AXILiteCrossbar {
     addrWidth: Int,
     dataWidth: Int,
     numMasters: Int,
-    addressMap: Seq[(Long, Long)]
+    addressMap: Seq[(Long, Long)],
+    arbiterFifoDepth: Int = 4
   ): AXILiteCrossbar =
-    Module(new AXILiteCrossbar(addrWidth, dataWidth, numMasters, addressMap))
+    Module(new AXILiteCrossbar(addrWidth, dataWidth, numMasters, addressMap, arbiterFifoDepth))
 }
 
 object TestAXILiteCrossbar extends App {
@@ -63,7 +65,8 @@ object TestAXILiteCrossbar extends App {
         (0x80000000L, 0x8000ffffL),
         (0x80010000L, 0x8001ffffL),
         (0x80020000L, 0x8002ffffL)
-      )
+      ),
+      4
     ),
     "axilite_crossbar.sv",
     info = true
