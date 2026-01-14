@@ -25,9 +25,8 @@ class PartialProductGen(dw: Int) extends Module {
     pp_raw := MuxCase(
       0.U,
       Seq(
-        encoders(i).zero -> 0.U,
-        encoders(i).one  -> x_ext.asUInt,
-        encoders(i).two  -> x_2
+        encoders(i).one -> x_ext.asUInt,
+        encoders(i).two -> x_2
       )
     )
 
