@@ -13,16 +13,14 @@ class BoothRadix4 extends Module {
   val two  = IO(Output(Bool()))
 
   // Booth encoding table
-  val encoding = MuxLookup(y, 0.U)(
+  val encoding = MuxLookup(y, "b0100".U)(
     Seq(
-      0.U -> "b0100".U, // 000: +0
       1.U -> "b0010".U, // 001: +1
       2.U -> "b0010".U, // 010: +1
       3.U -> "b0001".U, // 011: +2
       4.U -> "b1001".U, // 100: -2
       5.U -> "b1010".U, // 101: -1
       6.U -> "b1010".U, // 110: -1
-      7.U -> "b0100".U  // 111: +0
     )
   )
 
