@@ -107,5 +107,5 @@ class BoothWallaceMultiplier(dw: Int, pStages: Int) extends Module {
 }
 
 object TestBoothWallaceMultiplier extends App {
-  VerilogEmitter.parse(new BoothWallaceMultiplier(16, 0), "booth_wallace_multiplier.v")
+  VerilogEmitter.parse(new BoothWallaceMultiplier(16, 0), "booth_wallace_multiplier.sv")
 }
