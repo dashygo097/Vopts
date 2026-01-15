@@ -51,11 +51,12 @@ class MMapRegisters(
   val readable_vec = VecInit(mmap.map(_.readable.B))
 
   // Signals
-  val regs                 = RegInit(VecInit(mmap.map { reg =>
+  val regs = mmap.zipWithIndex.map { case (reg, i) =>
     val regInst = RegInit(reg.initValue.U(dataWidth.W))
-    regInst.suggestName(s"${reg.name}")
+    regInst.suggestName(reg.name)
     regInst
-  }))
+  }
+
   val byte_banks           = Wire(Vec(dataWidth / 8, UInt(8.W)))
   val write_addr_match     = Wire(Bool())
   val read_addr_match      = Wire(Bool())
