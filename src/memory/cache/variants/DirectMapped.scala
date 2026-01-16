@@ -41,6 +41,12 @@ class DirectMappedCache(
 
   // Current line data
   val currentLineData = Reg(UInt(lineWidth.W))
+  val cacheReadData   = Wire(UInt(lineWidth.W))
+  val cacheReadEn     = Wire(Bool())
+  val cacheReadAddr   = Wire(UInt(indexWidth.W))
+  cacheReadEn   := false.B
+  cacheReadAddr := 0.U
+  cacheReadData := dataArray.read(cacheReadAddr, cacheReadEn)
 
   // Write forwarding
   val lastWriteValid = RegInit(false.B)
@@ -67,11 +73,11 @@ class DirectMappedCache(
 
   // Update word in cache line (BIG ENDIAN)
   def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
-    val words = Wire(Vec(wordsPerLine, UInt(dataWidth.W)))
-    for (i <- 0 until wordsPerLine)
-      words(i) := lineData((i + 1) * dataWidth - 1, i * dataWidth)
-    // Update in reversed order (big endian)
-    words(wordsPerLine.U - 1.U - wordOffset) := newWord
+    val words = VecInit((0 until wordsPerLine).map { i =>
+      val currentWord    = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+      val bigEndianIndex = (wordsPerLine - 1 - i).U
+      Mux(wordOffset === bigEndianIndex, newWord, currentWord)
+    })
     words.asUInt
   }
 
@@ -123,8 +129,8 @@ class DirectMappedCache(
           usedForwardedData := true.B
           waitingForRead    := false.B
         }.otherwise {
-          // Issue synchronous read - data will be ready NEXT cycle
-          currentLineData   := dataArray.read(parsed.index)
+          cacheReadEn       := true.B
+          cacheReadAddr     := parsed.index
           waitingForRead    := true.B
           usedForwardedData := false.B
         }
@@ -134,9 +140,9 @@ class DirectMappedCache(
     }
 
     is(CacheFSMState.COMPARE_TAG) {
-      // Wait one cycle for SyncReadMem data to be ready
       when(waitingForRead) {
-        waitingForRead := false.B
+        currentLineData := cacheReadData
+        waitingForRead  := false.B
       }.otherwise {
         when(hit) {
           // Cache hit
@@ -167,17 +173,24 @@ class DirectMappedCache(
           }
         }.otherwise {
           // Cache miss
-          when(lastWriteValid && (lastWriteIndex === reqIndex)) {
-            lastWriteValid := false.B
-          }
-
           io.miss := true.B
 
           when(meta.valid && meta.dirty) {
-            // Need to write back dirty line first
+            // Need to write back dirty line
+            when(lastWriteValid && (lastWriteIndex === reqIndex) && (lastWriteTag === meta.tag)) {
+              // The SyncReadMem data is stale - use forwarded data instead
+              currentLineData := lastWriteData
+            }
+            // Invalidate forwarding for this index since we're evicting it
+            when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+              lastWriteValid := false.B
+            }
             state := CacheFSMState.WRITEBACK
           }.otherwise {
-            // Allocate new line directly
+            // No write-back needed
+            when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+              lastWriteValid := false.B
+            }
             state := CacheFSMState.ALLOCATE
           }
         }
