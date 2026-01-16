@@ -25,7 +25,7 @@ class DirectMappedCache(
   val lineWidth       = dataWidth * wordsPerLine
 
   // Cache storage
-  val dataArray = SyncReadMem(numLines, UInt(lineWidth.W))
+  val dataArray = Mem(numLines, UInt(lineWidth.W))
   val metaArray = RegInit(VecInit(Seq.fill(numLines)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
 
   // FSM state
@@ -41,12 +41,6 @@ class DirectMappedCache(
 
   // Current line data
   val currentLineData = Reg(UInt(lineWidth.W))
-  val cacheReadData   = Wire(UInt(lineWidth.W))
-  val cacheReadEn     = Wire(Bool())
-  val cacheReadAddr   = Wire(UInt(indexWidth.W))
-  cacheReadEn   := false.B
-  cacheReadAddr := 0.U
-  cacheReadData := dataArray.read(cacheReadAddr, cacheReadEn)
 
   // Write forwarding
   val lastWriteValid = RegInit(false.B)
@@ -96,9 +90,6 @@ class DirectMappedCache(
   io.lower.resp.ready     := false.B
   io.miss                 := false.B
 
-  // Track if we need to wait for SyncReadMem data
-  val waitingForRead = RegInit(false.B)
-
   // Track if we used forwarded data (no memory read needed)
   val usedForwardedData = RegInit(false.B)
 
@@ -106,11 +97,10 @@ class DirectMappedCache(
   switch(state) {
     is(CacheFSMState.IDLE) {
       io.upper.req.ready := true.B
-      waitingForRead     := false.B
       usedForwardedData  := false.B
       memReqSent         := false.B
 
-      when(io.upper.req.valid && io.upper.req.ready) {
+      when(io.upper.req.fire) {
         val parsed = parseAddr(io.upper.req.bits.addr)
         reqAddr       := io.upper.req.bits.addr
         reqData       := io.upper.req.bits.data
@@ -127,11 +117,7 @@ class DirectMappedCache(
           // Use forwarded data instead of reading from memory
           currentLineData   := lastWriteData
           usedForwardedData := true.B
-          waitingForRead    := false.B
         }.otherwise {
-          cacheReadEn       := true.B
-          cacheReadAddr     := parsed.index
-          waitingForRead    := true.B
           usedForwardedData := false.B
         }
 
@@ -140,59 +126,54 @@ class DirectMappedCache(
     }
 
     is(CacheFSMState.COMPARE_TAG) {
-      when(waitingForRead) {
-        currentLineData := cacheReadData
-        waitingForRead  := false.B
-      }.otherwise {
-        when(hit) {
-          // Cache hit
-          when(reqOp === MemoryOp.READ) {
-            // Read hit - return the specific word
-            io.upper.resp.valid     := true.B
-            io.upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
+      currentLineData := dataArray.read(reqIndex)
+      when(hit) {
+        // Cache hit
+        when(reqOp === MemoryOp.READ) {
+          // Read hit - return the specific word
+          io.upper.resp.valid     := true.B
+          io.upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
 
-            when(io.upper.resp.ready) {
-              state := CacheFSMState.IDLE
-            }
-          }.otherwise {
-            // Write hit - update the specific word
-            val updatedLine = updateWord(currentLineData, reqWordOffset, reqData)
-            dataArray.write(reqIndex, updatedLine)
-            metaArray(reqIndex).dirty := true.B
-
-            // Update write forwarding
-            lastWriteValid := true.B
-            lastWriteIndex := reqIndex
-            lastWriteTag   := reqTag
-            lastWriteData  := updatedLine
-
-            io.upper.resp.valid := true.B
-            when(io.upper.resp.ready) {
-              state := CacheFSMState.IDLE
-            }
+          when(io.upper.resp.ready) {
+            state := CacheFSMState.IDLE
           }
         }.otherwise {
-          // Cache miss
-          io.miss := true.B
+          // Write hit - update the specific word
+          val updatedLine = updateWord(currentLineData, reqWordOffset, reqData)
+          dataArray.write(reqIndex, updatedLine)
+          metaArray(reqIndex).dirty := true.B
 
-          when(meta.valid && meta.dirty) {
-            // Need to write back dirty line
-            when(lastWriteValid && (lastWriteIndex === reqIndex) && (lastWriteTag === meta.tag)) {
-              // The SyncReadMem data is stale - use forwarded data instead
-              currentLineData := lastWriteData
-            }
-            // Invalidate forwarding for this index since we're evicting it
-            when(lastWriteValid && (lastWriteIndex === reqIndex)) {
-              lastWriteValid := false.B
-            }
-            state := CacheFSMState.WRITEBACK
-          }.otherwise {
-            // No write-back needed
-            when(lastWriteValid && (lastWriteIndex === reqIndex)) {
-              lastWriteValid := false.B
-            }
-            state := CacheFSMState.ALLOCATE
+          // Update write forwarding
+          lastWriteValid := true.B
+          lastWriteIndex := reqIndex
+          lastWriteTag   := reqTag
+          lastWriteData  := updatedLine
+
+          io.upper.resp.valid := true.B
+          when(io.upper.resp.ready) {
+            state := CacheFSMState.IDLE
           }
+        }
+      }.otherwise {
+        // Cache miss
+        io.miss := true.B
+
+        when(meta.valid && meta.dirty) {
+          // Need to write back dirty line
+          when(lastWriteValid && (lastWriteIndex === reqIndex) && (lastWriteTag === meta.tag)) {
+            currentLineData := lastWriteData
+          }
+          // Invalidate forwarding for this index since we're evicting it
+          when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+            lastWriteValid := false.B
+          }
+          state := CacheFSMState.WRITEBACK
+        }.otherwise {
+          // No write-back needed
+          when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+            lastWriteValid := false.B
+          }
+          state := CacheFSMState.ALLOCATE
         }
       }
     }
@@ -227,7 +208,7 @@ class DirectMappedCache(
       // Always assert ready to accept response
       io.lower.resp.ready := true.B
 
-      when(memReqSent && io.lower.resp.valid && io.lower.resp.ready) {
+      when(memReqSent && io.lower.resp.fire) {
         val newLineData = Wire(UInt(lineWidth.W))
 
         when(reqOp === MemoryOp.WRITE) {
