@@ -280,6 +280,7 @@ object TestDirectMappedCache extends App {
       numLines = 16
     ),
     "direct_mapped_cache.sv",
-    info = true
+    info = true,
+    lowering = true
   )
 }
