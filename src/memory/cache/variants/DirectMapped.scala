@@ -90,14 +90,10 @@ class DirectMappedCache(
   io.lower.resp.ready     := false.B
   io.miss                 := false.B
 
-  // Track if we used forwarded data (no memory read needed)
-  val usedForwardedData = RegInit(false.B)
-
   // FSM
   switch(state) {
     is(CacheFSMState.IDLE) {
       io.upper.req.ready := true.B
-      usedForwardedData  := false.B
       memReqSent         := false.B
 
       when(io.upper.req.fire) {
@@ -114,11 +110,9 @@ class DirectMappedCache(
           (lastWriteTag === parsed.tag)
 
         when(useForwardedData) {
-          // Use forwarded data instead of reading from memory
-          currentLineData   := lastWriteData
-          usedForwardedData := true.B
+          currentLineData := lastWriteData
         }.otherwise {
-          usedForwardedData := false.B
+          currentLineData := dataArray.read(parsed.index)
         }
 
         state := CacheFSMState.COMPARE_TAG
@@ -126,7 +120,6 @@ class DirectMappedCache(
     }
 
     is(CacheFSMState.COMPARE_TAG) {
-      currentLineData := dataArray.read(reqIndex)
       when(hit) {
         // Cache hit
         when(reqOp === MemoryOp.READ) {
