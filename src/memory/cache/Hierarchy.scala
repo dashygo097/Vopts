@@ -14,7 +14,7 @@ class MemoryHierarchyReq(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int) e
   val data = UInt((dataWidth * wordsPerRequest).W)
 }
 
-class MemoryHierarchyReadReq(addrWidth: Int) extends Bundle {
+class MemoryHierarchyReadOnlyReq(addrWidth: Int) extends Bundle {
   val addr = UInt(addrWidth.W)
 }
 
@@ -27,8 +27,8 @@ class UnifiedMemoryIO(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int, word
   val resp = Flipped(Decoupled(new MemoryHierarchyResp(dataWidth, wordsPerRespond)))
 }
 
-class UnifiedMemoryReadIO(addrWidth: Int, dataWidth: Int, wordsPerRespond: Int) extends Bundle {
-  val req  = Decoupled(new MemoryHierarchyReadReq(addrWidth))
+class UnifiedMemoryReadOnlyIO(addrWidth: Int, dataWidth: Int, wordsPerRespond: Int) extends Bundle {
+  val req  = Decoupled(new MemoryHierarchyReadOnlyReq(addrWidth))
   val resp = Flipped(Decoupled(new MemoryHierarchyResp(dataWidth, wordsPerRespond)))
 }
 
@@ -36,8 +36,8 @@ object MemoryHierarchyReq {
   def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int) = new MemoryHierarchyReq(addrWidth, dataWidth, wordsPerRequest)
 }
 
-object MemoryHierarchyReadReq {
-  def apply(addrWidth: Int) = new MemoryHierarchyReadReq(addrWidth)
+object MemoryHierarchyReadOnlyReq {
+  def apply(addrWidth: Int) = new MemoryHierarchyReadOnlyReq(addrWidth)
 }
 
 object MemoryHierarchyResp {
@@ -49,7 +49,7 @@ object UnifiedMemoryIO {
     new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerRequest, wordsPerRespond)
 }
 
-object UnifiedMemoryReadIO {
+object UnifiedMemoryReadOnlyIO {
   def apply(addrWidth: Int, dataWidth: Int, wordsPerRespond: Int) =
-    new UnifiedMemoryReadIO(addrWidth, dataWidth, wordsPerRespond)
+    new UnifiedMemoryReadOnlyIO(addrWidth, dataWidth, wordsPerRespond)
 }
