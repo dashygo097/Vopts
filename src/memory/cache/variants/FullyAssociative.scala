@@ -17,6 +17,8 @@ class FullyAssociativeCache(
   val ext_io = IO(new CacheExternalIO(addrWidth, dataWidth, wordsPerLine)).suggestName("CACHE")
   val io     = Wire(new CacheIO(addrWidth, dataWidth, wordsPerLine))
 
+  dontTouch(ext_io)
+
   // Parameters
   val byteOffsetWidth = log2Ceil(dataWidth / 8)
   val wordOffsetWidth = log2Ceil(wordsPerLine)
