@@ -19,11 +19,12 @@ class FullyAssociativeCache(
   dontTouch(ext_io)
 
   // Parameters
-  val byteOffsetWidth = log2Ceil(dataWidth / 8)
-  val wordOffsetWidth = log2Ceil(wordsPerLine)
+  val tagWidth        = addrWidth - log2Ceil(numLines) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
   val indexWidth      = log2Ceil(numLines)
-  val tagWidth        = addrWidth - wordOffsetWidth - byteOffsetWidth
-  val lineWidth       = dataWidth * wordsPerLine
+  val wordOffsetWidth = log2Ceil(wordsPerLine)
+  val byteOffsetWidth = log2Ceil(dataWidth / 8)
+
+  val lineWidth = dataWidth * wordsPerLine
 
   // Cache storage
   val dataArray = Mem(numLines, UInt(lineWidth.W))

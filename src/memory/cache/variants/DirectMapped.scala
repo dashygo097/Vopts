@@ -18,11 +18,12 @@ class DirectMappedCache(
   dontTouch(ext_io)
 
   // Parameters
-  val byteOffsetWidth = log2Ceil(dataWidth / 8)
-  val wordOffsetWidth = log2Ceil(wordsPerLine)
+  val tagWidth        = addrWidth - log2Ceil(numLines) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
   val indexWidth      = log2Ceil(numLines)
-  val tagWidth        = addrWidth - indexWidth - wordOffsetWidth - byteOffsetWidth
-  val lineWidth       = dataWidth * wordsPerLine
+  val wordOffsetWidth = log2Ceil(wordsPerLine)
+  val byteOffsetWidth = log2Ceil(dataWidth / 8)
+
+  val lineWidth = dataWidth * wordsPerLine
 
   // Cache storage
   val dataArray = Mem(numLines, UInt(lineWidth.W))
@@ -35,28 +36,27 @@ class DirectMappedCache(
   val reqAddr       = RegInit(0.U(addrWidth.W))
   val reqData       = RegInit(0.U(dataWidth.W))
   val reqOp         = RegInit(MemoryOp.READ)
-  val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
-  val reqIndex      = RegInit(0.U(indexWidth.W))
   val reqTag        = RegInit(0.U(tagWidth.W))
+  val reqIndex      = RegInit(0.U(indexWidth.W))
+  val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
 
   // Current line data
   val currentLineData = Reg(UInt(lineWidth.W))
 
   // Write forwarding
   val lastWriteValid = RegInit(false.B)
-  val lastWriteIndex = Reg(UInt(indexWidth.W))
   val lastWriteTag   = Reg(UInt(tagWidth.W))
+  val lastWriteIndex = Reg(UInt(indexWidth.W))
   val lastWriteData  = Reg(UInt(lineWidth.W))
 
   val memReqSent = RegInit(false.B)
 
   // Address parsing helper function
   def parseAddr(addr: UInt) = new {
-    val byteOffset = addr(byteOffsetWidth - 1, 0)
-    val wordOffset = addr(wordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth)
-    val index      = addr(indexWidth + wordOffsetWidth + byteOffsetWidth - 1, wordOffsetWidth + byteOffsetWidth)
     val tag        = addr(addrWidth - 1, indexWidth + wordOffsetWidth + byteOffsetWidth)
-    val lineAddr   = Cat(addr(addrWidth - 1, wordOffsetWidth + byteOffsetWidth), 0.U((wordOffsetWidth + byteOffsetWidth).W))
+    val index      = addr(indexWidth + wordOffsetWidth + byteOffsetWidth - 1, wordOffsetWidth + byteOffsetWidth)
+    val wordOffset = addr(wordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth)
+    val byteOffset = addr(byteOffsetWidth - 1, 0)
   }
 
   // Extract word from cache line (BIG ENDIAN - MSB is word 0)
@@ -101,9 +101,9 @@ class DirectMappedCache(
         reqAddr       := io.upper.req.bits.addr
         reqData       := io.upper.req.bits.data
         reqOp         := io.upper.req.bits.op
-        reqWordOffset := parsed.wordOffset
-        reqIndex      := parsed.index
         reqTag        := parsed.tag
+        reqIndex      := parsed.index
+        reqWordOffset := parsed.wordOffset
 
         val useForwardedData = lastWriteValid &&
           (lastWriteIndex === parsed.index) &&
@@ -135,8 +135,8 @@ class DirectMappedCache(
 
           // Update write forwarding
           lastWriteValid := true.B
-          lastWriteIndex := reqIndex
           lastWriteTag   := reqTag
+          lastWriteIndex := reqIndex
           lastWriteData  := updatedLine
 
           io.upper.resp.valid := true.B
@@ -183,7 +183,7 @@ class DirectMappedCache(
       when(!memReqSent) {
         io.lower.req.valid     := true.B
         io.lower.req.bits.op   := MemoryOp.READ
-        io.lower.req.bits.addr := currParsed.lineAddr
+        io.lower.req.bits.addr := Cat(currParsed.tag, currParsed.index, 0.U((wordOffsetWidth + byteOffsetWidth).W))
         io.lower.req.bits.data := 0.U
 
         when(io.lower.req.ready) {
@@ -215,8 +215,8 @@ class DirectMappedCache(
 
         // Update write forwarding
         lastWriteValid := true.B
-        lastWriteIndex := reqIndex
         lastWriteTag   := reqTag
+        lastWriteIndex := reqIndex
         lastWriteData  := newLineData
 
         // Return data to CPU
