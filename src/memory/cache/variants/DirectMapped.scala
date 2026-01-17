@@ -77,7 +77,7 @@ class DirectMappedCache(
 
   // Current metadata
   val meta = metaArray(reqIndex)
-  val hit  = meta.valid && (meta.tag === reqTag)
+  val hit  = meta.alloc && (meta.tag === reqTag)
 
   // Default outputs
   io.upper.req.ready      := false.B
@@ -88,7 +88,7 @@ class DirectMappedCache(
   io.lower.req.bits.data  := 0.U
   io.lower.req.bits.op    := MemoryOp.READ
   io.lower.resp.ready     := false.B
-  io.miss                 := false.B
+  io.miss                 := true.B
 
   // FSM
   switch(state) {
@@ -109,11 +109,7 @@ class DirectMappedCache(
           (lastWriteIndex === parsed.index) &&
           (lastWriteTag === parsed.tag)
 
-        when(useForwardedData) {
-          currentLineData := lastWriteData
-        }.otherwise {
-          currentLineData := dataArray.read(parsed.index)
-        }
+        currentLineData := Mux(useForwardedData, lastWriteData, dataArray.read(parsed.index))
 
         state := CacheFSMState.COMPARE_TAG
       }
@@ -122,6 +118,7 @@ class DirectMappedCache(
     is(CacheFSMState.COMPARE_TAG) {
       when(hit) {
         // Cache hit
+        io.miss := false.B
         when(reqOp === MemoryOp.READ) {
           // Read hit - return the specific word
           io.upper.resp.valid     := true.B
@@ -150,22 +147,18 @@ class DirectMappedCache(
       }.otherwise {
         // Cache miss
         io.miss := true.B
+        when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+          lastWriteValid := false.B
+        }
 
-        when(meta.valid && meta.dirty) {
+        when(meta.alloc && meta.dirty) {
           // Need to write back dirty line
           when(lastWriteValid && (lastWriteIndex === reqIndex) && (lastWriteTag === meta.tag)) {
             currentLineData := lastWriteData
           }
-          // Invalidate forwarding for this index since we're evicting it
-          when(lastWriteValid && (lastWriteIndex === reqIndex)) {
-            lastWriteValid := false.B
-          }
           state := CacheFSMState.WRITEBACK
         }.otherwise {
           // No write-back needed
-          when(lastWriteValid && (lastWriteIndex === reqIndex)) {
-            lastWriteValid := false.B
-          }
           state := CacheFSMState.ALLOCATE
         }
       }
@@ -215,7 +208,7 @@ class DirectMappedCache(
 
         // Update cache
         dataArray.write(reqIndex, newLineData)
-        metaArray(reqIndex).valid := true.B
+        metaArray(reqIndex).alloc := true.B
         metaArray(reqIndex).tag   := reqTag
 
         currentLineData := newLineData
@@ -227,12 +220,12 @@ class DirectMappedCache(
         lastWriteData  := newLineData
 
         // Return data to CPU
-        io.upper.resp.valid := true.B
-        when(reqOp === MemoryOp.READ) {
-          io.upper.resp.bits.data := extractWord(newLineData, reqWordOffset)
-        }.otherwise {
-          io.upper.resp.bits.data := reqData
-        }
+        io.upper.resp.valid     := true.B
+        io.upper.resp.bits.data := Mux(
+          reqOp === MemoryOp.READ,
+          extractWord(newLineData, reqWordOffset),
+          reqData
+        )
 
         when(io.upper.resp.ready) {
           state      := CacheFSMState.IDLE
