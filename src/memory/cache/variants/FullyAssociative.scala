@@ -267,7 +267,7 @@ object TestFullyAssociativeCache extends App {
       dataWidth = 32,
       wordsPerLine = 4,
       numLines = 16,
-      replPolicy = FIFO 
+      replPolicy = FIFO
     ),
     "fully_associative_cache.sv",
     info = true,
