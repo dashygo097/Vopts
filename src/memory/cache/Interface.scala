@@ -4,7 +4,7 @@ import chisel3._
 
 class CacheEntry(tagWidth: Int) extends Bundle {
   val tag   = UInt(tagWidth.W)
-  val valid = Bool()
+  val alloc = Bool()
   val dirty = Bool()
 }
 
