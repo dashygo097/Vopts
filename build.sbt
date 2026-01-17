@@ -61,20 +61,20 @@ lazy val dsp = (project in file("src/dsp"))
     ),
   )
 
-lazy val mem = (project in file("src/memory"))
-  .dependsOn(utils, com)
+lazy val perip = (project in file("src/peripherals"))
+  .dependsOn(utils, mem)
   .settings(
-    name := "mem",
+    name := "perip",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
   )
 
-lazy val perip = (project in file("src/peripherals"))
-  .dependsOn(utils, mem)
+lazy val mem = (project in file("src/memory"))
+  .dependsOn(utils, com, math)
   .settings(
-    name := "perip",
+    name := "mem",
     Compile / unmanagedSourceDirectories += baseDirectory.value,
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full

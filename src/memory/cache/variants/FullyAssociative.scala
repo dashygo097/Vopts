@@ -85,7 +85,7 @@ class FullyAssociativeCache(
   io.lower.req.bits.data  := 0.U
   io.lower.req.bits.op    := MemoryOp.READ
   io.lower.resp.ready     := false.B
-  io.miss                 := true.B
+  io.miss                 := false.B
 
   // FSM
   switch(state) {
@@ -267,7 +267,7 @@ object TestFullyAssociativeCache extends App {
       dataWidth = 32,
       wordsPerLine = 4,
       numLines = 16,
-      replPolicy = Random
+      replPolicy = FIFO 
     ),
     "fully_associative_cache.sv",
     info = true,
