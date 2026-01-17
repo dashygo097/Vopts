@@ -7,7 +7,7 @@ TB_DIR = $(SIM_DIR)/tb
 COCOTB_DIR = $(SIM_DIR)/cocotb
 
 LIB ?= app
-FZF ?= false
+FZF ?= $(shell [ -x "$$(command -v fzf)" ] && echo true || echo false)
 STA_TOOL ?= yosys
 
 .PHONY: pre fmt build run clean update localpublish tb cocotb sta sta-yosys sta-vivado
