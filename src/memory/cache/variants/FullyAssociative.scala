@@ -19,8 +19,7 @@ class FullyAssociativeCache(
   dontTouch(ext_io)
 
   // Parameters
-  val tagWidth        = addrWidth - log2Ceil(numLines) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
-  val indexWidth      = log2Ceil(numLines)
+  val tagWidth        = addrWidth - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
   val wordOffsetWidth = log2Ceil(wordsPerLine)
   val byteOffsetWidth = log2Ceil(dataWidth / 8)
 
@@ -38,27 +37,26 @@ class FullyAssociativeCache(
   val reqAddr       = RegInit(0.U(addrWidth.W))
   val reqData       = RegInit(0.U(dataWidth.W))
   val reqOp         = RegInit(MemoryOp.READ)
-  val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
-  val reqIndex      = RegInit(0.U(indexWidth.W))
   val reqTag        = RegInit(0.U(tagWidth.W))
+  val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
+  val selectedLine  = RegInit(0.U(log2Ceil(numLines).W))
 
   // Current line data
   val currentLineData = Reg(UInt(lineWidth.W))
 
   // Write forwarding
-  val lastWriteValid = RegInit(false.B)
-  val lastWriteIndex = Reg(UInt(indexWidth.W))
-  val lastWriteTag   = Reg(UInt(tagWidth.W))
-  val lastWriteData  = Reg(UInt(lineWidth.W))
+  val lastWriteValid   = RegInit(false.B)
+  val lastWriteTag     = Reg(UInt(tagWidth.W))
+  val lastWriteData    = Reg(UInt(lineWidth.W))
+  val lastSelectedLine = Reg(UInt(log2Ceil(numLines).W))
 
   val memReqSent = RegInit(false.B)
 
   // Address parsing helper function
   def parseAddr(addr: UInt) = new {
-    val byteOffset = addr(byteOffsetWidth - 1, 0)
-    val wordOffset = addr(wordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth)
     val tag        = addr(addrWidth - 1, wordOffsetWidth + byteOffsetWidth)
-    val lineAddr   = Cat(addr(addrWidth - 1, wordOffsetWidth + byteOffsetWidth), 0.U((wordOffsetWidth + byteOffsetWidth).W))
+    val wordOffset = addr(wordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth)
+    val byteOffset = addr(byteOffsetWidth - 1, 0)
   }
 
   // Extract word from cache line (BIG ENDIAN - MSB is word 0)
@@ -99,8 +97,8 @@ class FullyAssociativeCache(
         reqAddr       := io.upper.req.bits.addr
         reqData       := io.upper.req.bits.data
         reqOp         := io.upper.req.bits.op
-        reqWordOffset := parsed.wordOffset
         reqTag        := parsed.tag
+        reqWordOffset := parsed.wordOffset
 
         // Search for tag match
         val hits        = Wire(Vec(numLines, Bool()))
@@ -112,28 +110,21 @@ class FullyAssociativeCache(
         val hitIndex    = PriorityEncoder(hits)
         val victimIndex = replState.getVictim()
 
-        reqIndex := Mux(isHit, hitIndex, victimIndex)
+        selectedLine := Mux(isHit, hitIndex, victimIndex)
 
         // Handle write forwarding
         val useForwardedData = lastWriteValid &&
-          isHit &&
-          (lastWriteIndex === hitIndex) &&
-          (lastWriteTag === parsed.tag)
+          isHit && (lastWriteTag === parsed.tag)
 
-        currentLineData := MuxCase(
-          dataArray.read(victimIndex),
-          Seq(
-            useForwardedData -> lastWriteData,
-            isHit            -> dataArray.read(hitIndex)
-          ),
-        )
+        // NOTE: Area optimization to reduce number of read ports on data array
+        currentLineData := Mux(useForwardedData, lastWriteData, dataArray.read(Mux(isHit, hitIndex, victimIndex)))
 
         state := CacheFSMState.COMPARE_TAG
       }
     }
 
     is(CacheFSMState.COMPARE_TAG) {
-      val meta = metaArray(reqIndex)
+      val meta = metaArray(selectedLine)
       val hit  = meta.alloc && (meta.tag === reqTag)
 
       when(hit) {
@@ -146,36 +137,36 @@ class FullyAssociativeCache(
 
           when(io.upper.resp.ready) {
             state := CacheFSMState.IDLE
-            replState.update(reqIndex, true.B)
+            replState.update(selectedLine, true.B)
           }
         }.otherwise {
           // Write hit - update the specific word
           val updatedLine = updateWord(currentLineData, reqWordOffset, reqData)
-          dataArray.write(reqIndex, updatedLine)
-          metaArray(reqIndex).dirty := true.B
+          dataArray.write(selectedLine, updatedLine)
+          metaArray(selectedLine).dirty := true.B
 
           // Update write forwarding
-          lastWriteValid := true.B
-          lastWriteIndex := reqIndex
-          lastWriteTag   := reqTag
-          lastWriteData  := updatedLine
+          lastWriteValid   := true.B
+          lastWriteData    := updatedLine
+          lastWriteTag     := reqTag
+          lastSelectedLine := selectedLine
 
           io.upper.resp.valid := true.B
           when(io.upper.resp.ready) {
             state := CacheFSMState.IDLE
-            replState.update(reqIndex, true.B)
+            replState.update(selectedLine, true.B)
           }
         }
       }.otherwise {
         // Cache miss
         io.miss := true.B
-        when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+        when(lastWriteValid && (lastSelectedLine === selectedLine)) {
           lastWriteValid := false.B
         }
 
         when(meta.alloc && meta.dirty) {
           // Need to write back dirty line
-          when(lastWriteValid && (lastWriteIndex === reqIndex) && (lastWriteTag === meta.tag)) {
+          when(lastWriteValid && (lastSelectedLine === selectedLine) && (lastWriteTag === meta.tag)) {
             currentLineData := lastWriteData
           }
           state := CacheFSMState.WRITEBACK
@@ -183,7 +174,7 @@ class FullyAssociativeCache(
           // No write-back needed
           state := CacheFSMState.ALLOCATE
         }
-        replState.update(reqIndex, false.B)
+        replState.update(selectedLine, false.B)
       }
     }
 
@@ -191,12 +182,12 @@ class FullyAssociativeCache(
       // Write back dirty line to memory
       io.lower.req.valid     := true.B
       io.lower.req.bits.op   := MemoryOp.WRITE
-      io.lower.req.bits.addr := Cat(metaArray(reqIndex).tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
+      io.lower.req.bits.addr := Cat(metaArray(selectedLine).tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
       io.lower.req.bits.data := currentLineData
 
       when(io.lower.req.ready) {
-        metaArray(reqIndex).dirty := false.B
-        state                     := CacheFSMState.ALLOCATE
+        metaArray(selectedLine).dirty := false.B
+        state                         := CacheFSMState.ALLOCATE
       }
     }
 
@@ -206,7 +197,7 @@ class FullyAssociativeCache(
       when(!memReqSent) {
         io.lower.req.valid     := true.B
         io.lower.req.bits.op   := MemoryOp.READ
-        io.lower.req.bits.addr := currParsed.lineAddr
+        io.lower.req.bits.addr := Cat(currParsed.tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
         io.lower.req.bits.data := 0.U
 
         when(io.lower.req.ready) {
@@ -222,25 +213,25 @@ class FullyAssociativeCache(
 
         when(reqOp === MemoryOp.WRITE) {
           // Write allocate - update the word being written
-          newLineData               := updateWord(io.lower.resp.bits.data, reqWordOffset, reqData)
-          metaArray(reqIndex).dirty := true.B
+          newLineData                   := updateWord(io.lower.resp.bits.data, reqWordOffset, reqData)
+          metaArray(selectedLine).dirty := true.B
         }.otherwise {
-          newLineData               := io.lower.resp.bits.data
-          metaArray(reqIndex).dirty := false.B
+          newLineData                   := io.lower.resp.bits.data
+          metaArray(selectedLine).dirty := false.B
         }
 
         // Update cache
-        dataArray.write(reqIndex, newLineData)
-        metaArray(reqIndex).alloc := true.B
-        metaArray(reqIndex).tag   := reqTag
+        dataArray.write(selectedLine, newLineData)
+        metaArray(selectedLine).alloc := true.B
+        metaArray(selectedLine).tag   := reqTag
 
         currentLineData := newLineData
 
         // Update write forwarding
-        lastWriteValid := true.B
-        lastWriteIndex := reqIndex
-        lastWriteTag   := reqTag
-        lastWriteData  := newLineData
+        lastWriteValid   := true.B
+        lastWriteData    := newLineData
+        lastWriteTag     := reqTag
+        lastSelectedLine := selectedLine
 
         // Return data to CPU
         io.upper.resp.valid     := true.B
