@@ -70,4 +70,33 @@ class CacheExternalIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends
     // Control signals
     this.MISS := intf.miss
   }
+
+  def connectRegNext(intf: CacheIO): Unit = {
+    // Upper side request
+    intf.upper.req.bits.addr := RegNext(this.UADDR)
+    intf.upper.req.bits.data := RegNext(this.UDATA)
+    intf.upper.req.bits.op   := RegNext(this.UOP)
+    intf.upper.req.valid     := RegNext(this.UVALID)
+    this.UREADY              := RegNext(intf.upper.req.ready)
+
+    // Upper side response
+    this.URDATA           := RegNext(intf.upper.resp.bits.data)
+    this.URVALID          := RegNext(intf.upper.resp.valid)
+    intf.upper.resp.ready := RegNext(this.URREADY)
+
+    // Lower side request
+    this.LADDR           := RegNext(intf.lower.req.bits.addr)
+    this.LDATA           := RegNext(intf.lower.req.bits.data)
+    this.LOP             := RegNext(intf.lower.req.bits.op)
+    this.LVALID          := RegNext(intf.lower.req.valid)
+    intf.lower.req.ready := RegNext(this.LREADY)
+
+    // Lower side response
+    intf.lower.resp.bits.data := RegNext(this.LRDATA)
+    intf.lower.resp.valid     := RegNext(this.LRVALID)
+    this.LRREADY              := RegNext(intf.lower.resp.ready)
+
+    // Control signals
+    this.MISS := RegNext(intf.miss)
+  }
 }

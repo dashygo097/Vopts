@@ -10,7 +10,8 @@ class SetAssociativeCache(
   wordsPerLine: Int,
   linesPerWay: Int,
   numWays: Int,
-  replPolicy: ReplacementPolicy
+  replPolicy: ReplacementPolicy,
+  pipe: Boolean = false
 ) extends Module {
   override def desiredName: String = s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
 
@@ -297,7 +298,9 @@ class SetAssociativeCache(
     }
   }
 
-  ext_io.connect(io)
+  if (pipe) ext_io.connectRegNext(io)
+  else
+    ext_io.connect(io)
 }
 
 object TestSetAssociativeCache extends App {

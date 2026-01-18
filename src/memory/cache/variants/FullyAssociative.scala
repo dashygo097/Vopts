@@ -9,7 +9,8 @@ class FullyAssociativeCache(
   dataWidth: Int,
   wordsPerLine: Int,
   numLines: Int,
-  replPolicy: ReplacementPolicy
+  replPolicy: ReplacementPolicy,
+  pipe: Boolean = false
 ) extends Module {
   override def desiredName: String = s"fully_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
@@ -249,7 +250,9 @@ class FullyAssociativeCache(
     }
   }
 
-  ext_io.connect(io)
+  if (pipe) ext_io.connectRegNext(io)
+  else
+    ext_io.connect(io)
 }
 
 object TestFullyAssociativeCache extends App {
