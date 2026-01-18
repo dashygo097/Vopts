@@ -72,31 +72,36 @@ class CacheExternalIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends
   }
 
   def connectRegNext(intf: CacheIO): Unit = {
-    // Upper side request
-    intf.upper.req.bits.addr := RegNext(this.UADDR)
-    intf.upper.req.bits.data := RegNext(this.UDATA)
-    intf.upper.req.bits.op   := RegNext(this.UOP)
-    intf.upper.req.valid     := RegNext(this.UVALID)
-    this.UREADY              := RegNext(intf.upper.req.ready)
+    val uaddr_reg   = RegNext(this.UADDR, 0.U)
+    val udata_reg   = RegNext(this.UDATA, 0.U)
+    val uop_reg     = RegNext(this.UOP, MemoryOp.READ)
+    val uvalid_reg  = RegNext(this.UVALID, false.B)
+    val urready_reg = RegNext(this.URREADY, false.B)
 
-    // Upper side response
-    this.URDATA           := RegNext(intf.upper.resp.bits.data)
-    this.URVALID          := RegNext(intf.upper.resp.valid)
-    intf.upper.resp.ready := RegNext(this.URREADY)
+    intf.upper.req.bits.addr := uaddr_reg
+    intf.upper.req.bits.data := udata_reg
+    intf.upper.req.bits.op   := uop_reg
+    intf.upper.req.valid     := uvalid_reg
+    intf.upper.resp.ready    := urready_reg
 
-    // Lower side request
-    this.LADDR           := RegNext(intf.lower.req.bits.addr)
-    this.LDATA           := RegNext(intf.lower.req.bits.data)
-    this.LOP             := RegNext(intf.lower.req.bits.op)
-    this.LVALID          := RegNext(intf.lower.req.valid)
-    intf.lower.req.ready := RegNext(this.LREADY)
+    this.UREADY  := intf.upper.req.ready
+    this.URDATA  := intf.upper.resp.bits.data
+    this.URVALID := intf.upper.resp.valid
 
-    // Lower side response
-    intf.lower.resp.bits.data := RegNext(this.LRDATA)
-    intf.lower.resp.valid     := RegNext(this.LRVALID)
-    this.LRREADY              := RegNext(intf.lower.resp.ready)
+    val lready_reg  = RegNext(this.LREADY, false.B)
+    val lrdata_reg  = RegNext(this.LRDATA, 0.U)
+    val lrvalid_reg = RegNext(this.LRVALID, false.B)
 
-    // Control signals
-    this.MISS := RegNext(intf.miss)
+    intf.lower.req.ready      := lready_reg
+    intf.lower.resp.bits.data := lrdata_reg
+    intf.lower.resp.valid     := lrvalid_reg
+
+    this.LADDR   := intf.lower.req.bits.addr
+    this.LDATA   := intf.lower.req.bits.data
+    this.LOP     := intf.lower.req.bits.op
+    this.LVALID  := intf.lower.req.valid
+    this.LRREADY := intf.lower.resp.ready
+
+    this.MISS := intf.miss
   }
 }
