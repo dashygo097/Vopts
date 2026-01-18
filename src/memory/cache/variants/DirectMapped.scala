@@ -8,7 +8,8 @@ class DirectMappedCache(
   addrWidth: Int,
   dataWidth: Int,
   wordsPerLine: Int,
-  numLines: Int
+  numLines: Int,
+  pipe: Boolean = false
 ) extends Module {
   override def desiredName: String = s"direct_mapped_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
@@ -235,7 +236,9 @@ class DirectMappedCache(
     }
   }
 
-  ext_io.connect(io)
+  if (pipe) ext_io.connectRegNext(io)
+  else
+    ext_io.connect(io)
 }
 
 object TestDirectMappedCache extends App {
