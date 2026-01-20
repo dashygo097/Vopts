@@ -10,14 +10,12 @@ class FullyAssociativeCache(
   wordsPerLine: Int,
   numLines: Int,
   replPolicy: ReplacementPolicy,
-  pipe: Boolean = false
 ) extends Module {
   override def desiredName: String = s"fully_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
-  val ext_io = IO(new CacheExternalIO(addrWidth, dataWidth, wordsPerLine)).suggestName("CACHE")
-  val io     = Wire(new CacheIO(addrWidth, dataWidth, wordsPerLine))
-
-  dontTouch(ext_io)
+  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, wordsPerLine)))
+  val lower = IO(new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine))
+  val miss  = IO(Output(Bool()))
 
   // Parameters
   val tagWidth        = addrWidth - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
@@ -77,27 +75,27 @@ class FullyAssociativeCache(
   }
 
   // Default outputs
-  io.upper.req.ready      := false.B
-  io.upper.resp.valid     := false.B
-  io.upper.resp.bits.data := 0.U
-  io.lower.req.valid      := false.B
-  io.lower.req.bits.addr  := 0.U
-  io.lower.req.bits.data  := 0.U
-  io.lower.req.bits.op    := MemoryOp.READ
-  io.lower.resp.ready     := false.B
-  io.miss                 := false.B
+  upper.req.ready      := false.B
+  upper.resp.valid     := false.B
+  upper.resp.bits.data := 0.U
+  lower.req.valid      := false.B
+  lower.req.bits.addr  := 0.U
+  lower.req.bits.data  := 0.U
+  lower.req.bits.op    := MemoryOp.READ
+  lower.resp.ready     := false.B
+  miss                 := false.B
 
   // FSM
   switch(state) {
     is(CacheFSMState.IDLE) {
-      io.upper.req.ready := true.B
-      memReqSent         := false.B
+      upper.req.ready := true.B
+      memReqSent      := false.B
 
-      when(io.upper.req.fire) {
-        val parsed = parseAddr(io.upper.req.bits.addr)
-        reqAddr       := io.upper.req.bits.addr
-        reqData       := io.upper.req.bits.data
-        reqOp         := io.upper.req.bits.op
+      when(upper.req.fire) {
+        val parsed = parseAddr(upper.req.bits.addr)
+        reqAddr       := upper.req.bits.addr
+        reqData       := upper.req.bits.data
+        reqOp         := upper.req.bits.op
         reqTag        := parsed.tag
         reqWordOffset := parsed.wordOffset
 
@@ -129,14 +127,14 @@ class FullyAssociativeCache(
       val hit  = meta.alloc && (meta.tag === reqTag)
 
       when(hit) {
-        io.miss := false.B
+        miss := false.B
         // Cache hit
         when(reqOp === MemoryOp.READ) {
           // Read hit - return the specific word
-          io.upper.resp.valid     := true.B
-          io.upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
+          upper.resp.valid     := true.B
+          upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
 
-          when(io.upper.resp.ready) {
+          when(upper.resp.ready) {
             state := CacheFSMState.IDLE
             replState.update(selectedLine, true.B)
           }
@@ -152,15 +150,15 @@ class FullyAssociativeCache(
           lastWriteTag     := reqTag
           lastSelectedLine := selectedLine
 
-          io.upper.resp.valid := true.B
-          when(io.upper.resp.ready) {
+          upper.resp.valid := true.B
+          when(upper.resp.ready) {
             state := CacheFSMState.IDLE
             replState.update(selectedLine, true.B)
           }
         }
       }.otherwise {
         // Cache miss
-        io.miss := true.B
+        miss := true.B
         when(lastWriteValid && (lastSelectedLine === selectedLine)) {
           lastWriteValid := false.B
         }
@@ -181,12 +179,12 @@ class FullyAssociativeCache(
 
     is(CacheFSMState.WRITEBACK) {
       // Write back dirty line to memory
-      io.lower.req.valid     := true.B
-      io.lower.req.bits.op   := MemoryOp.WRITE
-      io.lower.req.bits.addr := Cat(metaArray(selectedLine).tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
-      io.lower.req.bits.data := currentLineData
+      lower.req.valid     := true.B
+      lower.req.bits.op   := MemoryOp.WRITE
+      lower.req.bits.addr := Cat(metaArray(selectedLine).tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
+      lower.req.bits.data := currentLineData
 
-      when(io.lower.req.ready) {
+      when(lower.req.ready) {
         metaArray(selectedLine).dirty := false.B
         state                         := CacheFSMState.ALLOCATE
       }
@@ -196,28 +194,28 @@ class FullyAssociativeCache(
       val currParsed = parseAddr(reqAddr)
 
       when(!memReqSent) {
-        io.lower.req.valid     := true.B
-        io.lower.req.bits.op   := MemoryOp.READ
-        io.lower.req.bits.addr := Cat(currParsed.tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
-        io.lower.req.bits.data := 0.U
+        lower.req.valid     := true.B
+        lower.req.bits.op   := MemoryOp.READ
+        lower.req.bits.addr := Cat(currParsed.tag, 0.U((wordOffsetWidth + byteOffsetWidth).W))
+        lower.req.bits.data := 0.U
 
-        when(io.lower.req.ready) {
+        when(lower.req.ready) {
           memReqSent := true.B
         }
       }
 
       // Always assert ready to accept response
-      io.lower.resp.ready := true.B
+      lower.resp.ready := true.B
 
-      when(memReqSent && io.lower.resp.fire) {
+      when(memReqSent && lower.resp.fire) {
         val newLineData = Wire(UInt(lineWidth.W))
 
         when(reqOp === MemoryOp.WRITE) {
           // Write allocate - update the word being written
-          newLineData                   := updateWord(io.lower.resp.bits.data, reqWordOffset, reqData)
+          newLineData                   := updateWord(lower.resp.bits.data, reqWordOffset, reqData)
           metaArray(selectedLine).dirty := true.B
         }.otherwise {
-          newLineData                   := io.lower.resp.bits.data
+          newLineData                   := lower.resp.bits.data
           metaArray(selectedLine).dirty := false.B
         }
 
@@ -235,24 +233,20 @@ class FullyAssociativeCache(
         lastSelectedLine := selectedLine
 
         // Return data to CPU
-        io.upper.resp.valid     := true.B
-        io.upper.resp.bits.data := Mux(
+        upper.resp.valid     := true.B
+        upper.resp.bits.data := Mux(
           reqOp === MemoryOp.READ,
           extractWord(newLineData, reqWordOffset),
           reqData
         )
 
-        when(io.upper.resp.ready) {
+        when(upper.resp.ready) {
           state      := CacheFSMState.IDLE
           memReqSent := false.B
         }
       }
     }
   }
-
-  if (pipe) ext_io.connectRegNext(io)
-  else
-    ext_io.connect(io)
 }
 
 object TestFullyAssociativeCache extends App {
