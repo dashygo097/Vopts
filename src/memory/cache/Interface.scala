@@ -8,6 +8,11 @@ class CacheEntry(tagWidth: Int) extends Bundle {
   val dirty = Bool()
 }
 
+class CacheReadOnlyEntry(tagWidth: Int) extends Bundle {
+  val tag   = UInt(tagWidth.W)
+  val alloc = Bool()
+}
+
 class CacheIO(addrWidth: Int, dataWidth: Int, wordsPerLine: Int) extends Bundle {
   val upper = Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, wordsPerLine))
   val lower = new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine)
