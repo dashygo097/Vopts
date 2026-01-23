@@ -4,6 +4,9 @@
 .bloop/
 .bsp/
 .metals/
+.python-version
+.venv
+
 project/project
 build/
 target/
@@ -12,6 +15,3 @@ obj_dir/
 app/
 sims/
 synth/
-
-.python-version
-.venv
