@@ -57,6 +57,12 @@ class AXIFullMasterFSM(
   read_valid  := axi.r.valid
   busy        := state =/= IDLE
 
+  // Continuously sample write_data during burst
+  when(axi_wvalid && axi.w.ready) {
+    axi_wdata := write_data
+    axi_wstrb := write_strb
+  }
+
   override protected def onIDLE(): Unit =
     when(write_en) {
       state       := WRITE_ADDR
@@ -66,6 +72,10 @@ class AXIFullMasterFSM(
       axi_awsize  := log2Ceil(dataWidth / 8).U
       axi_awburst := write_burst
       axi_awvalid := true.B
+      axi_wdata   := write_data
+      axi_wstrb   := write_strb
+      axi_wid     := write_id
+      axi_wlast   := (write_len === 0.U)
     }.elsewhen(read_en) {
       state       := READ_ADDR
       axi_araddr  := read_addr
@@ -75,12 +85,6 @@ class AXIFullMasterFSM(
       axi_arburst := read_burst
       axi_arvalid := true.B
     }
-
-  // Continuously sample write_data during burst
-  override protected def onWriteData(): Unit = {
-    axi_wdata := write_data
-    axi_wstrb := write_strb
-  }
 
   override protected def onWriteResp(): Unit = {
     write_done := true.B
