@@ -24,9 +24,7 @@ class AXIFullMasterFSM(
   val write_done  = IO(Output(Bool())).suggestName("W_DONE")
   val write_resp  = IO(Output(UInt(2.W))).suggestName("W_RESP")
   val write_bid   = IO(Output(UInt(idWidth.W))).suggestName("W_BID")
-
   val write_valid = IO(Output(Bool())).suggestName("W_VALID")
-  val write_ready = IO(Input(Bool())).suggestName("W_READY")
 
   val read_addr  = IO(Input(UInt(addrWidth.W))).suggestName("R_ADDR")
   val read_len   = IO(Input(UInt(8.W))).suggestName("R_LEN")
@@ -38,9 +36,7 @@ class AXIFullMasterFSM(
   val read_resp  = IO(Output(UInt(2.W))).suggestName("R_RESP")
   val read_rid   = IO(Output(UInt(idWidth.W))).suggestName("R_RID")
   val read_last  = IO(Output(Bool())).suggestName("R_LAST")
-
   val read_valid = IO(Output(Bool())).suggestName("R_VALID")
-  val read_ready = IO(Input(Bool())).suggestName("R_READY")
 
   val busy = IO(Output(Bool())).suggestName("BUSY")
 
