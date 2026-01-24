@@ -11,7 +11,7 @@ class AXILiteArbiter(
   fifoDepth: Int = 4
 ) extends Module {
   override def desiredName: String =
-    s"axilite_arbiter${numMasters}_${addrWidth}x${dataWidth}_d$fifoDepth"
+    s"axilite_arbiter_${numMasters}_${addrWidth}x${dataWidth}_d$fifoDepth"
 
   require(numMasters > 0, "Number of masters must be at least 1")
   require(fifoDepth > 0, "FIFO depth must be at least 1")
@@ -112,6 +112,7 @@ class AXILiteArbiter(
     when(!aw_done && aw_fifos(selected_master_w).deq.valid && master.aw.ready) {
       aw_done := true.B
     }
+
     when(!w_done && w_fifos(selected_master_w).deq.valid && master.w.ready) {
       w_done := true.B
     }

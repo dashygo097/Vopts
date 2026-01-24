@@ -10,7 +10,7 @@ class AXILiteDecoder(
   addressMap: Seq[(Long, Long)] // (baseAddr, endAddr) for each slave
 ) extends Module {
   override def desiredName: String =
-    s"axilite_decoder${addressMap.length}_${addrWidth}x$dataWidth"
+    s"axilite_decoder_${addressMap.length}_${addrWidth}x$dataWidth"
 
   require(addressMap.length > 0, "Address map must have at least one slave")
   for (i <- 0 until addressMap.length)
