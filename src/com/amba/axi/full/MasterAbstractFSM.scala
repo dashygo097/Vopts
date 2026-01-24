@@ -156,7 +156,7 @@ abstract class AXIFullMasterBaseFSM(
             write_beat_count := 0.U
             state            := WRITE_RESP
           }.otherwise {
-            axi_wlast := (write_beat_count + 1.U) === axi_awlen
+            axi_wlast := (write_beat_count + 1.U) >= axi_awlen
             onWriteData()
           }
         }

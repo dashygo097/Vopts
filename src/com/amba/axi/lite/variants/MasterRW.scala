@@ -37,8 +37,8 @@ class AXILiteMasterRW(
     when(write_en) {
       state       := WRITE_ADDR
       axi_awaddr  := write_addr
-      axi_wdata   := write_data
       axi_awvalid := true.B
+      axi_wdata   := write_data
     }.elsewhen(read_en) {
       state       := READ_ADDR
       axi_araddr  := read_addr
