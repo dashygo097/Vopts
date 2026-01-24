@@ -12,9 +12,8 @@ class AXIFullArbiter(
   fifoDepth: Int = 4,
   userWidth: Int = 0
 ) extends Module {
-
   override def desiredName: String =
-    s"axifull_arbiter${numMasters}_${addrWidth}x${dataWidth}_id${idWidth}_d$fifoDepth"
+    s"axifull_arbiter_${numMasters}_${addrWidth}x${dataWidth}_id${idWidth}_d$fifoDepth"
 
   require(numMasters > 0, "Number of masters must be at least 1")
   require(fifoDepth > 0, "FIFO depth must be at least 1")

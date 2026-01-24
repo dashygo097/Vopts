@@ -12,7 +12,7 @@ class AXIFullDecoder(
   addressMap: Seq[(Long, Long)] // (baseAddr, endAddr) for each slave
 ) extends Module {
   override def desiredName: String =
-    s"axifull_decoder${addressMap.length}_${addrWidth}x$dataWidth"
+    s"axifull_decoder_${addressMap.length}_${addrWidth}x$dataWidth"
 
   require(addressMap.length > 0, "Address map must have at least one slave")
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")

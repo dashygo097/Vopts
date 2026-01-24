@@ -75,10 +75,8 @@ class AXIFullMasterFSM(
 
   // Continuously sample write_data during burst
   override protected def onWriteData(): Unit = {
-    // FIXME: FSM introduces a 2-cycle latency for write data
-    // This is a temporary solution
-    axi_wdata := RegNext(RegNext(write_data))
-    axi_wstrb := RegNext(RegNext(write_strb))
+    axi_wdata := write_data
+    axi_wstrb := write_strb
   }
 
   override protected def onWriteResp(): Unit = {
