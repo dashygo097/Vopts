@@ -112,6 +112,7 @@ abstract class AXIFullMasterBaseFSM(
 
   protected val state = RegInit(IDLE)
 
+  // TODO: make read and write independent
   // Abstract Callback Methods
   protected def onIDLE(): Unit                 = {}
   protected def onWriteAddr(): Unit            = {}

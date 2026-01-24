@@ -25,6 +25,9 @@ class AXIFullMasterFSM(
   val write_resp  = IO(Output(UInt(2.W))).suggestName("W_RESP")
   val write_bid   = IO(Output(UInt(idWidth.W))).suggestName("W_BID")
 
+  val write_valid = IO(Output(Bool())).suggestName("W_VALID")
+  val write_ready = IO(Input(Bool())).suggestName("W_READY")
+
   val read_addr  = IO(Input(UInt(addrWidth.W))).suggestName("R_ADDR")
   val read_len   = IO(Input(UInt(8.W))).suggestName("R_LEN")
   val read_burst = IO(Input(UInt(2.W))).suggestName("R_BURST")
@@ -36,18 +39,23 @@ class AXIFullMasterFSM(
   val read_rid   = IO(Output(UInt(idWidth.W))).suggestName("R_RID")
   val read_last  = IO(Output(Bool())).suggestName("R_LAST")
 
+  val read_valid = IO(Output(Bool())).suggestName("R_VALID")
+  val read_ready = IO(Input(Bool())).suggestName("R_READY")
+
   val busy = IO(Output(Bool())).suggestName("BUSY")
 
   // Default outputs
-  write_done := false.B
-  write_resp := 0.U
-  write_bid  := 0.U
-  read_done  := false.B
-  read_data  := axi.r.bits.data
-  read_resp  := axi.r.bits.resp
-  read_rid   := axi.r.bits.id
-  read_last  := axi.r.bits.last
-  busy       := state =/= IDLE
+  write_done  := false.B
+  write_resp  := 0.U
+  write_bid   := 0.U
+  write_valid := axi.w.valid
+  read_done   := false.B
+  read_data   := axi.r.bits.data
+  read_resp   := axi.r.bits.resp
+  read_rid    := axi.r.bits.id
+  read_last   := axi.r.bits.last
+  read_valid  := axi.r.valid
+  busy        := state =/= IDLE
 
   override protected def onIDLE(): Unit =
     when(write_en) {
@@ -58,11 +66,6 @@ class AXIFullMasterFSM(
       axi_awsize  := log2Ceil(dataWidth / 8).U
       axi_awburst := write_burst
       axi_awvalid := true.B
-      // Capture first beat
-      axi_wdata   := write_data
-      axi_wstrb   := write_strb
-      axi_wid     := write_id
-      axi_wlast   := (write_len === 0.U)
     }.elsewhen(read_en) {
       state       := READ_ADDR
       axi_araddr  := read_addr
