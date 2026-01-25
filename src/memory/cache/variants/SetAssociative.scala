@@ -11,6 +11,7 @@ class SetAssociativeCache(
   linesPerWay: Int,
   numWays: Int,
   replPolicy: ReplacementPolicy,
+  bigEndian: Boolean = true
 ) extends Module {
   override def desiredName: String = s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
 
@@ -65,21 +66,32 @@ class SetAssociativeCache(
     val setBase = Cat(index, 0.U(log2Ceil(linesPerWay).W))
   }
 
-  // Extract word from cache line (BIG ENDIAN - MSB is word 0)
-  def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
-    words(wordOffset)
-  }
+  // Extract word from cache line
+  def extractWord(lineData: UInt, wordOffset: UInt): UInt =
+    if (bigEndian) {
+      val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+      words(wordOffset)
+    } else {
+      val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+      words(wordOffset)
+    }
 
-  // Update word in cache line (BIG ENDIAN)
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).map { i =>
-      val currentWord    = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-      val bigEndianIndex = (wordsPerLine - 1 - i).U
-      Mux(wordOffset === bigEndianIndex, newWord, currentWord)
-    })
-    words.asUInt
-  }
+  // Update word in cache line
+  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt =
+    if (bigEndian) {
+      val words = VecInit((0 until wordsPerLine).map { i =>
+        val currentWord    = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+        val bigEndianIndex = (wordsPerLine - 1 - i).U
+        Mux(wordOffset === bigEndianIndex, newWord, currentWord)
+      })
+      words.asUInt
+    } else {
+      val words = VecInit((0 until wordsPerLine).map { i =>
+        val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+        Mux(wordOffset === i.U, newWord, currentWord)
+      })
+      words.asUInt
+    }
 
   // Helper to compute flat index from set and way
   def getFlatIndex(setIndex: UInt, way: UInt): UInt =
