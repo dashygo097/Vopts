@@ -122,94 +122,95 @@ class AXIFullArbiter(
   }
 
   // Write Path Arbitration
-  val selected_master_aw = RegInit(0.U(log2Ceil(numMasters).W))
-  val selected_master_w  = RegInit(0.U(log2Ceil(numMasters).W))
-  val aw_locked          = RegInit(false.B)
-  val w_locked           = RegInit(false.B)
+  val selected_write_master = RegInit(0.U(log2Ceil(numMasters).W))
+  val write_locked          = RegInit(false.B)
+  val aw_transferred        = RegInit(false.B)
+  val w_burst_done          = RegInit(false.B)
 
   val aw_fifo_valids = VecInit(aw_fifos.map(_.deq.valid))
   val w_fifo_valids  = VecInit(w_fifos.map(_.deq.valid))
 
-  // Round-robin arbiter for AW channel
-  val aw_grant = Wire(UInt(log2Ceil(numMasters).W))
-  when(!aw_locked) {
-    aw_grant := PriorityMux(
+  // Round-robin arbiter for write channel (considers both AW and W)
+  val write_grant = Wire(UInt(log2Ceil(numMasters).W))
+  when(!write_locked) {
+    write_grant := PriorityMux(
       (0 until numMasters).map { i =>
-        val idx = (selected_master_aw + i.U) % numMasters.U
-        (aw_fifo_valids(idx), idx)
+        val idx = (selected_write_master + i.U) % numMasters.U
+        // Grant to a master that has either AW or W data ready
+        ((aw_fifo_valids(idx) || w_fifo_valids(idx)), idx)
       }
     )
   }.otherwise {
-    aw_grant := selected_master_aw
+    write_grant := selected_write_master
   }
 
-  // Round-robin arbiter for W channel
-  val w_grant = Wire(UInt(log2Ceil(numMasters).W))
-  when(!w_locked) {
-    w_grant := PriorityMux(
-      (0 until numMasters).map { i =>
-        val idx = (selected_master_w + i.U) % numMasters.U
-        (w_fifo_valids(idx), idx)
-      }
-    )
-  }.otherwise {
-    w_grant := selected_master_w
+  // Lock the write path when either AW or W has data
+  when(!write_locked && (aw_fifo_valids(write_grant) || w_fifo_valids(write_grant))) {
+    write_locked          := true.B
+    selected_write_master := write_grant
+    aw_transferred        := false.B
+    w_burst_done          := false.B
   }
 
-  // AW channel lock/unlock
-  when(!aw_locked && aw_fifo_valids(aw_grant) && master.aw.ready) {
-    aw_locked          := true.B
-    selected_master_aw := aw_grant
-  }.elsewhen(aw_locked && aw_fifo_valids(selected_master_aw) && master.aw.ready) {
-    aw_locked          := false.B
-    selected_master_aw := (selected_master_aw + 1.U) % numMasters.U
+  // Track AW transfer
+  when(write_locked && aw_fifo_valids(selected_write_master) && master.aw.ready) {
+    aw_transferred := true.B
   }
 
-  // W channel lock/unlock - lock on first transfer, unlock when last transfers
-  when(!w_locked && w_fifo_valids(w_grant)) {
-    w_locked          := true.B
-    selected_master_w := w_grant
-  }.elsewhen(
-    w_locked && w_fifos(selected_master_w).deq.valid &&
-      w_fifos(selected_master_w).deq.bits.last && master.w.ready
+  // Track W burst completion
+  when(
+    write_locked && w_fifos(selected_write_master).deq.valid &&
+      w_fifos(selected_write_master).deq.bits.last && master.w.ready
   ) {
-    w_locked          := false.B
-    selected_master_w := (selected_master_w + 1.U) % numMasters.U
+    w_burst_done := true.B
   }
 
-  // AW channel forwarding
-  master.aw.valid       := aw_fifo_valids(aw_grant)
-  master.aw.bits.addr   := aw_fifos(aw_grant).deq.bits.addr
-  master.aw.bits.prot   := aw_fifos(aw_grant).deq.bits.prot
-  master.aw.bits.id     := aw_fifos(aw_grant).deq.bits.id
-  master.aw.bits.len    := aw_fifos(aw_grant).deq.bits.len
-  master.aw.bits.size   := aw_fifos(aw_grant).deq.bits.size
-  master.aw.bits.burst  := aw_fifos(aw_grant).deq.bits.burst
-  master.aw.bits.lock   := aw_fifos(aw_grant).deq.bits.lock
-  master.aw.bits.cache  := aw_fifos(aw_grant).deq.bits.cache
-  master.aw.bits.qos    := aw_fifos(aw_grant).deq.bits.qos
-  master.aw.bits.region := aw_fifos(aw_grant).deq.bits.region
-  master.aw.bits.user   := aw_fifos(aw_grant).deq.bits.user
+  // Unlock when both AW and W burst are complete
+  when(write_locked && aw_transferred && w_burst_done) {
+    write_locked          := false.B
+    selected_write_master := (selected_write_master + 1.U) % numMasters.U
+    aw_transferred        := false.B
+    w_burst_done          := false.B
+  }
+
+  // AW channel forwarding - only when locked to this master
+  master.aw.valid       := write_locked && aw_fifo_valids(selected_write_master) && !aw_transferred
+  master.aw.bits.addr   := aw_fifos(selected_write_master).deq.bits.addr
+  master.aw.bits.prot   := aw_fifos(selected_write_master).deq.bits.prot
+  master.aw.bits.id     := aw_fifos(selected_write_master).deq.bits.id
+  master.aw.bits.len    := aw_fifos(selected_write_master).deq.bits.len
+  master.aw.bits.size   := aw_fifos(selected_write_master).deq.bits.size
+  master.aw.bits.burst  := aw_fifos(selected_write_master).deq.bits.burst
+  master.aw.bits.lock   := aw_fifos(selected_write_master).deq.bits.lock
+  master.aw.bits.cache  := aw_fifos(selected_write_master).deq.bits.cache
+  master.aw.bits.qos    := aw_fifos(selected_write_master).deq.bits.qos
+  master.aw.bits.region := aw_fifos(selected_write_master).deq.bits.region
+  master.aw.bits.user   := aw_fifos(selected_write_master).deq.bits.user
 
   for (i <- 0 until numMasters)
-    aw_fifos(i).deq.ready := (aw_grant === i.U) && master.aw.ready
+    aw_fifos(i).deq.ready := write_locked && (selected_write_master === i.U) &&
+      !aw_transferred && master.aw.ready
 
-  // W channel forwarding
-  master.w.valid     := w_locked && w_fifos(selected_master_w).deq.valid
-  master.w.bits.data := w_fifos(selected_master_w).deq.bits.data
-  master.w.bits.strb := w_fifos(selected_master_w).deq.bits.strb
-  master.w.bits.last := w_fifos(selected_master_w).deq.bits.last
-  master.w.bits.id   := w_fifos(selected_master_w).deq.bits.id
-  master.w.bits.user := w_fifos(selected_master_w).deq.bits.user
+  // W channel forwarding - only when locked to this master
+  master.w.valid     := write_locked && w_fifos(selected_write_master).deq.valid && !w_burst_done
+  master.w.bits.data := w_fifos(selected_write_master).deq.bits.data
+  master.w.bits.strb := w_fifos(selected_write_master).deq.bits.strb
+  master.w.bits.last := w_fifos(selected_write_master).deq.bits.last
+  master.w.bits.id   := w_fifos(selected_write_master).deq.bits.id
+  master.w.bits.user := w_fifos(selected_write_master).deq.bits.user
 
   for (i <- 0 until numMasters)
-    w_fifos(i).deq.ready := w_locked && (selected_master_w === i.U) && master.w.ready
+    w_fifos(i).deq.ready := write_locked && (selected_write_master === i.U) &&
+      !w_burst_done && master.w.ready
 
   // B channel response routing - enqueue when AW transfers
   val b_route_fifo = Module(new Queue(UInt(log2Ceil(numMasters).W), fifoDepth * numMasters))
 
-  b_route_fifo.io.enq.valid := aw_fifo_valids(aw_grant) && master.aw.ready
-  b_route_fifo.io.enq.bits  := aw_fifos(aw_grant).deq.bits.master_id
+  b_route_fifo.io.enq.valid := write_locked &&
+    aw_fifo_valids(selected_write_master) &&
+    !aw_transferred &&
+    master.aw.ready
+  b_route_fifo.io.enq.bits  := aw_fifos(selected_write_master).deq.bits.master_id
 
   b_route_fifo.io.deq.ready := master.b.valid &&
     slaves(b_route_fifo.io.deq.bits).b.ready
@@ -225,55 +226,70 @@ class AXIFullArbiter(
     slaves(b_route_fifo.io.deq.bits).b.ready
 
   // Read Path Arbitration
-  val selected_master_ar = RegInit(0.U(log2Ceil(numMasters).W))
-  val ar_locked          = RegInit(false.B)
+  val selected_read_master = RegInit(0.U(log2Ceil(numMasters).W))
+  val read_locked          = RegInit(false.B)
+  val ar_transferred       = RegInit(false.B)
 
   val ar_fifo_valids = VecInit(ar_fifos.map(_.deq.valid))
 
-  val ar_grant = Wire(UInt(log2Ceil(numMasters).W))
+  val read_grant = Wire(UInt(log2Ceil(numMasters).W))
 
-  when(!ar_locked) {
-    ar_grant := PriorityMux(
+  when(!read_locked) {
+    read_grant := PriorityMux(
       (0 until numMasters).map { i =>
-        val idx = (selected_master_ar + i.U) % numMasters.U
+        val idx = (selected_read_master + i.U) % numMasters.U
         (ar_fifo_valids(idx), idx)
       }
     )
   }.otherwise {
-    ar_grant := selected_master_ar
+    read_grant := selected_read_master
   }
 
-  // AR channel lock/unlock - track full burst completion
-  when(!ar_locked && ar_fifo_valids(ar_grant) && master.ar.ready) {
-    ar_locked          := true.B
-    selected_master_ar := ar_grant
-  }.elsewhen(ar_locked && master.r.valid && slaves(selected_master_ar).r.ready && master.r.bits.last) {
-    ar_locked          := false.B
-    selected_master_ar := (selected_master_ar + 1.U) % numMasters.U
+  // AR channel lock - lock when AR has data
+  when(!read_locked && ar_fifo_valids(read_grant)) {
+    read_locked          := true.B
+    selected_read_master := read_grant
+    ar_transferred       := false.B
+  }
+
+  // Track AR transfer
+  when(read_locked && ar_fifo_valids(selected_read_master) && master.ar.ready) {
+    ar_transferred := true.B
+  }
+
+  // Unlock when the entire read burst completes (R channel last beat)
+  when(read_locked && master.r.valid && slaves(selected_read_master).r.ready && master.r.bits.last) {
+    read_locked          := false.B
+    selected_read_master := (selected_read_master + 1.U) % numMasters.U
+    ar_transferred       := false.B
   }
 
   // AR channel forwarding
-  master.ar.valid       := ar_fifo_valids(ar_grant)
-  master.ar.bits.addr   := ar_fifos(ar_grant).deq.bits.addr
-  master.ar.bits.prot   := ar_fifos(ar_grant).deq.bits.prot
-  master.ar.bits.id     := ar_fifos(ar_grant).deq.bits.id
-  master.ar.bits.len    := ar_fifos(ar_grant).deq.bits.len
-  master.ar.bits.size   := ar_fifos(ar_grant).deq.bits.size
-  master.ar.bits.burst  := ar_fifos(ar_grant).deq.bits.burst
-  master.ar.bits.lock   := ar_fifos(ar_grant).deq.bits.lock
-  master.ar.bits.cache  := ar_fifos(ar_grant).deq.bits.cache
-  master.ar.bits.qos    := ar_fifos(ar_grant).deq.bits.qos
-  master.ar.bits.region := ar_fifos(ar_grant).deq.bits.region
-  master.ar.bits.user   := ar_fifos(ar_grant).deq.bits.user
+  master.ar.valid       := read_locked && ar_fifo_valids(selected_read_master) && !ar_transferred
+  master.ar.bits.addr   := ar_fifos(selected_read_master).deq.bits.addr
+  master.ar.bits.prot   := ar_fifos(selected_read_master).deq.bits.prot
+  master.ar.bits.id     := ar_fifos(selected_read_master).deq.bits.id
+  master.ar.bits.len    := ar_fifos(selected_read_master).deq.bits.len
+  master.ar.bits.size   := ar_fifos(selected_read_master).deq.bits.size
+  master.ar.bits.burst  := ar_fifos(selected_read_master).deq.bits.burst
+  master.ar.bits.lock   := ar_fifos(selected_read_master).deq.bits.lock
+  master.ar.bits.cache  := ar_fifos(selected_read_master).deq.bits.cache
+  master.ar.bits.qos    := ar_fifos(selected_read_master).deq.bits.qos
+  master.ar.bits.region := ar_fifos(selected_read_master).deq.bits.region
+  master.ar.bits.user   := ar_fifos(selected_read_master).deq.bits.user
 
   for (i <- 0 until numMasters)
-    ar_fifos(i).deq.ready := (ar_grant === i.U) && master.ar.ready
+    ar_fifos(i).deq.ready := read_locked && (selected_read_master === i.U) &&
+      !ar_transferred && master.ar.ready
 
-  // R channel response routing - fixed to handle bursts correctly
+  // R channel response routing - enqueue when AR transfers
   val r_route_fifo = Module(new Queue(UInt(log2Ceil(numMasters).W), fifoDepth * numMasters))
 
-  r_route_fifo.io.enq.valid := ar_fifo_valids(ar_grant) && master.ar.ready
-  r_route_fifo.io.enq.bits  := ar_fifos(ar_grant).deq.bits.master_id
+  r_route_fifo.io.enq.valid := read_locked &&
+    ar_fifo_valids(selected_read_master) &&
+    !ar_transferred &&
+    master.ar.ready
+  r_route_fifo.io.enq.bits  := ar_fifos(selected_read_master).deq.bits.master_id
 
   // Dequeue from routing FIFO only when the last beat is transferred
   r_route_fifo.io.deq.ready := master.r.valid &&
