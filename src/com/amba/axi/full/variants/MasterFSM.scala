@@ -77,10 +77,9 @@ class AXIFullMasterFSM(
     }
 
   // Continuously sample write_data during burst
-  override protected def onWriteData(): Unit = {
+  override protected def onWriteData(): Unit =
     axi_wdata := write_data
     axi_wstrb := write_strb
-  }
 
   override protected def onWriteResp(): Unit = {
     write_done := true.B
