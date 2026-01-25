@@ -74,7 +74,7 @@ class SetAssociativeCacheReadOnly(
 
   // Helper to compute flat index from set and way
   def getFlatIndex(setIndex: UInt, way: UInt): UInt =
-    (setIndex * linesPerWay.U) + way
+    Cat(setIndex, 0.U(log2Ceil(linesPerWay).W)) + way
 
   // Default outputs
   upper.req.ready      := false.B
