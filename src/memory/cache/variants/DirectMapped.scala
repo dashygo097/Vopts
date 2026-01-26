@@ -154,23 +154,34 @@ class DirectMappedCache(
           when(lastWriteValid && (lastWriteIndex === reqIndex) && (lastWriteTag === meta.tag)) {
             currentLineData := lastWriteData
           }
-          state := CacheFSMState.WRITEBACK
+          memReqSent := false.B
+          state      := CacheFSMState.WRITEBACK
         }.otherwise {
           // No write-back needed
-          state := CacheFSMState.ALLOCATE
+          memReqSent := false.B
+          state      := CacheFSMState.ALLOCATE
         }
       }
     }
 
+    // TODO: The current impl is pending writeback state, there can be a more effective way to do this
     is(CacheFSMState.WRITEBACK) {
       // Write back dirty line to memory
-      lower.req.valid     := true.B
+      lower.req.valid     := !memReqSent
       lower.req.bits.op   := MemoryOp.WRITE
       lower.req.bits.addr := Cat(meta.tag, reqIndex, 0.U((wordOffsetWidth + byteOffsetWidth).W))
       lower.req.bits.data := currentLineData
 
+      when(!memReqSent && lower.req.fire) {
+        memReqSent := true.B
+      }
+
+      // Always assert ready to accept response
+      lower.resp.ready := true.B
+
       when(lower.req.ready) {
         metaArray(reqIndex).dirty := false.B
+        memReqSent                := false.B
         state                     := CacheFSMState.ALLOCATE
       }
     }
