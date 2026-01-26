@@ -10,7 +10,6 @@ class FullyAssociativeCache(
   wordsPerLine: Int,
   numLines: Int,
   replPolicy: ReplacementPolicy,
-  bigEndian: Boolean = true
 ) extends Module {
   override def desiredName: String = s"fully_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
@@ -61,7 +60,7 @@ class FullyAssociativeCache(
 
   // Extract word from cache line
   def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
     words(wordOffset)
   }
 

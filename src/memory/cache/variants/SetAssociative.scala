@@ -11,7 +11,6 @@ class SetAssociativeCache(
   linesPerWay: Int,
   numWays: Int,
   replPolicy: ReplacementPolicy,
-  bigEndian: Boolean = true
 ) extends Module {
   override def desiredName: String = s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
 
@@ -68,26 +67,18 @@ class SetAssociativeCache(
 
   // Extract word from cache line
   def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
     words(wordOffset)
   }
 
   // Update word in cache line
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt =
-    if (bigEndian) {
-      val words = VecInit((0 until wordsPerLine).map { i =>
-        val currentWord    = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-        val bigEndianIndex = (wordsPerLine - 1 - i).U
-        Mux(wordOffset === bigEndianIndex, newWord, currentWord)
-      })
-      words.asUInt
-    } else {
-      val words = VecInit((0 until wordsPerLine).map { i =>
-        val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-        Mux(wordOffset === i.U, newWord, currentWord)
-      })
-      words.asUInt
-    }
+  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
+    val words = VecInit((0 until wordsPerLine).map { i =>
+      val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+      Mux(wordOffset === i.U, newWord, currentWord)
+    })
+    words.asUInt
+  }
 
   // Helper to compute flat index from set and way
   def getFlatIndex(setIndex: UInt, way: UInt): UInt =
@@ -234,10 +225,16 @@ class SetAssociativeCache(
 
     is(CacheFSMState.WRITEBACK) {
       // Write back dirty line to memory
+      val writebackData = Mux(
+        lastWriteValid && (lastSelectedLine === selectedLine) && (lastWriteTag === metaArray(selectedLine).tag),
+        lastWriteData,
+        currentLineData
+      )
+
       lower.req.valid     := true.B
       lower.req.bits.op   := MemoryOp.WRITE
       lower.req.bits.addr := Cat(metaArray(selectedLine).tag, reqIndex, 0.U((wordOffsetWidth + byteOffsetWidth).W))
-      lower.req.bits.data := currentLineData
+      lower.req.bits.data := writebackData
 
       when(lower.req.ready) {
         metaArray(selectedLine).dirty := false.B
