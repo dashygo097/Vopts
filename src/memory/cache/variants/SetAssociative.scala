@@ -205,10 +205,12 @@ class SetAssociativeCache(
           when(lastWriteValid && (lastSelectedLine === selectedLine) && (lastWriteTag === meta.tag)) {
             currentLineData := lastWriteData
           }
-          state := CacheFSMState.WRITEBACK
+          memReqSent := false.B
+          state      := CacheFSMState.WRITEBACK
         }.otherwise {
           // No write-back needed
-          state := CacheFSMState.ALLOCATE
+          memReqSent := false.B
+          state      := CacheFSMState.ALLOCATE
         }
 
         // Update replacement policy on miss
@@ -223,21 +225,24 @@ class SetAssociativeCache(
       }
     }
 
+    // TODO: The current impl is pending writeback state, there can be a more effective way to do this
     is(CacheFSMState.WRITEBACK) {
       // Write back dirty line to memory
-      val writebackData = Mux(
-        lastWriteValid && (lastSelectedLine === selectedLine) && (lastWriteTag === metaArray(selectedLine).tag),
-        lastWriteData,
-        currentLineData
-      )
-
-      lower.req.valid     := true.B
+      lower.req.valid     := !memReqSent
       lower.req.bits.op   := MemoryOp.WRITE
       lower.req.bits.addr := Cat(metaArray(selectedLine).tag, reqIndex, 0.U((wordOffsetWidth + byteOffsetWidth).W))
-      lower.req.bits.data := writebackData
+      lower.req.bits.data := currentLineData
 
-      when(lower.req.ready) {
+      when(!memReqSent && lower.req.fire) {
+        memReqSent := true.B
+      }
+
+      // Always assert ready to accept response
+      lower.resp.ready := true.B
+
+      when(memReqSent && lower.resp.fire) {
         metaArray(selectedLine).dirty := false.B
+        memReqSent                    := false.B
         state                         := CacheFSMState.ALLOCATE
       }
     }
