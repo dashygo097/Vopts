@@ -9,7 +9,6 @@ class DirectMappedCache(
   dataWidth: Int,
   wordsPerLine: Int,
   numLines: Int,
-  bigEndian: Boolean = true
 ) extends Module {
   override def desiredName: String = s"direct_mapped_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
@@ -61,26 +60,18 @@ class DirectMappedCache(
 
   // Extract word from cache line
   def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
     words(wordOffset)
   }
 
   // Update word in cache line
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt =
-    if (bigEndian) {
-      val words = VecInit((0 until wordsPerLine).map { i =>
-        val currentWord    = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-        val bigEndianIndex = (wordsPerLine - 1 - i).U
-        Mux(wordOffset === bigEndianIndex, newWord, currentWord)
-      })
-      words.asUInt
-    } else {
-      val words = VecInit((0 until wordsPerLine).map { i =>
-        val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-        Mux(wordOffset === i.U, newWord, currentWord)
-      })
-      words.asUInt
-    }
+  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
+    val words = VecInit((0 until wordsPerLine).map { i =>
+      val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+      Mux(wordOffset === i.U, newWord, currentWord)
+    })
+    words.asUInt
+  }
 
   // Current metadata
   val meta = metaArray(reqIndex)
