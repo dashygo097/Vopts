@@ -67,14 +67,10 @@ class SetAssociativeCache(
   }
 
   // Extract word from cache line
-  def extractWord(lineData: UInt, wordOffset: UInt): UInt =
-    if (bigEndian) {
-      val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
-      words(wordOffset)
-    } else {
-      val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
-      words(wordOffset)
-    }
+  def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
+    val words = VecInit((0 until wordsPerLine).reverse.map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+    words(wordOffset)
+  }
 
   // Update word in cache line
   def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt =
