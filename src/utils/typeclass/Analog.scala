@@ -14,7 +14,7 @@ object AnalogSyntax {
     def *(y: UInt)(implicit arith: Arithmetic[T]): T                    = arith.mul(x, y)
     def /(y: T)(implicit arith: Arithmetic[T]): T                       = arith.div(x, y)
     def /(y: UInt)(implicit arith: Arithmetic[T]): T                    = arith.div(x, y)
-    def zero()(implicit arith: Arithmetic[T]): T                        = arith.zero(x)
+    def zero(implicit arith: Arithmetic[T]): T                          = arith.zero(x)
     def fromInt(value: Int)(implicit arith: Arithmetic[T]): T           = arith.fromInt(x, value)
     def fromDouble(value: Double)(implicit arith: Arithmetic[T]): T     = arith.fromDouble(x, value)
   }

@@ -3,54 +3,49 @@ package vopts.math
 import vopts.utils._
 import chisel3._
 
-class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T]) extends Bundle with MatrixOps[T] {
-  var _row = row
-  var _col = col
-
+class Matrix[T <: Data](gen: T, val row: Int, val col: Int)(implicit ev: Arithmetic[T]) extends Bundle with MatrixOps[T] {
   val value = Vec(row, Vec(col, gen.cloneType))
 
-  def row(): Int               = _row
   def row(idx: Int): Vector[T] = {
-    require(idx >= 0 && idx < _row, s"Matrix row index out of bounds: $idx, size=${_row}")
+    require(idx >= 0 && idx < row, s"Matrix row index out of bounds: $idx, size=$row")
     Vector(value(idx))
   }
-  def col(): Int               = _col
   def col(idx: Int): Vector[T] = {
-    require(idx >= 0 && idx < _col, s"Matrix column index out of bounds: $idx, size=${_col}")
+    require(idx >= 0 && idx < col, s"Matrix column index out of bounds: $idx, size=$col")
     Vector(value.map(_(idx)))
   }
-  def gen(): T                 = value.head.head.cloneType
+  def eleType: T               = value.head.head.cloneType
 
   def apply(r: Int, c: Int): T              = {
     require(
-      r >= 0 && r < _row && c >= 0 && c < _col,
-      s"Matrix index out of bounds: ($r, $c), size=(${_row}, ${_col})"
+      r >= 0 && r < row && c >= 0 && c < col,
+      s"Matrix index out of bounds: ($r, $c), size=($row, $col)"
     )
     value(r)(c)
   }
   def update(r: Int, c: Int, data: T): Unit = {
     require(
-      r >= 0 && r < _row && c >= 0 && c < _col,
-      s"Matrix index out of bounds: ($r, $c), size=(${_row}, ${_col})"
+      r >= 0 && r < row && c >= 0 && c < col,
+      s"Matrix index out of bounds: ($r, $c), size=($row, $col)"
     )
     value(r)(c) := data
   }
 
   def fromSeq(seq: Seq[Seq[T]]): Matrix[T] = {
     require(
-      seq.length == _row && seq.forall(_.length == _col),
-      s"Matrix size mismatch: expected ${_row}x${_col}, got ${seq.length}x${if (seq.nonEmpty) seq.head.length else 0}"
+      seq.length == row && seq.forall(_.length == col),
+      s"Matrix size mismatch: expected ${row}x$col, got ${seq.length}x${if (seq.nonEmpty) seq.head.length else 0}"
     )
-    for (r <- 0 until _row)
-      value(r) := seq(r).map(_.asTypeOf(gen)).toVector
+    for (r <- 0 until row)
+      value(r) := seq(r).map(_.asTypeOf(eleType)).toVector
     this
   }
 
   def slice(rowStart: Int, rowEnd: Int, colStart: Int, colEnd: Int): Matrix[T] = {
     require(
-      rowStart >= 0 && rowEnd <= _row && rowStart < rowEnd &&
-        colStart >= 0 && colEnd <= _col && colStart < colEnd,
-      s"Matrix slice indices out of bounds: ($rowStart, $colStart) to ($rowEnd, $colEnd), size=(${_row}, ${_col})"
+      rowStart >= 0 && rowEnd <= row && rowStart < rowEnd &&
+        colStart >= 0 && colEnd <= col && colStart < colEnd,
+      s"Matrix slice indices out of bounds: ($rowStart, $colStart) to ($rowEnd, $colEnd), size=($row, $col)"
     )
     val mat = Wire(new Matrix(gen, rowEnd - rowStart, colEnd - colStart))
     for (r <- 0 until (rowEnd - rowStart))
@@ -61,10 +56,10 @@ class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T]) 
 
   def sliceRows(rowStart: Int, rowEnd: Int): Matrix[T] = {
     require(
-      rowStart >= 0 && rowEnd <= _row && rowStart < rowEnd,
-      s"Matrix slice indices out of bounds: $rowStart to $rowEnd, size=${_row}"
+      rowStart >= 0 && rowEnd <= row && rowStart < rowEnd,
+      s"Matrix slice indices out of bounds: $rowStart to $rowEnd, size=$row"
     )
-    val mat = Wire(new Matrix(gen, rowEnd - rowStart, _col))
+    val mat = Wire(new Matrix(gen, rowEnd - rowStart, col))
     for (r <- 0 until (rowEnd - rowStart))
       mat.value(r) := value(rowStart + r)
     mat
@@ -72,25 +67,24 @@ class Matrix[T <: Data](gen: T, row: Int, col: Int)(implicit ev: Arithmetic[T]) 
 
   def sliceCols(colStart: Int, colEnd: Int): Matrix[T] = {
     require(
-      colStart >= 0 && colEnd <= _col && colStart < colEnd,
-      s"Matrix slice indices out of bounds: $colStart to $colEnd, size=${_col}"
+      colStart >= 0 && colEnd <= col && colStart < colEnd,
+      s"Matrix slice indices out of bounds: $colStart to $colEnd, size=$col"
     )
-    val mat = Wire(new Matrix(gen, _row, colEnd - colStart))
-    for (r <- 0 until _row)
+    val mat = Wire(new Matrix(gen, row, colEnd - colStart))
+    for (r <- 0 until row)
       for (c <- 0 until (colEnd - colStart))
         mat.value(r)(c) := value(r)(colStart + c)
     mat
   }
 
   def isCompatible(that: Matrix[T]): Boolean =
-    this.row() == that.row() && this.col() == that
-      .col() && this.gen().getClass == that.gen().getClass
+    this.row == that.row && this.col == that.col && this.eleType.getClass == that.eleType.getClass
 
   def requireCompatible(that: Matrix[T]): Unit =
     require(
       isCompatible(that),
       s"Matrix compatibility check failed: " +
-        s"this(${this.row()}, ${this.col()}, ${this.gen()}) vs that(${that.row()}, ${that.col()}, ${that.gen()})"
+        s"this(${this.row}, ${this.col}, ${this.eleType}) vs that(${that.row}, ${that.col}, ${that.eleType})"
     )
 }
 
@@ -106,7 +100,7 @@ object Matrix {
         seq(r).length == col,
         s"Matrix row size mismatch at row $r: expected $col, got ${seq(r).length}"
       )
-      mat.value(r) := seq(r).map(_.asTypeOf(mat.gen())).toVector
+      mat.value(r) := seq(r).map(_.asTypeOf(mat.eleType)).toVector
     }
     mat
   }
@@ -268,9 +262,9 @@ trait MatrixOps[T <: Data] {
 
   def add(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
-    val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
-    for (r <- 0 until self.row())
-      for (c <- 0 until self.col())
+    val mat = Wire(new Matrix(self.eleType, self.row, self.col))
+    for (r <- 0 until self.row)
+      for (c <- 0 until self.col)
         mat.value(r)(c) := self.value(r)(c) + that.value(r)(c)
     mat
   }
@@ -278,9 +272,9 @@ trait MatrixOps[T <: Data] {
 
   def sub(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
-    val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
-    for (r <- 0 until self.row())
-      for (c <- 0 until self.col())
+    val mat = Wire(new Matrix(self.eleType, self.row, self.col))
+    for (r <- 0 until self.row)
+      for (c <- 0 until self.col)
         mat.value(r)(c) := self.value(r)(c) - that.value(r)(c)
     mat
   }
@@ -288,9 +282,9 @@ trait MatrixOps[T <: Data] {
 
   def mul(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
-    val mat = Wire(new Matrix(self.gen(), self.row(), that.col()))
-    for (r <- 0 until self.row())
-      for (c <- 0 until that.col())
+    val mat = Wire(new Matrix(self.eleType, self.row, that.col))
+    for (r <- 0 until self.row)
+      for (c <- 0 until that.col)
         mat.value(r)(c) := self.value(r)(c) * that.value(r)(c)
     mat
   }
@@ -298,9 +292,9 @@ trait MatrixOps[T <: Data] {
 
   def div(that: Matrix[T])(implicit ev: Arithmetic[T]): Matrix[T] = {
     this.requireCompatible(that)
-    val mat = Wire(new Matrix(self.gen(), self.row(), self.col()))
-    for (r <- 0 until self.row())
-      for (c <- 0 until self.col())
+    val mat = Wire(new Matrix(self.eleType, self.row, self.col))
+    for (r <- 0 until self.row)
+      for (c <- 0 until self.col)
         mat.value(r)(c) := self.value(r)(c) / that.value(r)(c)
     mat
   }

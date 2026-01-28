@@ -25,7 +25,7 @@ object Butterfly {
     in1.requireCompatible(in2)
     in1.requireCompatible(wn)
 
-    val m = Module(new Butterfly(in1.dw(), in1.bp()))
+    val m = Module(new Butterfly(in1.dw, in1.bp))
     m.io.in1 := in1
     m.io.in2 := in2
     m.io.wn  := wn

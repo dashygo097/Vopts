@@ -3,28 +3,25 @@ package vopts.math
 import vopts.utils._
 import chisel3._
 
-class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends Bundle with VectorOps[T] {
-  var _size = size
-
+class Vector[T <: Data](gen: T, val size: Int)(implicit ev: Arithmetic[T]) extends Bundle with VectorOps[T] {
   val value = Vec(size, gen.cloneType)
 
-  def size(): Int = _size
-  def gen(): T    = value.head.cloneType
+  def eleType: T = value.head.cloneType
 
   def apply(idx: Int): T = {
-    require(idx >= 0 && idx < _size, s"Vector index out of bounds: $idx, size=${_size}")
+    require(idx >= 0 && idx < size, s"Vector index out of bounds: $idx, size=$size")
     value(idx)
   }
 
   def update(idx: Int, data: T): Unit = {
-    require(idx >= 0 && idx < _size, s"Vector index out of bounds: $idx, size=${_size}")
+    require(idx >= 0 && idx < size, s"Vector index out of bounds: $idx, size=$size")
     value(idx) := data
   }
 
   def slice(start: Int, end: Int): Vector[T] = {
     require(
-      start >= 0 && end <= _size && start < end,
-      s"Vector slice indices out of bounds: start=$start, end=$end, size=${_size}"
+      start >= 0 && end <= size && start < end,
+      s"Vector slice indices out of bounds: start=$start, end=$end, size=$size"
     )
     val vec = Wire(new Vector(gen, end - start))
     vec.value := value.slice(start, end)
@@ -32,20 +29,20 @@ class Vector[T <: Data](gen: T, size: Int)(implicit ev: Arithmetic[T]) extends B
   }
 
   def fromSeq(seq: Seq[T]): Vector[T] = {
-    require(seq.length == _size, s"Vector size mismatch: expected ${_size}, got ${seq.length}")
-    val vec = Wire(new Vector(gen, _size))
+    require(seq.length == size, s"Vector size mismatch: expected $size, got ${seq.length}")
+    val vec = Wire(new Vector(gen, size))
     vec.value := seq.map(_.asTypeOf(gen)).toVector
     vec
   }
 
   def isCompatible(that: Vector[T]): Boolean =
-    this.size() == that.size() && this.gen().getClass == that.gen().getClass
+    this.size == that.size && this.gen.getClass == that.eleType.getClass
 
   def requireCompatible(that: Vector[T]): Unit =
     require(
       isCompatible(that),
       s"Vector compatibility check failed: " +
-        s"this(${this.size()}, ${this.gen()}) vs that(${that.size()}, ${that.gen()})"
+        s"this(${this.size}, ${this.eleType}) vs that(${that.size}, ${that.eleType})"
     )
 }
 
@@ -112,7 +109,7 @@ trait VectorOps[T <: Data] {
 
   def add(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
-    val result = Wire(new Vector(self.gen(), self.size()))
+    val result = Wire(new Vector(self.eleType, self.size))
     result.value := Pipeline.buildChunkTree(self.value, that.value, chunkSize)(_ + _)
     result
   }
@@ -120,7 +117,7 @@ trait VectorOps[T <: Data] {
 
   def sub(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
-    val result = Wire(new Vector(self.gen(), self.size()))
+    val result = Wire(new Vector(self.eleType, self.size))
     result.value := Pipeline.buildChunkTree(self.value, that.value, chunkSize)(_ - _)
     result
   }
@@ -128,7 +125,7 @@ trait VectorOps[T <: Data] {
 
   def mul(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
-    val result = Wire(new Vector(self.gen(), self.size()))
+    val result = Wire(new Vector(self.eleType, self.size))
     result.value := Pipeline.buildChunkTree(self.value, that.value, chunkSize)(_ * _)
     result
   }
@@ -136,21 +133,21 @@ trait VectorOps[T <: Data] {
 
   def div(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T] = {
     this.requireCompatible(that)
-    val result = Wire(new Vector(self.gen(), self.size()))
+    val result = Wire(new Vector(self.eleType, self.size))
     result.value := Pipeline.buildChunkTree(self.value, that.value, 16)(_ / _)
     result
   }
   def /(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T]   = this.div(that, chunkSize)
 
   def sum(groupSize: Int = 2)(implicit ev: Arithmetic[T]): T = {
-    val sum = Wire(self.gen())
+    val sum = Wire(self.eleType)
     sum := Pipeline.buildTree(self.value, groupSize)(_ + _)
     sum
   }
 
   def dot(that: Vector[T], groupSize: Int = 2)(implicit ev: Arithmetic[T]): T = {
     this.requireCompatible(that)
-    val products = VecInit.tabulate(self.size()) { i =>
+    val products = VecInit.tabulate(self.size) { i =>
       RegNext(self.value(i) * that.value(i))
     }
     val sum      = Pipeline.buildTree(products, groupSize)(_ + _)
@@ -158,13 +155,13 @@ trait VectorOps[T <: Data] {
   }
 
   def min(groupSize: Int = 2)(implicit ord: PartialOrdered[T]): T = {
-    val minimum = Wire(self.gen())
+    val minimum = Wire(self.eleType)
     minimum := Pipeline.buildTree(self.value, groupSize)(_ min _)
     minimum
   }
 
   def max(groupSize: Int = 2)(implicit ord: PartialOrdered[T]): T = {
-    val maximum = Wire(self.gen())
+    val maximum = Wire(self.eleType)
     maximum := Pipeline.buildTree(self.value, groupSize)(_ max _)
     maximum
   }
