@@ -5,46 +5,44 @@ import scala.math._
 import chisel3._
 import chisel3.util._
 
-class Float(expWidth: Int, sigWidth: Int) extends Bundle with FloatOps {
+class Float(val expWidth: Int, val sigWidth: Int) extends Bundle with FloatOps {
   val value: UInt = UInt((expWidth + sigWidth + 1).W)
 
-  def totalWidth(): Int = expWidth + sigWidth + 1
-  def expWidth(): Int   = expWidth
-  def sigWidth(): Int   = sigWidth
-  def bias(): Int       = (1 << (expWidth - 1)) - 1
+  def totalWidth: Int = expWidth + sigWidth + 1
+  def bias: Int       = (1 << (expWidth - 1)) - 1
 
-  def sign(): Bool        = value(totalWidth() - 1).asBool
-  def exponent(): UInt    = value(totalWidth() - 2, sigWidth)
-  def fraction(): UInt    = value(sigWidth - 1, 0)
-  def mantissa(): UInt    = fraction()
-  def significant(): UInt = mantissa()
+  def sign: Bool        = value(totalWidth - 1).asBool
+  def exponent: UInt    = value(totalWidth - 2, sigWidth)
+  def fraction: UInt    = value(sigWidth - 1, 0)
+  def mantissa: UInt    = fraction
+  def significant: UInt = mantissa
 
   def apply(idx: Int): Bool = {
-    require(idx >= 0 && idx < totalWidth(), s"Index {$idx} out of bounds for dataWidth ${totalWidth()}")
+    require(idx >= 0 && idx < totalWidth, s"Index {$idx} out of bounds for dataWidth $totalWidth")
     value(idx)
   }
 
   def apply(high: Int, low: Int): UInt = {
-    require(high >= low && high < totalWidth() && low >= 0, s"Index range {$high, $low} out of bounds for dataWidth ${totalWidth()}")
+    require(high >= low && high < totalWidth && low >= 0, s"Index range {$high, $low} out of bounds for dataWidth $totalWidth")
     value(high, low)
   }
 
   def update(idx: Int, b: Bool): Unit = {
-    require(idx >= 0 && idx < totalWidth(), s"Index {$idx} out of bounds for dataWidth ${totalWidth()}")
+    require(idx >= 0 && idx < totalWidth, s"Index {$idx} out of bounds for dataWidth $totalWidth")
     value(idx) := b
   }
 
-  def newInstance(): Float = new Float(expWidth, sigWidth)
+  def newInstance: Float = new Float(expWidth, sigWidth)
 
   def fromDouble(value: Double): Float = {
-    val fl      = Wire(this.newInstance())
+    val fl      = Wire(this.newInstance)
     val signBit = (value < 0).B
     if (value == 0.0) {
       fl.value := 0.U
     } else {
       val absValue      = math.abs(value)
-      val expValue      = math.floor(math.log(absValue) / math.log(2)).toInt + bias()
-      val normValue     = absValue / pow(2, expValue - bias())
+      val expValue      = math.floor(math.log(absValue) / math.log(2)).toInt + bias
+      val normValue     = absValue / pow(2, expValue - bias)
       val fractionValue = ((normValue - 1.0) * pow(2, sigWidth)).toLong
       fl.value := Cat(signBit, expValue.U(expWidth.W), fractionValue.U(sigWidth.W))
     }
@@ -54,20 +52,20 @@ class Float(expWidth: Int, sigWidth: Int) extends Bundle with FloatOps {
   def fromInt(value: Int): Float =
     fromDouble(value.toDouble)
 
-  def Zero(): Float = {
-    val fl = Wire(this.newInstance())
+  def Zero: Float = {
+    val fl = Wire(this.newInstance)
     fl.value := 0.U
     fl
   }
 
-  def NaN(): Float = {
-    val fl = Wire(this.newInstance())
+  def NaN: Float = {
+    val fl = Wire(this.newInstance)
     fl.value := Cat(0.U(1.W), ((1 << expWidth) - 1).U(expWidth.W), 1.U(sigWidth.W))
     fl
   }
 
-  def Inf(): Float = {
-    val fl = Wire(this.newInstance())
+  def Inf: Float = {
+    val fl = Wire(this.newInstance)
     fl.value := Cat(0.U(1.W), ((1 << expWidth) - 1).U(expWidth.W), 0.U(sigWidth.W))
     fl
   }
@@ -88,28 +86,28 @@ object Float {
 trait FloatOps {
   self: Float =>
 
-  def unpack(): (Bool, UInt, UInt) = (sign(), exponent(), fraction())
+  def unpack: (Bool, UInt, UInt) = (sign, exponent, fraction)
 
-  def isNaN(): Bool = {
-    val maxExp = ((1 << expWidth()) - 1).U
-    (exponent() === maxExp) && (fraction() =/= 0.U)
+  def isNaN: Bool = {
+    val maxExp = ((1 << expWidth) - 1).U
+    (exponent === maxExp) && (fraction =/= 0.U)
   }
 
-  def isInf(): Bool = {
-    val maxExp = ((1 << expWidth()) - 1).U
-    (exponent() === maxExp) && (fraction() === 0.U)
+  def isInf: Bool = {
+    val maxExp = ((1 << expWidth) - 1).U
+    (exponent === maxExp) && (fraction === 0.U)
   }
 
-  def isZero(): Bool = (exponent() === 0.U) && (fraction() === 0.U)
+  def isZero: Bool = (exponent === 0.U) && (fraction === 0.U)
 
   def +(that: Float): Float  = {
     require(
-      this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(),
+      this.expWidth == that.expWidth && this.sigWidth == that.sigWidth,
       s"Float operations require matching formats: " +
-        s"Float(${this.expWidth()}, ${this.sigWidth()}) vs Float(${that.expWidth()}, ${that.sigWidth()})"
+        s"Float(${this.expWidth}, ${this.sigWidth}) vs Float(${that.expWidth}, ${that.sigWidth})"
     )
-    val result = Wire(this.newInstance())
-    val adder  = Module(new AddRecFN(expWidth(), sigWidth()))
+    val result = Wire(this.newInstance)
+    val adder  = Module(new AddRecFN(expWidth, sigWidth))
     adder.io.subOp          := false.B
     adder.io.a              := this.value
     adder.io.b              := that.value
@@ -122,9 +120,9 @@ trait FloatOps {
   def +(that: Double): Float = this + that
 
   def -(that: Float): Float  = {
-    require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(), s"Float operations require matching formats")
-    val result = Wire(this.newInstance())
-    val adder  = Module(new AddRecFN(expWidth(), sigWidth()))
+    require(this.expWidth == that.expWidth && this.sigWidth == that.sigWidth, s"Float operations require matching formats")
+    val result = Wire(this.newInstance)
+    val adder  = Module(new AddRecFN(expWidth, sigWidth))
     adder.io.subOp          := true.B
     adder.io.a              := this.value
     adder.io.b              := that.value
@@ -137,9 +135,9 @@ trait FloatOps {
   def -(that: Double): Float = this - that
 
   def *(that: Float): Float  = {
-    require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(), s"Float operations require matching formats")
-    val result     = Wire(this.newInstance())
-    val multiplier = Module(new MulRecFN(expWidth(), sigWidth()))
+    require(this.expWidth == that.expWidth && this.sigWidth == that.sigWidth, s"Float operations require matching formats")
+    val result     = Wire(this.newInstance)
+    val multiplier = Module(new MulRecFN(expWidth, sigWidth))
     multiplier.io.a              := this.value
     multiplier.io.b              := that.value
     multiplier.io.roundingMode   := 0.U
@@ -151,9 +149,9 @@ trait FloatOps {
   def *(that: Double): Float = this * that
 
   def /(that: Float): Float  = {
-    require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(), s"Float operations require matching formats")
-    val result  = Wire(this.newInstance())
-    val divider = Module(new DivSqrtRecFN_small(expWidth(), sigWidth(), 0))
+    require(this.expWidth == that.expWidth && this.sigWidth == that.sigWidth, s"Float operations require matching formats")
+    val result  = Wire(this.newInstance)
+    val divider = Module(new DivSqrtRecFN_small(expWidth, sigWidth, 0))
     divider.io.inValid        := true.B
     divider.io.sqrtOp         := false.B
     divider.io.a              := this.value
@@ -167,8 +165,8 @@ trait FloatOps {
   def /(that: Double): Float = this / that
 
   def <(that: Float): Bool  = {
-    require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(), s"Float operations require matching formats")
-    val comparator = Module(new CompareRecFN(expWidth(), sigWidth()))
+    require(this.expWidth == that.expWidth && this.sigWidth == that.sigWidth, s"Float operations require matching formats")
+    val comparator = Module(new CompareRecFN(expWidth, sigWidth))
     comparator.io.a         := this.value
     comparator.io.b         := that.value
     comparator.io.signaling := false.B
@@ -178,8 +176,8 @@ trait FloatOps {
   def <(that: Double): Bool = this < that
 
   def ===(that: Float): Bool  = {
-    require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(), s"Float operations require matching formats")
-    val comparator = Module(new CompareRecFN(expWidth(), sigWidth()))
+    require(this.expWidth == that.expWidth && this.sigWidth == that.sigWidth, s"Float operations require matching formats")
+    val comparator = Module(new CompareRecFN(expWidth, sigWidth))
     comparator.io.a         := this.value
     comparator.io.b         := that.value
     comparator.io.signaling := false.B
@@ -193,8 +191,8 @@ trait FloatOps {
   def =/=(that: Double): Bool = this =/= that
 
   def <=(that: Float): Bool  = {
-    require(this.expWidth() == that.expWidth() && this.sigWidth() == that.sigWidth(), s"Float operations require matching formats")
-    val comparator = Module(new CompareRecFN(expWidth(), sigWidth()))
+    require(this.expWidth == that.expWidth && this.sigWidth == that.sigWidth, s"Float operations require matching formats")
+    val comparator = Module(new CompareRecFN(expWidth, sigWidth))
     comparator.io.a         := this.value
     comparator.io.b         := that.value
     comparator.io.signaling := false.B

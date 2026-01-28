@@ -31,25 +31,3 @@ class UnifiedMemoryReadOnlyIO(addrWidth: Int, dataWidth: Int, wordsPerRespond: I
   val req  = Decoupled(new MemoryHierarchyReadOnlyReq(addrWidth))
   val resp = Flipped(Decoupled(new MemoryHierarchyResp(dataWidth, wordsPerRespond)))
 }
-
-object MemoryHierarchyReq {
-  def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int) = new MemoryHierarchyReq(addrWidth, dataWidth, wordsPerRequest)
-}
-
-object MemoryHierarchyReadOnlyReq {
-  def apply(addrWidth: Int) = new MemoryHierarchyReadOnlyReq(addrWidth)
-}
-
-object MemoryHierarchyResp {
-  def apply(addrWidth: Int, wordsPerRespond: Int) = new MemoryHierarchyResp(addrWidth, wordsPerRespond)
-}
-
-object UnifiedMemoryIO {
-  def apply(addrWidth: Int, dataWidth: Int, wordsPerRequest: Int, wordsPerRespond: Int) =
-    new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerRequest, wordsPerRespond)
-}
-
-object UnifiedMemoryReadOnlyIO {
-  def apply(addrWidth: Int, dataWidth: Int, wordsPerRespond: Int) =
-    new UnifiedMemoryReadOnlyIO(addrWidth, dataWidth, wordsPerRespond)
-}

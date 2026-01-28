@@ -14,7 +14,7 @@ class SetAssociativeCache(
 ) extends Module {
   override def desiredName: String = s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
 
-  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, wordsPerLine)))
+  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, 1)))
   val lower = IO(new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine))
   val miss  = IO(Output(Bool()))
 

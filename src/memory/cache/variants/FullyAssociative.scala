@@ -13,7 +13,7 @@ class FullyAssociativeCache(
 ) extends Module {
   override def desiredName: String = s"fully_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
-  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, wordsPerLine)))
+  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, 1)))
   val lower = IO(new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine))
   val miss  = IO(Output(Bool()))
 

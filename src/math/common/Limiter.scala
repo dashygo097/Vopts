@@ -15,10 +15,9 @@ class Limiter[T <: Data](gen: T, threshold: AnyVal)(implicit
     case _              => throw new IllegalArgumentException("Unsupported threshold type")
   }
 
-  val zero = gen.zero()
   io.out := Mux(
     io.in > thresholdValue,
     thresholdValue,
-    Mux(io.in < zero - thresholdValue, zero - thresholdValue, io.in)
+    Mux(io.in < gen.zero - thresholdValue, gen.zero - thresholdValue, io.in)
   )
 }

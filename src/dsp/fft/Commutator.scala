@@ -22,7 +22,7 @@ object Commutator {
   def apply(in1: FPComplex, in2: FPComplex, sel: Bool): (FPComplex, FPComplex) = {
     in1.requireCompatible(in2)
 
-    val commutator = Module(new Commutator(in1.dw(), in1.bp()))
+    val commutator = Module(new Commutator(in1.dw, in1.bp))
     commutator.io.in1 := in1
     commutator.io.in2 := in2
     commutator.io.sel := sel

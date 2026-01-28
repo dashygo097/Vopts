@@ -12,7 +12,7 @@ class DirectMappedCache(
 ) extends Module {
   override def desiredName: String = s"direct_mapped_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
-  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, wordsPerLine)))
+  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, 1)))
   val lower = IO(new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine))
   val miss  = IO(Output(Bool()))
 
