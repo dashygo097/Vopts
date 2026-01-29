@@ -4,19 +4,20 @@ import vopts.utils._
 import chisel3._
 import chisel3.util._
 
-class SetAssociativeCache(
+class SetAssociativeCache[T <: Data](
+  gen: T,
   addrWidth: Int,
-  dataWidth: Int,
   wordsPerLine: Int,
   linesPerWay: Int,
   numWays: Int,
   replPolicy: ReplacementPolicy,
 ) extends Module {
+  val dataWidth = gen.getWidth
+
   override def desiredName: String = s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
 
-  val upper = IO(Flipped(new UnifiedMemoryIO(addrWidth, dataWidth, 1, 1)))
-  val lower = IO(new UnifiedMemoryIO(addrWidth, dataWidth, wordsPerLine, wordsPerLine))
-  val miss  = IO(Output(Bool()))
+  val upper = IO(Flipped(new CacheIO(gen, addrWidth)))
+  val lower = IO(new CacheIO(Vec(wordsPerLine, gen), addrWidth))
 
   // Parameters
   val tagWidth        = addrWidth - log2Ceil(numWays) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
@@ -36,8 +37,8 @@ class SetAssociativeCache(
 
   // Registers
   val reqAddr       = RegInit(0.U(addrWidth.W))
-  val reqData       = RegInit(0.U(dataWidth.W))
-  val reqOp         = RegInit(MemoryOp.READ)
+  val reqData       = Reg(gen)
+  val reqOp         = RegInit(CacheOp.READ)
   val reqTag        = RegInit(0.U(tagWidth.W))
   val reqIndex      = RegInit(0.U(indexWidth.W))
   val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
@@ -65,20 +66,28 @@ class SetAssociativeCache(
     val setBase = Cat(index, 0.U(log2Ceil(linesPerWay).W))
   }
 
-  // Extract word from cache line
-  def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+  // Extract word from cache line (returns T)
+  def extractWord(lineData: UInt, wordOffset: UInt): T = {
+    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth).asTypeOf(gen)))
     words(wordOffset)
   }
 
-  // Update word in cache line
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
+  // Update word in cache line (accepts T)
+  def updateWord(lineData: UInt, wordOffset: UInt, newWord: T): UInt = {
     val words = VecInit((0 until wordsPerLine).map { i =>
       val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-      Mux(wordOffset === i.U, newWord, currentWord)
+      Mux(wordOffset === i.U, newWord.asUInt, currentWord)
     })
     words.asUInt
   }
+
+  // Convert UInt line data to Vec[T]
+  def lineDataToVec(lineData: UInt): Vec[T] =
+    VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth).asTypeOf(gen)))
+
+  // Convert Vec[T] to UInt line data
+  def vecToLineData(vec: Vec[T]): UInt =
+    vec.asUInt
 
   // Helper to compute flat index from set and way
   def getFlatIndex(setIndex: UInt, way: UInt): UInt =
@@ -87,13 +96,13 @@ class SetAssociativeCache(
   // Default outputs
   upper.req.ready      := false.B
   upper.resp.valid     := false.B
-  upper.resp.bits.data := 0.U
+  upper.resp.bits.data := 0.U.asTypeOf(gen)
+  upper.resp.bits.hit  := false.B
   lower.req.valid      := false.B
   lower.req.bits.addr  := 0.U
-  lower.req.bits.data  := 0.U
-  lower.req.bits.op    := MemoryOp.READ
+  lower.req.bits.data  := 0.U.asTypeOf(Vec(wordsPerLine, gen))
+  lower.req.bits.op    := CacheOp.READ
   lower.resp.ready     := false.B
-  miss                 := false.B
 
   // FSM
   switch(state) {
@@ -148,11 +157,11 @@ class SetAssociativeCache(
 
       when(hit) {
         // Cache hit
-        miss := false.B
-        when(reqOp === MemoryOp.READ) {
+        when(reqOp === CacheOp.READ) {
           // Read hit - return the specific word
           upper.resp.valid     := true.B
           upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
+          upper.resp.bits.hit  := true.B
 
           when(upper.resp.ready) {
             state := CacheFSMState.IDLE
@@ -179,7 +188,8 @@ class SetAssociativeCache(
           lastWriteData    := updatedLine
           lastSelectedLine := selectedLine
 
-          upper.resp.valid := true.B
+          upper.resp.valid    := true.B
+          upper.resp.bits.hit := true.B
           when(upper.resp.ready) {
             state := CacheFSMState.IDLE
             val way        = selectedLine - reqIndex ## 0.U(log2Ceil(linesPerWay).W)
@@ -195,7 +205,6 @@ class SetAssociativeCache(
         }
       }.otherwise {
         // Cache miss
-        miss := true.B
         when(lastWriteValid && (lastWriteIndex === reqIndex)) {
           lastWriteValid := false.B
         }
@@ -229,9 +238,9 @@ class SetAssociativeCache(
     is(CacheFSMState.WRITEBACK) {
       // Write back dirty line to memory
       lower.req.valid     := !memReqSent
-      lower.req.bits.op   := MemoryOp.WRITE
+      lower.req.bits.op   := CacheOp.WRITE
       lower.req.bits.addr := Cat(metaArray(selectedLine).tag, reqIndex, 0.U((wordOffsetWidth + byteOffsetWidth).W))
-      lower.req.bits.data := currentLineData
+      lower.req.bits.data := lineDataToVec(currentLineData)
 
       when(!memReqSent && lower.req.fire) {
         memReqSent := true.B
@@ -252,9 +261,9 @@ class SetAssociativeCache(
 
       when(!memReqSent) {
         lower.req.valid     := true.B
-        lower.req.bits.op   := MemoryOp.READ
+        lower.req.bits.op   := CacheOp.READ
         lower.req.bits.addr := Cat(currParsed.tag, currParsed.index, 0.U((wordOffsetWidth + byteOffsetWidth).W))
-        lower.req.bits.data := 0.U
+        lower.req.bits.data := 0.U.asTypeOf(Vec(wordsPerLine, gen))
 
         when(lower.req.ready) {
           memReqSent := true.B
@@ -265,14 +274,15 @@ class SetAssociativeCache(
       lower.resp.ready := true.B
 
       when(memReqSent && lower.resp.fire) {
-        val newLineData = Wire(UInt(lineWidth.W))
+        val receivedLineData = vecToLineData(lower.resp.bits.data)
+        val newLineData      = Wire(UInt(lineWidth.W))
 
-        when(reqOp === MemoryOp.WRITE) {
-          // Write allocate - update the word being written
-          newLineData                   := updateWord(lower.resp.bits.data, reqWordOffset, reqData)
+        when(reqOp === CacheOp.WRITE) {
+          // Write allocate
+          newLineData                   := updateWord(receivedLineData, reqWordOffset, reqData)
           metaArray(selectedLine).dirty := true.B
         }.otherwise {
-          newLineData                   := lower.resp.bits.data
+          newLineData                   := receivedLineData
           metaArray(selectedLine).dirty := false.B
         }
 
@@ -293,10 +303,11 @@ class SetAssociativeCache(
         // Return data to CPU
         upper.resp.valid     := true.B
         upper.resp.bits.data := Mux(
-          reqOp === MemoryOp.READ,
+          reqOp === CacheOp.READ,
           extractWord(newLineData, reqWordOffset),
           reqData
         )
+        upper.resp.bits.hit  := false.B
 
         when(upper.resp.ready) {
           state      := CacheFSMState.IDLE
@@ -310,8 +321,8 @@ class SetAssociativeCache(
 object TestSetAssociativeCache extends App {
   VerilogEmitter.parse(
     new SetAssociativeCache(
+      gen = UInt(32.W),
       addrWidth = 32,
-      dataWidth = 32,
       wordsPerLine = 4,
       linesPerWay = 4,
       numWays = 4,
