@@ -3,17 +3,18 @@ package vopts.mem.cache
 import chisel3._
 import chisel3.util._
 
-class DirectMappedCacheReadOnly(
+class DirectMappedCacheReadOnly[T <: Data](
+  gen: T,
   addrWidth: Int,
-  dataWidth: Int,
   wordsPerLine: Int,
   numLines: Int,
 ) extends Module {
+  val dataWidth = gen.getWidth
+
   override def desiredName: String = s"direct_mapped_cache_read_only_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
-  val upper = IO(Flipped(new UnifiedMemoryReadOnlyIO(addrWidth, dataWidth, 1)))
-  val lower = IO(new UnifiedMemoryReadOnlyIO(addrWidth, dataWidth, wordsPerLine))
-  val miss  = IO(Output(Bool()))
+  val upper = IO(Flipped(new CacheReadOnlyIO(gen, addrWidth)))
+  val lower = IO(new CacheReadOnlyIO(Vec(wordsPerLine, gen), addrWidth))
 
   // Parameters
   val tagWidth        = addrWidth - log2Ceil(numLines) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
@@ -49,20 +50,19 @@ class DirectMappedCacheReadOnly(
     val byteOffset = addr(byteOffsetWidth - 1, 0)
   }
 
-  // Extract word from cache line
-  def extractWord(lineData: UInt, wordOffset: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth)))
+  // Extract word from cache line (returns T)
+  def extractWord(lineData: UInt, wordOffset: UInt): T = {
+    val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth).asTypeOf(gen)))
     words(wordOffset)
   }
 
-  // Update word in cache line
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: UInt): UInt = {
-    val words = VecInit((0 until wordsPerLine).map { i =>
-      val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-      Mux(wordOffset === i.U, newWord, currentWord)
-    })
-    words.asUInt
-  }
+  // Convert UInt line data to Vec[T]
+  def lineDataToVec(lineData: UInt): Vec[T] =
+    VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth).asTypeOf(gen)))
+
+  // Convert Vec[T] to UInt line data
+  def vecToLineData(vec: Vec[T]): UInt =
+    vec.asUInt
 
   // Current metadata
   val meta = metaArray(reqIndex)
@@ -71,11 +71,11 @@ class DirectMappedCacheReadOnly(
   // Default outputs
   upper.req.ready      := false.B
   upper.resp.valid     := false.B
-  upper.resp.bits.data := 0.U
+  upper.resp.bits.data := 0.U.asTypeOf(gen)
+  upper.resp.bits.hit  := false.B
   lower.req.valid      := false.B
   lower.req.bits.addr  := 0.U
   lower.resp.ready     := false.B
-  miss                 := false.B
 
   // FSM
   switch(state) {
@@ -99,16 +99,15 @@ class DirectMappedCacheReadOnly(
     is(CacheFSMState.COMPARE_TAG) {
       when(hit) {
         // Cache hit
-        miss                 := false.B
         upper.resp.valid     := true.B
         upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
+        upper.resp.bits.hit  := true.B
 
         when(upper.resp.ready) {
           state := CacheFSMState.IDLE
         }
       }.otherwise {
         // Cache miss
-        miss  := true.B
         state := CacheFSMState.ALLOCATE
       }
     }
@@ -129,9 +128,10 @@ class DirectMappedCacheReadOnly(
       lower.resp.ready := true.B
 
       when(memReqSent && lower.resp.fire) {
-        val newLineData = Wire(UInt(lineWidth.W))
+        val receivedLineData = vecToLineData(lower.resp.bits.data)
+        val newLineData      = Wire(UInt(lineWidth.W))
 
-        newLineData := lower.resp.bits.data
+        newLineData := receivedLineData
 
         // Update cache
         dataArray.write(reqIndex, newLineData)
@@ -143,6 +143,7 @@ class DirectMappedCacheReadOnly(
         // Return data to CPU
         upper.resp.valid     := true.B
         upper.resp.bits.data := extractWord(newLineData, reqWordOffset)
+        upper.resp.bits.hit  := false.B
 
         when(upper.resp.ready) {
           state      := CacheFSMState.IDLE
