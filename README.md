@@ -84,12 +84,10 @@ or just use sbt to install is also ok.
 
 ## References
 
-#### Some code references:
-
-[chisel-template](https://github.com/chipsalliance/chisel-template.git) <br>
-[FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git) <br>
-[AXI-IF](https://github.com/maltanar/axi-in-chisel) <br>
-[hardfloat](https://github.com/ucb-bar/berkeley-hardfloat)
+- [chisel-template](https://github.com/chipsalliance/chisel-template.git)
+- [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git)
+- [AXI-IF](https://github.com/maltanar/axi-in-chisel)
+- [hardfloat](https://github.com/ucb-bar/berkeley-hardfloat)
 
 ## License
 
