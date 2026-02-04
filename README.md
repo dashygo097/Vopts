@@ -90,3 +90,9 @@ or just use sbt to install is also ok.
 [FFT](https://github.com/IA-C-Lab-Fudan/Chisel-FFT-generator.git) <br>
 [AXI-IF](https://github.com/maltanar/axi-in-chisel) <br>
 [hardfloat](https://github.com/ucb-bar/berkeley-hardfloat)
+
+## License
+
+Copyright 2026 dashygo097
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
