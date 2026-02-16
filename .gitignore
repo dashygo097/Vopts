@@ -1,5 +1,6 @@
 .scalafmt.conf
 .DS_Store
+.idea/
 .vscode/
 .bloop/
 .bsp/
