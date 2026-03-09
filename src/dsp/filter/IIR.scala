@@ -10,7 +10,8 @@ class IIRFilter[T <: Data](
   cutoff: Seq[Double],
   order: Int,
   clkFreq: Int,
-  groupSize: Int = 2
+  groupSize: Int = 2,
+  delay: Int = 1
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName: String =
@@ -71,8 +72,8 @@ class IIRFilter[T <: Data](
     RegNext(yRegs(i) * a(i))
   }
 
-  val stage2FFSums = Pipeline.buildTree(stage1FFProducts, groupSize)(_ + _)
-  val stage2FBSums = Pipeline.buildTree(stage1FBProducts, groupSize)(_ + _)
+  val stage2FFSums = Pipeline.buildTree(stage1FFProducts, groupSize, delay)(_ + _)
+  val stage2FBSums = Pipeline.buildTree(stage1FBProducts, groupSize, delay)(_ + _)
 
   io.out := stage2FFSums - stage2FBSums
 }

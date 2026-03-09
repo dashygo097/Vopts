@@ -10,7 +10,8 @@ class FIRFilter[T <: Data](
   cutoff: Seq[Double],
   order: Int,
   clkFreq: Int,
-  groupSize: Int = 2
+  groupSize: Int = 2,
+  delay: Int = 1,
 )(implicit analog: Analog[T])
     extends Module {
   override def desiredName = s"fir_${filterType}_o${order}_g${groupSize}_${cutoff.mkString("_")}"
@@ -48,7 +49,7 @@ class FIRFilter[T <: Data](
     RegNext(regs(i) * coeffs(i))
   }
 
-  val stage2Sums = Pipeline.buildTree(stage1Products, groupSize)(_ + _)
+  val stage2Sums = Pipeline.buildTree(stage1Products, groupSize, delay)(_ + _)
 
   io.out := stage2Sums
 }
