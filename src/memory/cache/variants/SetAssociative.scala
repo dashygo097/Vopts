@@ -306,7 +306,7 @@ object TestSetAssociativeCache extends App {
       wordsPerLine = 4,
       linesPerWay = 4,
       numWays = 4,
-      replPolicy = PseudoLRU,
+      replPolicy = LRU,
     ),
     "set_associative_cache.sv",
     info = true,
