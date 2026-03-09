@@ -139,30 +139,30 @@ trait VectorOps[T <: Data] {
   }
   def /(that: Vector[T], chunkSize: Int = 16)(implicit ev: Arithmetic[T]): Vector[T]   = this.div(that, chunkSize)
 
-  def sum(groupSize: Int = 2)(implicit ev: Arithmetic[T]): T = {
+  def sum(groupSize: Int = 2, delay: Int = 0)(implicit ev: Arithmetic[T]): T = {
     val sum = Wire(self.eleType)
-    sum := Pipeline.buildTree(self.value, groupSize)(_ + _)
+    sum := Pipeline.buildTree(self.value, groupSize, delay)(_ + _)
     sum
   }
 
-  def dot(that: Vector[T], groupSize: Int = 2)(implicit ev: Arithmetic[T]): T = {
+  def dot(that: Vector[T], groupSize: Int = 2, delay: Int = 0)(implicit ev: Arithmetic[T]): T = {
     this.requireCompatible(that)
     val products = VecInit.tabulate(self.size) { i =>
       RegNext(self.value(i) * that.value(i))
     }
-    val sum      = Pipeline.buildTree(products, groupSize)(_ + _)
+    val sum      = Pipeline.buildTree(products, groupSize, delay)(_ + _)
     sum
   }
 
-  def min(groupSize: Int = 2)(implicit ord: PartialOrdered[T]): T = {
+  def min(groupSize: Int = 2, delay: Int = 0)(implicit ord: PartialOrdered[T]): T = {
     val minimum = Wire(self.eleType)
-    minimum := Pipeline.buildTree(self.value, groupSize)(_ min _)
+    minimum := Pipeline.buildTree(self.value, groupSize, delay)(_ min _)
     minimum
   }
 
-  def max(groupSize: Int = 2)(implicit ord: PartialOrdered[T]): T = {
+  def max(groupSize: Int = 2, delay: Int = 0)(implicit ord: PartialOrdered[T]): T = {
     val maximum = Wire(self.eleType)
-    maximum := Pipeline.buildTree(self.value, groupSize)(_ max _)
+    maximum := Pipeline.buildTree(self.value, groupSize, delay)(_ max _)
     maximum
   }
 }

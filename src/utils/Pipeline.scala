@@ -13,7 +13,7 @@ object Pipeline {
     currentData
   }
 
-  def buildTree[T <: Data](data: Vec[T], groupSize: Int)(op: (T, T) => T): T = {
+  def buildTree[T <: Data](data: Vec[T], groupSize: Int, delay: Int)(op: (T, T) => T): T = {
     val n = data.length
     if (n <= groupSize) {
       data.reduce(op)
@@ -24,8 +24,8 @@ object Pipeline {
         val endIdx   = min(startIdx + groupSize, n)
         VecInit(data.slice(startIdx, endIdx))
       }
-      val reducedGroups = RegNext(VecInit(groups.map(_.reduce(op))))
-      buildTree(reducedGroups, groupSize)(op)
+      val reducedGroups = ShiftRegister(VecInit(groups.map(_.reduce(op))), delay)
+      buildTree(reducedGroups, groupSize, delay)(op)
     }
   }
 
