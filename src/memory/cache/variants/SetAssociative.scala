@@ -3,6 +3,7 @@ package vopts.mem.cache
 import vopts.utils._
 import chisel3._
 import chisel3.util._
+import java.sql.PseudoColumnUsage
 
 class SetAssociativeCache[T <: Data](
   gen: T,
@@ -326,7 +327,7 @@ object TestSetAssociativeCache extends App {
       wordsPerLine = 4,
       linesPerWay = 4,
       numWays = 4,
-      replPolicy = FIFO
+      replPolicy = PseudoLRU
     ),
     "set_associative_cache.sv",
     info = true,
