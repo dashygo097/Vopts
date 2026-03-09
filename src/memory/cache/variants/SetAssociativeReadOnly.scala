@@ -1,5 +1,6 @@
 package vopts.mem.cache
 
+import vopts.utils._
 import chisel3._
 import chisel3.util._
 
@@ -12,7 +13,8 @@ class SetAssociativeCacheReadOnly[T <: Data](
   replPolicy: ReplacementPolicy,
 ) extends Module {
   val dataWidth                    = gen.getWidth
-  override def desiredName: String = s"set_associative_cache_read_only_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
+  override def desiredName: String =
+    s"set_associative_cache_read_only_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
 
   val upper = IO(Flipped(new CacheReadOnlyIO(gen, addrWidth)))
   val lower = IO(new CacheReadOnlyIO(Vec(wordsPerLine, gen), addrWidth))
@@ -22,8 +24,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val indexWidth      = log2Ceil(numWays)
   val wordOffsetWidth = log2Ceil(wordsPerLine)
   val byteOffsetWidth = log2Ceil(dataWidth / 8)
-
-  val lineWidth = dataWidth * wordsPerLine
+  val lineWidth       = dataWidth * wordsPerLine
 
   // Cache storage
   val dataArray = Mem(numWays * linesPerWay, UInt(lineWidth.W))
@@ -41,47 +42,36 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val selectedLine  = RegInit(0.U(log2Ceil(numWays * linesPerWay).W))
 
   // Current line data
-  val currentLineData = Reg(UInt(lineWidth.W))
-
+  val currentLineData  = Reg(UInt(lineWidth.W))
   val lastSelectedLine = Reg(UInt(log2Ceil(numWays * linesPerWay).W))
   val memReqSent       = RegInit(false.B)
 
-  // Address parsing helper function
+  // Helpers
   def parseAddr(addr: UInt) = new {
     val tag        = addr(addrWidth - 1, indexWidth + wordOffsetWidth + byteOffsetWidth)
     val index      = addr(indexWidth + wordOffsetWidth + byteOffsetWidth - 1, wordOffsetWidth + byteOffsetWidth)
     val wordOffset = addr(wordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth)
     val byteOffset = addr(byteOffsetWidth - 1, 0)
-
-    val setBase = Cat(index, 0.U(log2Ceil(linesPerWay).W))
+    val setBase    = Cat(index, 0.U(log2Ceil(linesPerWay).W))
   }
 
-  // Extract word from cache line
   def extractWord(lineData: UInt, wordOffset: UInt): T = {
     val words = VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth).asTypeOf(gen)))
     words(wordOffset)
   }
 
-  // Update word in cache line
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: T): UInt = {
-    val words = VecInit((0 until wordsPerLine).map { i =>
-      val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-      Mux(wordOffset === i.U, newWord.asUInt, currentWord)
-    })
-    words.asUInt
-  }
-
-  // Convert UInt line data to Vec[T]
   def lineDataToVec(lineData: UInt): Vec[T] =
     VecInit((0 until wordsPerLine).map(i => lineData((i + 1) * dataWidth - 1, i * dataWidth).asTypeOf(gen)))
 
-  // Convert Vec[T] to UInt line data
-  def vecToLineData(vec: Vec[T]): UInt =
-    vec.asUInt
+  def vecToLineData(vec: Vec[T]): UInt = vec.asUInt
 
-  // Helper to compute flat index from set and way
   def getFlatIndex(setIndex: UInt, way: UInt): UInt =
     Cat(setIndex, 0.U(log2Ceil(linesPerWay).W)) + way
+
+  // replacement policy update
+  def updateReplPolicy(setIdx: UInt, way: UInt, isHit: Bool): Unit =
+    for (s <- 0 until numWays)
+      when(s.U === setIdx)(replStates(s).update(way, isHit))
 
   // Default outputs
   upper.req.ready      := false.B
@@ -105,18 +95,15 @@ class SetAssociativeCacheReadOnly[T <: Data](
         reqIndex      := parsed.index
         reqWordOffset := parsed.wordOffset
 
-        // Search within the set for tag match
-        val hits = Wire(Vec(linesPerWay, Bool()))
-        for (way <- 0 until linesPerWay) {
-          val lineIdx = parsed.setBase + way.U
-          val meta    = metaArray(lineIdx)
-          hits(way) := meta.alloc && (meta.tag === parsed.tag)
+        // Tag match: CombTree.orTree for balanced OR reduction
+        val hitBits = (0 until linesPerWay).map { way =>
+          val m = metaArray(parsed.setBase + way.U)
+          m.alloc && (m.tag === parsed.tag)
         }
+        val isHit   = CombTree.orTree(hitBits)
+        val hitWay  = PriorityEncoder(VecInit(hitBits))
 
-        val isHit  = hits.asUInt.orR
-        val hitWay = PriorityEncoder(hits)
-
-        // Get victim way for this set - need to evaluate dynamically
+        // Victim selection
         val victimWays  = Wire(Vec(numWays, UInt(log2Ceil(linesPerWay).W)))
         for (s <- 0 until numWays)
           victimWays(s) := replStates(s).getVictim()
@@ -124,8 +111,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
         val chosenWay   = Mux(isHit, hitWay, victimWay)
         val chosenIndex = parsed.setBase + chosenWay
 
-        selectedLine := chosenIndex
-
+        selectedLine    := chosenIndex
         currentLineData := dataArray.read(chosenIndex)
 
         state := CacheFSMState.COMPARE_TAG
@@ -137,36 +123,18 @@ class SetAssociativeCacheReadOnly[T <: Data](
       val hit  = meta.alloc && (meta.tag === reqTag)
 
       when(hit) {
-        // Cache hit
         upper.resp.valid     := true.B
         upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
         upper.resp.bits.hit  := true.B
 
         when(upper.resp.ready) {
+          val way = selectedLine - Cat(reqIndex, 0.U(log2Ceil(linesPerWay).W))
+          updateReplPolicy(reqIndex, way, true.B)
           state := CacheFSMState.IDLE
-          val way        = selectedLine - reqIndex ## 0.U(log2Ceil(linesPerWay).W)
-          // Update replacement policy for this set
-          val updateWays = Wire(Vec(numWays, Bool()))
-          for (s <- 0 until numWays) {
-            updateWays(s) := (s.U === reqIndex) && upper.resp.ready
-            when(updateWays(s)) {
-              replStates(s).update(way, true.B)
-            }
-          }
         }
       }.otherwise {
-        // Cache miss
-
-        // Update replacement policy on miss
-        val way        = selectedLine - reqIndex ## 0.U(log2Ceil(linesPerWay).W)
-        val updateWays = Wire(Vec(numWays, Bool()))
-        for (s <- 0 until numWays) {
-          updateWays(s) := s.U === reqIndex
-          when(updateWays(s)) {
-            replStates(s).update(way, false.B)
-          }
-        }
-
+        val way = selectedLine - Cat(reqIndex, 0.U(log2Ceil(linesPerWay).W))
+        updateReplPolicy(reqIndex, way, false.B)
         state := CacheFSMState.ALLOCATE
       }
     }
@@ -183,7 +151,6 @@ class SetAssociativeCacheReadOnly[T <: Data](
         }
       }
 
-      // Always assert ready to accept response
       lower.resp.ready := true.B
 
       when(memReqSent && lower.resp.fire) {
@@ -193,20 +160,16 @@ class SetAssociativeCacheReadOnly[T <: Data](
         newLineData                   := receivedLineData
         metaArray(selectedLine).dirty := false.B
 
-        // Update cache
         dataArray.write(selectedLine, newLineData)
         metaArray(selectedLine).alloc := true.B
         metaArray(selectedLine).tag   := reqTag
 
-        currentLineData := newLineData
-
+        currentLineData  := newLineData
         lastSelectedLine := selectedLine
 
-        // Return data to CPU
         upper.resp.valid     := true.B
         upper.resp.bits.data := extractWord(newLineData, reqWordOffset)
-
-        upper.resp.bits.hit := false.B
+        upper.resp.bits.hit  := false.B
 
         when(upper.resp.ready) {
           state      := CacheFSMState.IDLE
