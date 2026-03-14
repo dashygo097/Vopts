@@ -3,7 +3,6 @@ package vopts.mem.cache
 import vopts.utils._
 import chisel3._
 import chisel3.util._
-import java.sql.PseudoColumnUsage
 
 class SetAssociativeCache[T <: Data](
   gen: T,
