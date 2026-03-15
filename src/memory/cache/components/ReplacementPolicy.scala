@@ -36,7 +36,7 @@ object ReplacementPolicy {
     case _                    => None
   }
 
-  def available: Seq[ReplacementPolicy] = Seq(Random, FIFO, LFU, LRU)
+  def available: Seq[ReplacementPolicy] = Seq(Random, FIFO, LFU, LRU, PseudoLRU)
 }
 
 abstract class ReplacementPolicyState(val numLines: Int) {
