@@ -243,7 +243,7 @@ run_test() {
   show_status "info" "Compile with Verilator: $tb_file"
   cd "$TB_DIR/${tb_dir}" || exit
   mkdir -p "$SIM_DIR/${tb_name%.*}" 2>&1 
-  verilator --quiet --cc --exe --build --binary --trace -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC "$tb_name" -o "${tb_name%.*}" -Mdir "$SIM_DIR/${tb_name%.*}" > "$LOG_DIR/tb.log" 2>&1
+  verilator  --cc --exe --build --binary --trace -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC "$tb_name" -o "${tb_name%.*}" -Mdir "$SIM_DIR/${tb_name%.*}" > "$LOG_DIR/tb.log" 2>&1
   show_status "success" "Compilation completed. Logs saved in $LOG_DIR"
   cd "$SIM_DIR/${tb_name%.*}" || exit
   "./${tb_name%.*}" > "$LOG_DIR/simulation_run.log" 2>&1 

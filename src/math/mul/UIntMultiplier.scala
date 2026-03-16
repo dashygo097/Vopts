@@ -7,6 +7,8 @@ import chisel3.util._
 class UIntMultiplier(dw: Int, pipelineStages: Int = 0) extends Module {
   override def desiredName: String = s"booth_4_wallace_tree_mul_${dw}_s$pipelineStages"
 
+  val isSignedA    = IO(Input(Bool())) 
+  val isSignedB    = IO(Input(Bool()))
   val en           = IO(Input(Bool()))
   val multiplicand = IO(Input(UInt(dw.W)))
   val multiplier   = IO(Input(UInt(dw.W)))
@@ -17,15 +19,13 @@ class UIntMultiplier(dw: Int, pipelineStages: Int = 0) extends Module {
   val a = Mux(en, multiplicand, 0.U(dw.W))
   val b = Mux(en, multiplier, 0.U(dw.W))
 
-  // 1. Unsigned Fix: Zero-extend inputs by 1 bit for Booth
-  val extDW = dw + 1
-  val a_ext = Cat(0.U(1.W), a)
-  val b_ext = Cat(0.U(1.W), b)
 
   // Stage 1: Partial product generation
-  val ppGen = Module(new PartialProductGen(extDW))
-  ppGen.multiplicand := a_ext
-  ppGen.multiplier   := b_ext
+  val ppGen = Module(new PartialProductGen(dw))  //
+  ppGen.isSignedA    := isSignedA         // 控制被乘数
+  ppGen.isSignedB    := isSignedB         // 控制乘数
+  ppGen.multiplicand := a                //被乘数
+  ppGen.multiplier   := b                //乘数
 
   val fullWidthPPs = ppGen.partialProducts
   val finalWidth   = 2 * dw
