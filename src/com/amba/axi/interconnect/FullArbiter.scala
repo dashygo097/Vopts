@@ -19,6 +19,8 @@ class AXIFullArbiter(
   require(fifoDepth > 0, "FIFO depth must be at least 1")
   require(dataWidth % 8 == 0, "Data width must be a multiple of 8")
 
+  val masterWidth = log2Ceil(numMasters.max(2))
+
   val slaves_ext = IO(Vec(numMasters, new AXIFullSlaveExtIO(addrWidth, dataWidth, idWidth, userWidth))).suggestName("S_AXI")
   val slaves     = Wire(Vec(numMasters, AXIFullSlaveIO(addrWidth, dataWidth, idWidth, userWidth)))
 
@@ -28,7 +30,6 @@ class AXIFullArbiter(
   dontTouch(slaves_ext)
   dontTouch(master_ext)
 
-  // AW channel FIFOs
   class AWEntry extends Bundle {
     val addr      = UInt(addrWidth.W)
     val prot      = UInt(3.W)
@@ -41,24 +42,22 @@ class AXIFullArbiter(
     val qos       = UInt(4.W)
     val region    = UInt(4.W)
     val user      = UInt(userWidth.W)
-    val master_id = UInt(log2Ceil(numMasters).W)
+    val master_id = UInt(masterWidth.W)
   }
 
   val aw_fifos = VecInit(Seq.fill(numMasters)(Module(new Queue(new AWEntry, fifoDepth)).io))
 
-  // W channel FIFOs
   class WEntry extends Bundle {
     val data      = UInt(dataWidth.W)
     val strb      = UInt((dataWidth / 8).W)
     val last      = Bool()
     val id        = UInt(idWidth.W)
     val user      = UInt(userWidth.W)
-    val master_id = UInt(log2Ceil(numMasters).W)
+    val master_id = UInt(masterWidth.W)
   }
 
   val w_fifos = VecInit(Seq.fill(numMasters)(Module(new Queue(new WEntry, fifoDepth)).io))
 
-  // AR channel FIFOs
   class AREntry extends Bundle {
     val addr      = UInt(addrWidth.W)
     val prot      = UInt(3.W)
@@ -71,14 +70,12 @@ class AXIFullArbiter(
     val qos       = UInt(4.W)
     val region    = UInt(4.W)
     val user      = UInt(userWidth.W)
-    val master_id = UInt(log2Ceil(numMasters).W)
+    val master_id = UInt(masterWidth.W)
   }
 
   val ar_fifos = VecInit(Seq.fill(numMasters)(Module(new Queue(new AREntry, fifoDepth)).io))
 
-  // Connect slaves to FIFOs
   for (i <- 0 until numMasters) {
-    // AW
     aw_fifos(i).enq.valid          := slaves(i).aw.valid
     aw_fifos(i).enq.bits.addr      := slaves(i).aw.bits.addr
     aw_fifos(i).enq.bits.prot      := slaves(i).aw.bits.prot
@@ -94,7 +91,6 @@ class AXIFullArbiter(
     aw_fifos(i).enq.bits.master_id := i.U
     slaves(i).aw.ready             := aw_fifos(i).enq.ready
 
-    // W
     w_fifos(i).enq.valid          := slaves(i).w.valid
     w_fifos(i).enq.bits.data      := slaves(i).w.bits.data
     w_fifos(i).enq.bits.strb      := slaves(i).w.bits.strb
@@ -104,7 +100,6 @@ class AXIFullArbiter(
     w_fifos(i).enq.bits.master_id := i.U
     slaves(i).w.ready             := w_fifos(i).enq.ready
 
-    // AR
     ar_fifos(i).enq.valid          := slaves(i).ar.valid
     ar_fifos(i).enq.bits.addr      := slaves(i).ar.bits.addr
     ar_fifos(i).enq.bits.prot      := slaves(i).ar.bits.prot
@@ -121,8 +116,40 @@ class AXIFullArbiter(
     slaves(i).ar.ready             := ar_fifos(i).enq.ready
   }
 
-  // Write Path Arbitration
-  val selected_write_master = RegInit(0.U(log2Ceil(numMasters).W))
+  def nextMaster(current: UInt): UInt =
+    if (numMasters == 1) {
+      0.U
+    } else {
+      val next = Wire(UInt(masterWidth.W))
+      next := 0.U
+      for (i <- 0 until numMasters)
+        when(current === i.U) {
+          next := ((i + 1) % numMasters).U
+        }
+      next
+    }
+
+  def roundRobinGrant(start: UInt, valids: Seq[Bool]): (UInt, Bool) = {
+    val grant = Wire(UInt(masterWidth.W))
+    val found = Wire(Bool())
+    grant := 0.U
+    found := false.B
+    for (startVal <- 0 until numMasters)
+      when(start === startVal.U) {
+        grant := 0.U
+        found := false.B
+        for (offset <- (numMasters - 1) to 0 by -1) {
+          val idx = (startVal + offset) % numMasters
+          when(valids(idx)) {
+            grant := idx.U
+            found := true.B
+          }
+        }
+      }
+    (grant, found)
+  }
+
+  val selected_write_master = RegInit(0.U(masterWidth.W))
   val write_locked          = RegInit(false.B)
   val aw_transferred        = RegInit(false.B)
   val w_burst_done          = RegInit(false.B)
@@ -130,50 +157,41 @@ class AXIFullArbiter(
   val aw_fifo_valids = VecInit(aw_fifos.map(_.deq.valid))
   val w_fifo_valids  = VecInit(w_fifos.map(_.deq.valid))
 
-  // Round-robin arbiter for write channel (considers both AW and W)
-  val write_grant = Wire(UInt(log2Ceil(numMasters).W))
+  val w_both_valid                         = Seq.tabulate(numMasters)(i => aw_fifo_valids(i) && w_fifo_valids(i))
+  val (write_grant_val, write_grant_found) = roundRobinGrant(selected_write_master, w_both_valid)
+
+  val write_grant = Wire(UInt(masterWidth.W))
   when(!write_locked) {
-    write_grant := PriorityMux(
-      (0 until numMasters).map { i =>
-        val idx = (selected_write_master + i.U) % numMasters.U
-        // Grant to a master that has either AW or W data ready
-        ((aw_fifo_valids(idx) || w_fifo_valids(idx)), idx)
-      }
-    )
+    write_grant := write_grant_val
   }.otherwise {
     write_grant := selected_write_master
   }
 
-  // Lock the write path when either AW or W has data
-  when(!write_locked && (aw_fifo_valids(write_grant) || w_fifo_valids(write_grant))) {
+  when(!write_locked && write_grant_found) {
     write_locked          := true.B
     selected_write_master := write_grant
     aw_transferred        := false.B
     w_burst_done          := false.B
   }
 
-  // Track AW transfer
-  when(write_locked && aw_fifo_valids(selected_write_master) && master.aw.ready) {
+  when(write_locked && !aw_transferred && aw_fifo_valids(selected_write_master) && master.aw.ready) {
     aw_transferred := true.B
   }
 
-  // Track W burst completion
   when(
-    write_locked && w_fifos(selected_write_master).deq.valid &&
+    write_locked && !w_burst_done && w_fifos(selected_write_master).deq.valid &&
       w_fifos(selected_write_master).deq.bits.last && master.w.ready
   ) {
     w_burst_done := true.B
   }
 
-  // Unlock when both AW and W burst are complete
   when(write_locked && aw_transferred && w_burst_done) {
     write_locked          := false.B
-    selected_write_master := (selected_write_master + 1.U) % numMasters.U
+    selected_write_master := nextMaster(selected_write_master)
     aw_transferred        := false.B
     w_burst_done          := false.B
   }
 
-  // AW channel forwarding - only when locked to this master
   master.aw.valid       := write_locked && aw_fifo_valids(selected_write_master) && !aw_transferred
   master.aw.bits.addr   := aw_fifos(selected_write_master).deq.bits.addr
   master.aw.bits.prot   := aw_fifos(selected_write_master).deq.bits.prot
@@ -191,7 +209,6 @@ class AXIFullArbiter(
     aw_fifos(i).deq.ready := write_locked && (selected_write_master === i.U) &&
       !aw_transferred && master.aw.ready
 
-  // W channel forwarding - only when locked to this master
   master.w.valid     := write_locked && w_fifos(selected_write_master).deq.valid && !w_burst_done
   master.w.bits.data := w_fifos(selected_write_master).deq.bits.data
   master.w.bits.strb := w_fifos(selected_write_master).deq.bits.strb
@@ -203,8 +220,7 @@ class AXIFullArbiter(
     w_fifos(i).deq.ready := write_locked && (selected_write_master === i.U) &&
       !w_burst_done && master.w.ready
 
-  // B channel response routing - enqueue when AW transfers
-  val b_route_fifo = Module(new Queue(UInt(log2Ceil(numMasters).W), fifoDepth * numMasters))
+  val b_route_fifo = Module(new Queue(UInt(masterWidth.W), fifoDepth * numMasters))
 
   b_route_fifo.io.enq.valid := write_locked &&
     aw_fifo_valids(selected_write_master) &&
@@ -225,46 +241,38 @@ class AXIFullArbiter(
   master.b.ready := b_route_fifo.io.deq.valid &&
     slaves(b_route_fifo.io.deq.bits).b.ready
 
-  // Read Path Arbitration
-  val selected_read_master = RegInit(0.U(log2Ceil(numMasters).W))
+  val selected_read_master = RegInit(0.U(masterWidth.W))
   val read_locked          = RegInit(false.B)
   val ar_transferred       = RegInit(false.B)
 
   val ar_fifo_valids = VecInit(ar_fifos.map(_.deq.valid))
 
-  val read_grant = Wire(UInt(log2Ceil(numMasters).W))
+  val ar_valids_seq                      = Seq.tabulate(numMasters)(i => ar_fifo_valids(i))
+  val (read_grant_val, read_grant_found) = roundRobinGrant(selected_read_master, ar_valids_seq)
 
+  val read_grant = Wire(UInt(masterWidth.W))
   when(!read_locked) {
-    read_grant := PriorityMux(
-      (0 until numMasters).map { i =>
-        val idx = (selected_read_master + i.U) % numMasters.U
-        (ar_fifo_valids(idx), idx)
-      }
-    )
+    read_grant := read_grant_val
   }.otherwise {
     read_grant := selected_read_master
   }
 
-  // AR channel lock - lock when AR has data
-  when(!read_locked && ar_fifo_valids(read_grant)) {
+  when(!read_locked && read_grant_found) {
     read_locked          := true.B
     selected_read_master := read_grant
     ar_transferred       := false.B
   }
 
-  // Track AR transfer
-  when(read_locked && ar_fifo_valids(selected_read_master) && master.ar.ready) {
+  when(read_locked && !ar_transferred && ar_fifo_valids(selected_read_master) && master.ar.ready) {
     ar_transferred := true.B
   }
 
-  // Unlock when the entire read burst completes (R channel last beat)
-  when(read_locked && master.r.valid && slaves(selected_read_master).r.ready && master.r.bits.last) {
+  when(read_locked && ar_transferred && master.r.valid && slaves(selected_read_master).r.ready && master.r.bits.last) {
     read_locked          := false.B
-    selected_read_master := (selected_read_master + 1.U) % numMasters.U
+    selected_read_master := nextMaster(selected_read_master)
     ar_transferred       := false.B
   }
 
-  // AR channel forwarding
   master.ar.valid       := read_locked && ar_fifo_valids(selected_read_master) && !ar_transferred
   master.ar.bits.addr   := ar_fifos(selected_read_master).deq.bits.addr
   master.ar.bits.prot   := ar_fifos(selected_read_master).deq.bits.prot
@@ -282,8 +290,7 @@ class AXIFullArbiter(
     ar_fifos(i).deq.ready := read_locked && (selected_read_master === i.U) &&
       !ar_transferred && master.ar.ready
 
-  // R channel response routing - enqueue when AR transfers
-  val r_route_fifo = Module(new Queue(UInt(log2Ceil(numMasters).W), fifoDepth * numMasters))
+  val r_route_fifo = Module(new Queue(UInt(masterWidth.W), fifoDepth * numMasters))
 
   r_route_fifo.io.enq.valid := read_locked &&
     ar_fifo_valids(selected_read_master) &&
@@ -291,7 +298,6 @@ class AXIFullArbiter(
     master.ar.ready
   r_route_fifo.io.enq.bits  := ar_fifos(selected_read_master).deq.bits.master_id
 
-  // Dequeue from routing FIFO only when the last beat is transferred
   r_route_fifo.io.deq.ready := master.r.valid &&
     slaves(r_route_fifo.io.deq.bits).r.ready &&
     master.r.bits.last
@@ -306,7 +312,6 @@ class AXIFullArbiter(
   master.r.ready := r_route_fifo.io.deq.valid &&
     slaves(r_route_fifo.io.deq.bits).r.ready
 
-  // Connect external interfaces
   master_ext.connect(master)
   for (i <- 0 until numMasters)
     slaves_ext(i).connect(slaves(i))
