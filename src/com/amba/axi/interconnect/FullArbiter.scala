@@ -76,7 +76,16 @@ class AXIFullArbiter(
   val ar_fifos = VecInit(Seq.fill(numMasters)(Module(new Queue(new AREntry, fifoDepth)).io))
 
   for (i <- 0 until numMasters) {
-    aw_fifos(i).enq.valid          := slaves(i).aw.valid
+    // AW
+    val aw_ready_reg = RegInit(false.B)
+    when(slaves(i).aw.valid && !aw_ready_reg) {
+      aw_ready_reg := true.B
+    }.elsewhen(slaves(i).aw.valid && aw_ready_reg && aw_fifos(i).enq.ready) {
+      aw_ready_reg := false.B
+    }
+    slaves(i).aw.ready := aw_ready_reg && aw_fifos(i).enq.ready
+    aw_fifos(i).enq.valid := slaves(i).aw.valid && aw_ready_reg
+
     aw_fifos(i).enq.bits.addr      := slaves(i).aw.bits.addr
     aw_fifos(i).enq.bits.prot      := slaves(i).aw.bits.prot
     aw_fifos(i).enq.bits.id        := slaves(i).aw.bits.id
@@ -89,18 +98,34 @@ class AXIFullArbiter(
     aw_fifos(i).enq.bits.region    := slaves(i).aw.bits.region
     aw_fifos(i).enq.bits.user      := slaves(i).aw.bits.user
     aw_fifos(i).enq.bits.master_id := i.U
-    slaves(i).aw.ready             := aw_fifos(i).enq.ready
 
-    w_fifos(i).enq.valid          := slaves(i).w.valid
+    // W
+    val w_ready_reg = RegInit(false.B)
+    when(slaves(i).w.valid && !w_ready_reg) {
+      w_ready_reg := true.B
+    }.elsewhen(slaves(i).w.valid && w_ready_reg && slaves(i).w.bits.last && w_fifos(i).enq.ready) {
+      w_ready_reg := false.B
+    }
+    slaves(i).w.ready := w_ready_reg && w_fifos(i).enq.ready
+    w_fifos(i).enq.valid := slaves(i).w.valid && w_ready_reg
+
     w_fifos(i).enq.bits.data      := slaves(i).w.bits.data
     w_fifos(i).enq.bits.strb      := slaves(i).w.bits.strb
     w_fifos(i).enq.bits.last      := slaves(i).w.bits.last
     w_fifos(i).enq.bits.id        := slaves(i).w.bits.id
     w_fifos(i).enq.bits.user      := slaves(i).w.bits.user
     w_fifos(i).enq.bits.master_id := i.U
-    slaves(i).w.ready             := w_fifos(i).enq.ready
 
-    ar_fifos(i).enq.valid          := slaves(i).ar.valid
+    // AR
+    val ar_ready_reg = RegInit(false.B)
+    when(slaves(i).ar.valid && !ar_ready_reg) {
+      ar_ready_reg := true.B
+    }.elsewhen(slaves(i).ar.valid && ar_ready_reg && ar_fifos(i).enq.ready) {
+      ar_ready_reg := false.B
+    }
+    slaves(i).ar.ready := ar_ready_reg && ar_fifos(i).enq.ready
+    ar_fifos(i).enq.valid := slaves(i).ar.valid && ar_ready_reg
+
     ar_fifos(i).enq.bits.addr      := slaves(i).ar.bits.addr
     ar_fifos(i).enq.bits.prot      := slaves(i).ar.bits.prot
     ar_fifos(i).enq.bits.id        := slaves(i).ar.bits.id
@@ -113,7 +138,6 @@ class AXIFullArbiter(
     ar_fifos(i).enq.bits.region    := slaves(i).ar.bits.region
     ar_fifos(i).enq.bits.user      := slaves(i).ar.bits.user
     ar_fifos(i).enq.bits.master_id := i.U
-    slaves(i).ar.ready             := ar_fifos(i).enq.ready
   }
 
   def nextMaster(current: UInt): UInt =
@@ -327,19 +351,4 @@ object AXIFullArbiter {
     userWidth: Int = 0
   ): AXIFullArbiter =
     Module(new AXIFullArbiter(addrWidth, dataWidth, idWidth, numMasters, fifoDepth, userWidth))
-}
-
-object TestAXIFullArbiter extends App {
-  VerilogEmitter.parse(
-    new AXIFullArbiter(
-      addrWidth = 32,
-      dataWidth = 32,
-      idWidth = 4,
-      numMasters = 4,
-      fifoDepth = 4,
-      userWidth = 0
-    ),
-    "axifull_arbiter.sv",
-    info = true
-  )
 }
