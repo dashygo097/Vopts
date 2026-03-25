@@ -19,7 +19,14 @@ object VerilogEmitter {
     }
     val code        = ChiselStage.emitSystemVerilog(
       gen = gen,
-      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info") ++ firtoolOpts
+      firtoolOpts = Array(
+        "-disable-all-randomization",
+        "-strip-debug-info",
+        "--disable-layers=Verification",
+        "--disable-layers=Verification.Assert",
+        "--disable-layers=Verification.Assume",
+        "--disable-layers=Verification.Cover",
+      ) ++ firtoolOpts
     )
 
     val num_lines = code.split("\n").length

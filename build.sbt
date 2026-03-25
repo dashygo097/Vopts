@@ -1,5 +1,5 @@
 ThisBuild / scalaVersion := "2.13.16"
-ThisBuild / version      := "0.1.1-SNAPSHOT"
+ThisBuild / version      := "0.1.0"
 ThisBuild / organization := "dashygo097"
 ThisBuild / publishTo    := Some(
   Resolver.file("local-ivy", file(Path.userHome + "/.ivy2/local"))
