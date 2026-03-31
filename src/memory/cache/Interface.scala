@@ -13,6 +13,7 @@ class CacheReq[T <: Data](gen: T, addrWidth: Int) extends Bundle {
   val op   = CacheOp()
   val addr = UInt(addrWidth.W)
   val data = gen
+  val strb = UInt((gen.getWidth / 8).W)
 }
 
 // TODO: Multi request support
