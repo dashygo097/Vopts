@@ -11,7 +11,7 @@ class DirectMappedCache[T <: Data](
   numLines: Int,
 ) extends Module {
   val dataWidth = gen.getWidth
-  
+
   override def desiredName: String = s"direct_mapped_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x$numLines"
 
   val upper = IO(Flipped(new CacheIO(gen, addrWidth)))
@@ -35,6 +35,7 @@ class DirectMappedCache[T <: Data](
   // Registers
   val reqAddr       = RegInit(0.U(addrWidth.W))
   val reqData       = Reg(gen)
+  val reqStrb       = RegInit(0.U((dataWidth / 8).W))
   val reqOp         = RegInit(CacheOp.READ)
   val reqTag        = RegInit(0.U(tagWidth.W))
   val reqIndex      = RegInit(0.U(indexWidth.W))
@@ -65,11 +66,20 @@ class DirectMappedCache[T <: Data](
     words(wordOffset)
   }
 
-  // Update word in cache line (accepts T)
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: T): UInt = {
+  def applyStrb(oldWord: UInt, newWord: UInt, strb: UInt): UInt = {
+    val bytes = (0 until (dataWidth / 8)).map { i =>
+      val oldByte = oldWord(8 * i + 7, 8 * i)
+      val newByte = newWord(8 * i + 7, 8 * i)
+      Mux(strb(i), newByte, oldByte)
+    }
+    Cat(bytes.reverse)
+  }
+
+  def updateWord(lineData: UInt, wordOffset: UInt, newWord: T, strb: UInt): UInt = {
     val words = VecInit((0 until wordsPerLine).map { i =>
-      val currentWord = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-      Mux(wordOffset === i.U, newWord.asUInt, currentWord)
+      val cur     = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+      val updated = applyStrb(cur, newWord.asUInt, strb)
+      Mux(wordOffset === i.U, updated, cur)
     })
     words.asUInt
   }
@@ -95,6 +105,7 @@ class DirectMappedCache[T <: Data](
   lower.req.bits.addr  := 0.U
   lower.req.bits.data  := 0.U.asTypeOf(Vec(wordsPerLine, gen))
   lower.req.bits.op    := CacheOp.READ
+  lower.req.bits.strb  := 0.U // Default strb
   lower.resp.ready     := false.B
 
   // FSM
@@ -107,6 +118,7 @@ class DirectMappedCache[T <: Data](
         val parsed = parseAddr(upper.req.bits.addr)
         reqAddr       := upper.req.bits.addr
         reqData       := upper.req.bits.data
+        reqStrb       := upper.req.bits.strb
         reqOp         := upper.req.bits.op
         reqTag        := parsed.tag
         reqIndex      := parsed.index
@@ -135,8 +147,8 @@ class DirectMappedCache[T <: Data](
             state := CacheFSMState.IDLE
           }
         }.otherwise {
-          // Write hit - update the specific word
-          val updatedLine = updateWord(currentLineData, reqWordOffset, reqData)
+          // Write hit - update the specific word with strb
+          val updatedLine = updateWord(currentLineData, reqWordOffset, reqData, reqStrb)
           dataArray.write(reqIndex, updatedLine)
           metaArray(reqIndex).dirty := true.B
 
@@ -173,13 +185,13 @@ class DirectMappedCache[T <: Data](
       }
     }
 
-    // TODO: The current impl is pending writeback state, there can be a more effective way to do this
     is(CacheFSMState.WRITEBACK) {
       // Write back dirty line to memory
       lower.req.valid     := !memReqSent
       lower.req.bits.op   := CacheOp.WRITE
       lower.req.bits.addr := Cat(meta.tag, reqIndex, 0.U((wordOffsetWidth + byteOffsetWidth).W))
       lower.req.bits.data := lineDataToVec(currentLineData)
+      lower.req.bits.strb := Fill(lineWidth / 8, 1.U)
 
       when(!memReqSent && lower.req.fire) {
         memReqSent := true.B
@@ -217,8 +229,8 @@ class DirectMappedCache[T <: Data](
         val newLineData      = Wire(UInt(lineWidth.W))
 
         when(reqOp === CacheOp.WRITE) {
-          // Write allocate - update the word being written
-          newLineData               := updateWord(receivedLineData, reqWordOffset, reqData)
+          // Write allocate - update the word being written with strb
+          newLineData               := updateWord(receivedLineData, reqWordOffset, reqData, reqStrb)
           metaArray(reqIndex).dirty := true.B
         }.otherwise {
           newLineData               := receivedLineData
