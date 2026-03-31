@@ -42,6 +42,7 @@ class SetAssociativeCache[T <: Data](
   // Request registers
   val reqAddr         = RegInit(0.U(addrWidth.W))
   val reqData         = Reg(gen)
+  val reqStrb         = RegInit(0.U((dataWidth / 8).W))
   val reqOp           = RegInit(CacheOp.READ)
   val reqTag          = RegInit(0.U(tagWidth.W))
   val reqIndex        = RegInit(0.U(indexWidth.W))
@@ -72,10 +73,20 @@ class SetAssociativeCache[T <: Data](
     words(wordOffset)
   }
 
-  def updateWord(lineData: UInt, wordOffset: UInt, newWord: T): UInt = {
+  def applyStrb(oldWord: UInt, newWord: UInt, strb: UInt): UInt = {
+    val bytes = (0 until (dataWidth / 8)).map { i =>
+      val oldByte = oldWord(8 * i + 7, 8 * i)
+      val newByte = newWord(8 * i + 7, 8 * i)
+      Mux(strb(i), newByte, oldByte)
+    }
+    Cat(bytes.reverse)
+  }
+
+  def updateWord(lineData: UInt, wordOffset: UInt, newWord: T, strb: UInt): UInt = {
     val words = VecInit((0 until wordsPerLine).map { i =>
-      val cur = lineData((i + 1) * dataWidth - 1, i * dataWidth)
-      Mux(wordOffset === i.U, newWord.asUInt, cur)
+      val cur     = lineData((i + 1) * dataWidth - 1, i * dataWidth)
+      val updated = applyStrb(cur, newWord.asUInt, strb)
+      Mux(wordOffset === i.U, updated, cur)
     })
     words.asUInt
   }
@@ -98,6 +109,7 @@ class SetAssociativeCache[T <: Data](
   lower.req.bits.addr  := 0.U
   lower.req.bits.data  := 0.U.asTypeOf(Vec(wordsPerLine, gen))
   lower.req.bits.op    := CacheOp.READ
+  lower.req.bits.strb  := 0.U
   lower.resp.ready     := false.B
 
   // FSM
@@ -111,6 +123,7 @@ class SetAssociativeCache[T <: Data](
         val parsed = parseAddr(upper.req.bits.addr)
         reqAddr       := upper.req.bits.addr
         reqData       := upper.req.bits.data
+        reqStrb       := upper.req.bits.strb
         reqOp         := upper.req.bits.op
         reqTag        := parsed.tag
         reqIndex      := parsed.index
@@ -164,7 +177,7 @@ class SetAssociativeCache[T <: Data](
           }
         }.otherwise {
           // Write hit
-          val updatedLine = updateWord(currentLineData, reqWordOffset, reqData)
+          val updatedLine = updateWord(currentLineData, reqWordOffset, reqData, reqStrb)
           dataArray.write(selectedLine, updatedLine)
           metaArray(selectedLine).dirty := true.B
 
@@ -217,6 +230,7 @@ class SetAssociativeCache[T <: Data](
       lower.req.bits.op   := CacheOp.WRITE
       lower.req.bits.addr := Cat(metaArray(selectedLine).tag, reqIndex, 0.U((wordOffsetWidth + byteOffsetWidth).W))
       lower.req.bits.data := lineDataToVec(currentLineData)
+      lower.req.bits.strb := Fill(lineWidth / 8, 1.U)
 
       when(!memReqSent && lower.req.fire)(memReqSent := true.B)
 
@@ -248,7 +262,7 @@ class SetAssociativeCache[T <: Data](
         val newLineData      = Wire(UInt(lineWidth.W))
 
         when(reqOp === CacheOp.WRITE) {
-          newLineData                   := updateWord(receivedLineData, reqWordOffset, reqData)
+          newLineData                   := updateWord(receivedLineData, reqWordOffset, reqData, reqStrb)
           metaArray(selectedLine).dirty := true.B
         }.otherwise {
           newLineData                   := receivedLineData
