@@ -50,8 +50,8 @@ class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = S
   if (isBypass) {
     val write_target_is_writable = VecInit(isWritable.map(_.B))(write_addr)
 
-    val rs1_is_write_target = (rs1_addr === write_addr) && write_en && write_target_is_writable
-    val rs2_is_write_target = (rs2_addr === write_addr) && write_en && write_target_is_writable
+    val rs1_is_write_target = write_en && write_target_is_writable && (rs1_addr === write_addr)
+    val rs2_is_write_target = write_en && write_target_is_writable && (rs2_addr === write_addr)
 
     val rs1_bypass = Mux(rs1_is_write_target, write_data, rs1_raw)
     val rs2_bypass = Mux(rs2_is_write_target, write_data, rs2_raw)

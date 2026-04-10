@@ -4,14 +4,14 @@ import vopts.utils._
 import chisel3._
 import chisel3.util._
 
-class MultiPortRegFile(numRegs: Int, dataWidth: Int, numReadPairs: Int, extraInfo: Seq[Register] = Seq(), isBypass: Boolean = false) extends Module {
+class MultiPortRegFile(numRegs: Int, dataWidth: Int, numReadPairs: Int, numWritePorts: Int, extraInfo: Seq[Register] = Seq(), isBypass: Boolean = false) extends Module {
   override def desiredName: String = s"multi_port_regfile_b${dataWidth}_r$numRegs"
 
   val rs1_addr   = IO(Input(Vec(numReadPairs, UInt(log2Ceil(numRegs).W)))).suggestName("RS1_ADDR")
   val rs2_addr   = IO(Input(Vec(numReadPairs, UInt(log2Ceil(numRegs).W)))).suggestName("RS2_ADDR")
-  val write_addr = IO(Input(UInt(log2Ceil(numRegs).W))).suggestName("WRITE_ADDR")
-  val write_data = IO(Input(UInt(dataWidth.W))).suggestName("WRITE_DATA")
-  val write_en   = IO(Input(Bool())).suggestName("WRITE_EN")
+  val write_addr = IO(Input(Vec(numWritePorts, UInt(log2Ceil(numRegs).W)))).suggestName("WRITE_ADDR")
+  val write_data = IO(Input(Vec(numWritePorts, UInt(dataWidth.W)))).suggestName("WRITE_DATA")
+  val write_en   = IO(Input(Vec(numWritePorts, Bool()))).suggestName("WRITE_EN")
   val rs1_data   = IO(Output(Vec(numReadPairs, UInt(dataWidth.W)))).suggestName("RS1_DATA")
   val rs2_data   = IO(Output(Vec(numReadPairs, UInt(dataWidth.W)))).suggestName("RS2_DATA")
 
@@ -39,9 +39,10 @@ class MultiPortRegFile(numRegs: Int, dataWidth: Int, numReadPairs: Int, extraInf
 
   for (i <- 0 until numRegs)
     if (isWritable(i)) {
-      when(write_en && write_addr === i.U) {
-        regsSeq(i) := write_data
-      }
+      for (w <- 0 until numWritePorts)
+        when(write_en(w) && write_addr(w) === i.U) {
+          regsSeq(i) := write_data(w)
+        }
     }
 
   for (i <- 0 until numReadPairs) {
@@ -49,16 +50,20 @@ class MultiPortRegFile(numRegs: Int, dataWidth: Int, numReadPairs: Int, extraInf
     val rs2_raw = regsVec(rs2_addr(i))
 
     if (isBypass) {
-      val write_target_is_writable = VecInit(isWritable.map(_.B))(write_addr)
+      var rs1_bypassed = rs1_raw
+      var rs2_bypassed = rs2_raw
 
-      val rs1_is_write_target = (rs1_addr(i) === write_addr) && write_en && write_target_is_writable
-      val rs2_is_write_target = (rs2_addr(i) === write_addr) && write_en && write_target_is_writable
+      for (w <- 0 until numWritePorts) {
+        val is_w      = VecInit(isWritable.map(_.B))(write_addr(w))
+        val match_rs1 = write_en(w) && is_w && (rs1_addr(i) === write_addr(w))
+        val match_rs2 = write_en(w) && is_w && (rs2_addr(i) === write_addr(w))
 
-      val rs1_bypass = Mux(rs1_is_write_target, write_data, rs1_raw)
-      val rs2_bypass = Mux(rs2_is_write_target, write_data, rs2_raw)
+        rs1_bypassed = Mux(match_rs1, write_data(w), rs1_bypassed)
+        rs2_bypassed = Mux(match_rs2, write_data(w), rs2_bypassed)
+      }
 
-      rs1_data(i) := Mux(readableVec(rs1_addr(i)), rs1_bypass, 0.U)
-      rs2_data(i) := Mux(readableVec(rs2_addr(i)), rs2_bypass, 0.U)
+      rs1_data(i) := Mux(readableVec(rs1_addr(i)), rs1_bypassed, 0.U)
+      rs2_data(i) := Mux(readableVec(rs2_addr(i)), rs2_bypassed, 0.U)
     } else {
       rs1_data(i) := Mux(readableVec(rs1_addr(i)), rs1_raw, 0.U)
       rs2_data(i) := Mux(readableVec(rs2_addr(i)), rs2_raw, 0.U)
