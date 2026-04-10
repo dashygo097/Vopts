@@ -15,36 +15,43 @@ class DualPortRegFile(numRegs: Int, dataWidth: Int, extraInfo: Seq[Register] = S
   val rs1_data   = IO(Output(UInt(dataWidth.W))).suggestName("RS1_DATA")
   val rs2_data   = IO(Output(UInt(dataWidth.W))).suggestName("RS2_DATA")
 
-  // Memory
-  val regs = RegInit(VecInit(Seq.tabulate(numRegs) { addr =>
-    val regInfo = extraInfo.find(_.addr == addr)
-    regInfo
-      .map(r => (r.initValue & ((1L << dataWidth) - 1)).U(dataWidth.W))
-      .getOrElse(0.U(dataWidth.W))
-  }))
-
-  // Writable/readable masks
-  val writableVec = VecInit(Seq.tabulate(numRegs) { addr =>
-    val regInfo = extraInfo.find(_.addr == addr)
-    regInfo.map(_.writable).getOrElse(true).B
-  })
-
-  val readableVec = VecInit(Seq.tabulate(numRegs) { addr =>
-    val regInfo = extraInfo.find(_.addr == addr)
-    regInfo.map(_.readable).getOrElse(true).B
-  })
-
-  // Write logic
-  when(write_en && writableVec(write_addr)) {
-    regs(write_addr) := write_data
+  val isWritable = Seq.tabulate(numRegs) { addr =>
+    extraInfo.find(_.addr == addr).forall(_.writable)
   }
 
-  val rs1_raw = regs(rs1_addr)
-  val rs2_raw = regs(rs2_addr)
+  val readableVec = VecInit(Seq.tabulate(numRegs) { addr =>
+    extraInfo.find(_.addr == addr).forall(_.readable).B
+  })
+
+  val regsSeq = Seq.tabulate(numRegs) { addr =>
+    val regInfo = extraInfo.find(_.addr == addr)
+    val initVal = regInfo
+      .map(r => (r.initValue & ((1L << dataWidth) - 1)).U(dataWidth.W))
+      .getOrElse(0.U(dataWidth.W))
+
+    val r    = RegInit(initVal)
+    val name = regInfo.map(_.name).getOrElse(s"x$addr")
+    r.suggestName(name)
+    r
+  }
+
+  val regsVec = VecInit(regsSeq)
+
+  for (i <- 0 until numRegs)
+    if (isWritable(i)) {
+      when(write_en && write_addr === i.U) {
+        regsSeq(i) := write_data
+      }
+    }
+
+  val rs1_raw = regsVec(rs1_addr)
+  val rs2_raw = regsVec(rs2_addr)
 
   if (isBypass) {
-    val rs1_is_write_target = (rs1_addr === write_addr) && write_en && writableVec(write_addr)
-    val rs2_is_write_target = (rs2_addr === write_addr) && write_en && writableVec(write_addr)
+    val write_target_is_writable = VecInit(isWritable.map(_.B))(write_addr)
+
+    val rs1_is_write_target = (rs1_addr === write_addr) && write_en && write_target_is_writable
+    val rs2_is_write_target = (rs2_addr === write_addr) && write_en && write_target_is_writable
 
     val rs1_bypass = Mux(rs1_is_write_target, write_data, rs1_raw)
     val rs2_bypass = Mux(rs2_is_write_target, write_data, rs2_raw)
@@ -63,8 +70,8 @@ object TestDualPortRegFile extends App {
       32,
       32,
       Seq(
-        Register("x0", 0x0, 0x0L, writable = false, readable = true),
-        Register("x1", 0x1, 0x0L, writable = false, readable = false)
+        Register("zero", 0x0, 0x0L, writable = false, readable = true),
+        Register("ra", 0x1, 0x0L, writable = true, readable = true)
       )
     ),
     "dual_port_regfile.sv",
