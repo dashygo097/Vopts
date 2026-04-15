@@ -20,8 +20,8 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val upper = IO(Flipped(new CacheReadOnlyIO(gen, addrWidth)))
   val lower = IO(new CacheReadOnlyIO(gen, addrWidth))
 
-  val tagWidth        = addrWidth - log2Ceil(numWays) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
-  val indexWidth      = log2Ceil(numWays)
+  val tagWidth        = addrWidth - log2Ceil(linesPerWay) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
+  val indexWidth      = log2Ceil(linesPerWay)
   val wordOffsetWidth = log2Ceil(wordsPerLine).max(1)
   val byteOffsetWidth = log2Ceil(dataWidth / 8)
   val lineWidth       = dataWidth * wordsPerLine
@@ -33,8 +33,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val replStates = Seq.fill(numWays)(ReplacementPolicyState(replPolicy, linesPerWay))
 
   val victimWayReg = RegInit(VecInit(Seq.fill(numWays)(0.U(log2Ceil(linesPerWay).W))))
-  for (s <- 0 until numWays)
-    victimWayReg(s) := replStates(s).getVictim()
+  for (s <- 0 until numWays) victimWayReg(s) := replStates(s).getVictim()
 
   val reqAddr         = RegInit(0.U(addrWidth.W))
   val reqValid        = RegInit(false.B)
@@ -44,18 +43,14 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val selectedLine    = RegInit(0.U(log2Ceil(numWays * linesPerWay).W))
   val currentLineData = Reg(UInt(lineWidth.W))
 
-  // MSHR logic correctly issuing individual beat requests
-  val filling    = RegInit(false.B)
-  val fillTag    = Reg(UInt(tagWidth.W))
-  val fillIndex  = Reg(UInt(indexWidth.W))
-  val fillWay    = Reg(UInt(log2Ceil(linesPerWay).W))
-  val fillValid  = RegInit(VecInit(Seq.fill(wordsPerLine)(false.B)))
-  val fillBuffer = Reg(Vec(wordsPerLine, gen))
-
+  val filling           = RegInit(false.B)
+  val memReqSent        = RegInit(false.B)
+  val fillTag           = Reg(UInt(tagWidth.W))
+  val fillIndex         = Reg(UInt(indexWidth.W))
+  val fillWay           = Reg(UInt(log2Ceil(linesPerWay).W))
+  val fillValid         = RegInit(VecInit(Seq.fill(wordsPerLine)(false.B)))
+  val fillBuffer        = Reg(Vec(wordsPerLine, gen))
   val currentFillOffset = Reg(UInt(wordOffsetWidth.W))
-  val reqOffset         = Reg(UInt(wordOffsetWidth.W))
-  val reqCount          = Reg(UInt(log2Ceil(wordsPerLine + 1).W))
-  val respCount         = Reg(UInt(log2Ceil(wordsPerLine + 1).W))
 
   def makeAddr(tag: UInt, index: UInt, offset: UInt): UInt =
     if (byteOffsetWidth > 0) Cat(tag, index, offset, 0.U(byteOffsetWidth.W)) else Cat(tag, index, offset)
@@ -72,11 +67,9 @@ class SetAssociativeCacheReadOnly[T <: Data](
     words(wordOffset)
   }
 
-  def vecToLineData(vec: Vec[T]): UInt = vec.asUInt
-
+  def vecToLineData(vec: Vec[T]): UInt                             = vec.asUInt
   def updateReplPolicy(setIdx: UInt, way: UInt, isHit: Bool): Unit =
-    for (s <- 0 until numWays)
-      when(s.U === setIdx)(replStates(s).update(way, isHit))
+    for (s <- 0 until numWays) when(s.U === setIdx)(replStates(s).update(way, isHit))
 
   val proceedReq  = upper.req.fire || reqValid
   val currentAddr = Mux(reqValid, reqAddr, upper.req.bits.addr)
@@ -87,8 +80,16 @@ class SetAssociativeCacheReadOnly[T <: Data](
   upper.resp.bits.hit  := false.B
   upper.resp.bits.last := true.B
 
-  val mshrFillArriving  = filling && lower.resp.valid
-  val currentRespOffset = currentFillOffset
+  lower.req.valid     := filling && !memReqSent
+  lower.req.bits.addr := makeAddr(fillTag, fillIndex, reqWordOffset)
+  when(lower.req.fire)(memReqSent := true.B)
+  lower.resp.ready    := true.B
+
+  val isFillLast    = filling && lower.resp.valid && lower.resp.bits.last
+  val fillLineIdx   = Cat(fillIndex, fillWay)
+  val assembledLine = VecInit((0 until wordsPerLine).map { i =>
+    Mux(i.U === currentFillOffset, lower.resp.bits.data, fillBuffer(i.U))
+  })
 
   switch(state) {
     is(CacheFSMState.IDLE) {
@@ -108,12 +109,13 @@ class SetAssociativeCacheReadOnly[T <: Data](
         val hitWay    = PriorityEncoder(VecInit(hitBits))
         val victimWay = CombTree.oneHotMux((0 until numWays).map(s => (parsed.index === s.U) -> victimWayReg(s)))
 
-        val chosenWay   = Mux(isHit, hitWay, victimWay)
-        val chosenIndex = parsed.setBase + chosenWay
+        val nextSelectedLine = parsed.setBase + Mux(isHit, hitWay, victimWay)
+        selectedLine := nextSelectedLine
 
-        selectedLine    := chosenIndex
-        currentLineData := dataArray.read(chosenIndex)
-        state           := CacheFSMState.COMPARE_TAG
+        val rawReadData = dataArray.read(nextSelectedLine)
+        currentLineData := Mux(isFillLast && (nextSelectedLine === fillLineIdx), vecToLineData(assembledLine), rawReadData)
+
+        state := CacheFSMState.COMPARE_TAG
       }
     }
 
@@ -127,13 +129,12 @@ class SetAssociativeCacheReadOnly[T <: Data](
         upper.resp.valid     := true.B
         upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
         upper.resp.bits.hit  := true.B
-
         when(upper.resp.ready) {
           updateReplPolicy(reqIndex, way, true.B)
           state := CacheFSMState.IDLE
         }
       }.elsewhen(isMshrHit) {
-        val cwReady = fillValid(reqWordOffset) || (mshrFillArriving && currentRespOffset === reqWordOffset)
+        val cwReady = fillValid(reqWordOffset) || (lower.resp.valid && currentFillOffset === reqWordOffset)
         when(cwReady) {
           upper.resp.valid     := true.B
           upper.resp.bits.data := Mux(fillValid(reqWordOffset), fillBuffer(reqWordOffset), lower.resp.bits.data)
@@ -142,9 +143,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
             updateReplPolicy(reqIndex, fillWay, true.B)
             state := CacheFSMState.IDLE
           }
-        }.otherwise {
-          state := CacheFSMState.WAIT_WORD
-        }
+        }.otherwise(state := CacheFSMState.WAIT_WORD)
       }.otherwise {
         when(filling) {
           reqValid := true.B
@@ -152,66 +151,42 @@ class SetAssociativeCacheReadOnly[T <: Data](
         }.otherwise {
           updateReplPolicy(reqIndex, way, false.B)
           filling           := true.B
+          memReqSent        := false.B
           fillTag           := reqTag
           fillIndex         := reqIndex
           fillWay           := way
           fillValid         := VecInit(Seq.fill(wordsPerLine)(false.B))
           currentFillOffset := reqWordOffset
-          reqOffset         := reqWordOffset
-          reqCount          := 0.U
-          respCount         := 0.U
           state             := CacheFSMState.WAIT_WORD
         }
       }
     }
 
     is(CacheFSMState.WAIT_WORD) {
-      val cwReady = fillValid(reqWordOffset) || (mshrFillArriving && currentRespOffset === reqWordOffset)
+      val cwReady = fillValid(reqWordOffset) || (lower.resp.valid && currentFillOffset === reqWordOffset)
       when(cwReady) {
         upper.resp.valid     := true.B
         upper.resp.bits.data := Mux(fillValid(reqWordOffset), fillBuffer(reqWordOffset), lower.resp.bits.data)
         upper.resp.bits.hit  := false.B
-        when(upper.resp.ready) {
-          state := CacheFSMState.IDLE
-        }
+        when(upper.resp.ready)(state := CacheFSMState.IDLE)
       }
     }
   }
 
-  lower.req.valid     := filling && (reqCount < wordsPerLine.U)
-  lower.req.bits.addr := makeAddr(fillTag, fillIndex, reqOffset)
-
-  when(filling && (reqCount < wordsPerLine.U) && lower.req.fire) {
-    reqCount  := reqCount + 1.U
-    reqOffset := Mux(reqOffset === (wordsPerLine - 1).U, 0.U, reqOffset + 1.U)
-  }
-
-  lower.resp.ready := true.B
-
   when(filling && lower.resp.valid) {
     fillBuffer(currentFillOffset) := lower.resp.bits.data
     fillValid(currentFillOffset)  := true.B
+    currentFillOffset             := Mux(currentFillOffset === (wordsPerLine - 1).U, 0.U, currentFillOffset + 1.U)
 
-    val nextFillOffset = Mux(currentFillOffset === (wordsPerLine - 1).U, 0.U, currentFillOffset + 1.U)
-    currentFillOffset := nextFillOffset
-    respCount         := respCount + 1.U
-
-    when(respCount === (wordsPerLine - 1).U) {
+    when(lower.resp.bits.last) {
       filling := false.B
-
-      val assembledLine = VecInit((0 until wordsPerLine).map { i =>
-        Mux(i.U === currentFillOffset, lower.resp.bits.data, fillBuffer(i.U))
-      })
-
-      val fillLineIndex = Cat(fillIndex, fillWay)
-      dataArray.write(fillLineIndex, vecToLineData(assembledLine))
+      dataArray.write(fillLineIdx, vecToLineData(assembledLine))
 
       val newMeta = Wire(new CacheEntry(tagWidth))
-      newMeta                  := metaArray(fillLineIndex)
-      newMeta.alloc            := true.B
-      newMeta.tag              := fillTag
-      newMeta.dirty            := false.B
-      metaArray(fillLineIndex) := newMeta
+      newMeta.alloc          := true.B
+      newMeta.tag            := fillTag
+      newMeta.dirty          := false.B
+      metaArray(fillLineIdx) := newMeta
     }
   }
 }
