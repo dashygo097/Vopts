@@ -23,6 +23,7 @@ class CacheReadOnlyReq(addrWidth: Int) extends Bundle {
 
 class CacheResp[T <: Data](gen: T) extends Bundle {
   val data = gen
+  val last = Bool()
   val hit  = Bool()
 }
 
