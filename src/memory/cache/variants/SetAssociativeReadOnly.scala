@@ -13,41 +13,42 @@ class SetAssociativeCacheReadOnly[T <: Data](
   replPolicy: ReplacementPolicy,
 ) extends Module {
 
+  val numSets                      = linesPerWay
   val dataWidth                    = gen.getWidth
   override def desiredName: String =
-    s"set_associative_cache_read_only_${addrWidth}x${dataWidth}x${wordsPerLine}x${linesPerWay}x$numWays"
+    s"set_associative_cache_read_only_${addrWidth}x${dataWidth}x${wordsPerLine}x${numSets}x$numWays"
 
   val upper = IO(Flipped(new CacheReadOnlyIO(gen, addrWidth)))
   val lower = IO(new CacheReadOnlyIO(gen, addrWidth))
 
-  val tagWidth        = addrWidth - log2Ceil(linesPerWay) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
-  val indexWidth      = log2Ceil(linesPerWay)
+  val tagWidth        = addrWidth - log2Ceil(numSets) - log2Ceil(wordsPerLine) - log2Ceil(dataWidth / 8)
+  val indexWidth      = log2Ceil(numSets)
   val wordOffsetWidth = log2Ceil(wordsPerLine).max(1)
   val byteOffsetWidth = log2Ceil(dataWidth / 8)
   val lineWidth       = dataWidth * wordsPerLine
 
-  val dataArray = Mem(numWays * linesPerWay, UInt(lineWidth.W))
-  val metaArray = RegInit(VecInit(Seq.fill(numWays * linesPerWay)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
+  val dataArray = Mem(numWays * numSets, UInt(lineWidth.W))
+  val metaArray = RegInit(VecInit(Seq.fill(numWays * numSets)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
 
   val state      = RegInit(CacheFSMState.IDLE)
-  val replStates = Seq.fill(numWays)(ReplacementPolicyState(replPolicy, linesPerWay))
+  val replStates = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
 
-  val victimWayReg = RegInit(VecInit(Seq.fill(numWays)(0.U(log2Ceil(linesPerWay).W))))
-  for (s <- 0 until numWays) victimWayReg(s) := replStates(s).getVictim()
+  val victimWayReg = RegInit(VecInit(Seq.fill(numSets)(0.U(log2Ceil(numWays).max(1).W))))
+  for (s <- 0 until numSets) victimWayReg(s) := replStates(s).getVictim()
 
   val reqAddr         = RegInit(0.U(addrWidth.W))
   val reqValid        = RegInit(false.B)
   val reqTag          = RegInit(0.U(tagWidth.W))
   val reqIndex        = RegInit(0.U(indexWidth.W))
   val reqWordOffset   = RegInit(0.U(wordOffsetWidth.W))
-  val selectedLine    = RegInit(0.U(log2Ceil(numWays * linesPerWay).W))
+  val selectedLine    = RegInit(0.U(log2Ceil(numWays * numSets).W))
   val currentLineData = Reg(UInt(lineWidth.W))
 
   val filling           = RegInit(false.B)
   val memReqSent        = RegInit(false.B)
   val fillTag           = Reg(UInt(tagWidth.W))
   val fillIndex         = Reg(UInt(indexWidth.W))
-  val fillWay           = Reg(UInt(log2Ceil(linesPerWay).W))
+  val fillWay           = Reg(UInt(log2Ceil(numWays).max(1).W))
   val fillValid         = RegInit(VecInit(Seq.fill(wordsPerLine)(false.B)))
   val fillBuffer        = Reg(Vec(wordsPerLine, gen))
   val currentFillOffset = Reg(UInt(wordOffsetWidth.W))
@@ -59,7 +60,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
     val tag        = addr(addrWidth - 1, indexWidth + wordOffsetWidth + byteOffsetWidth)
     val index      = addr(indexWidth + wordOffsetWidth + byteOffsetWidth - 1, wordOffsetWidth + byteOffsetWidth)
     val wordOffset = if (log2Ceil(wordsPerLine) > 0) addr(wordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth) else 0.U(1.W)
-    val setBase    = Cat(index, 0.U(log2Ceil(linesPerWay).W))
+    val setBase    = index * numWays.U
   }
 
   def extractWord(lineData: UInt, wordOffset: UInt): T = {
@@ -69,7 +70,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
 
   def vecToLineData(vec: Vec[T]): UInt                             = vec.asUInt
   def updateReplPolicy(setIdx: UInt, way: UInt, isHit: Bool): Unit =
-    for (s <- 0 until numWays) when(s.U === setIdx)(replStates(s).update(way, isHit))
+    for (s <- 0 until numSets) when(s.U === setIdx)(replStates(s).update(way, isHit))
 
   val proceedReq  = upper.req.fire || reqValid
   val currentAddr = Mux(reqValid, reqAddr, upper.req.bits.addr)
@@ -86,7 +87,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
   lower.resp.ready    := true.B
 
   val isFillLast    = filling && lower.resp.valid && lower.resp.bits.last
-  val fillLineIdx   = Cat(fillIndex, fillWay)
+  val fillLineIdx   = (fillIndex * numWays.U) + fillWay
   val assembledLine = VecInit((0 until wordsPerLine).map { i =>
     Mux(i.U === currentFillOffset, lower.resp.bits.data, fillBuffer(i.U))
   })
@@ -101,13 +102,13 @@ class SetAssociativeCacheReadOnly[T <: Data](
         reqWordOffset := parsed.wordOffset
         reqValid      := false.B
 
-        val hitBits   = (0 until linesPerWay).map { way =>
+        val hitBits   = (0 until numWays).map { way =>
           val m = metaArray(parsed.setBase + way.U)
           m.alloc && (m.tag === parsed.tag)
         }
         val isHit     = CombTree.orTree(hitBits)
         val hitWay    = PriorityEncoder(VecInit(hitBits))
-        val victimWay = CombTree.oneHotMux((0 until numWays).map(s => (parsed.index === s.U) -> victimWayReg(s)))
+        val victimWay = victimWayReg(parsed.index)
 
         val nextSelectedLine = parsed.setBase + Mux(isHit, hitWay, victimWay)
         selectedLine := nextSelectedLine
@@ -123,7 +124,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
       val meta      = metaArray(selectedLine)
       val cacheHit  = meta.alloc && (meta.tag === reqTag)
       val isMshrHit = filling && (fillTag === reqTag) && (fillIndex === reqIndex)
-      val way       = selectedLine - Cat(reqIndex, 0.U(log2Ceil(linesPerWay).W))
+      val way       = selectedLine - (reqIndex * numWays.U)
 
       when(cacheHit) {
         upper.resp.valid     := true.B
