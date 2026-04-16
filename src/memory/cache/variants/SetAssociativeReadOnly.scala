@@ -169,7 +169,10 @@ class SetAssociativeCacheReadOnly[T <: Data](
         upper.resp.valid     := true.B
         upper.resp.bits.data := Mux(fillValid(reqWordOffset), fillBuffer(reqWordOffset), lower.resp.bits.data)
         upper.resp.bits.hit  := false.B
-        when(upper.resp.ready)(state := CacheFSMState.IDLE)
+        when(upper.resp.ready) {
+          updateReplPolicy(reqIndex, fillWay, true.B)
+          state := CacheFSMState.IDLE
+        }
       }
     }
   }
