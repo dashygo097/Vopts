@@ -66,10 +66,11 @@ class SetAssociativeCache[T <: Data](
   val mshrCw        = Reg(UInt(wordOffsetWidth.W))
   val mshrDirty     = RegInit(false.B)
 
-  val reqOffset = Reg(UInt(wordOffsetWidth.W))
-  val wbData    = Reg(Vec(wordsPerLine, gen))
-  val fillValid = RegInit(VecInit(Seq.fill(wordsPerLine)(false.B)))
-  val fillData  = Reg(Vec(wordsPerLine, gen))
+  val reqOffset     = Reg(UInt(wordOffsetWidth.W))
+  val wbData        = Reg(Vec(wordsPerLine, gen))
+  val fillValid     = RegInit(VecInit(Seq.fill(wordsPerLine)(false.B)))
+  val fillData      = Reg(Vec(wordsPerLine, gen))
+  val fillDirtyStrb = RegInit(VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W))))
 
   def makeAddr(tag: UInt, index: UInt, offset: UInt): UInt =
     if (byteOffsetWidth > 0) Cat(tag, index, offset, 0.U(byteOffsetWidth.W)) else Cat(tag, index, offset)
@@ -140,12 +141,23 @@ class SetAssociativeCache[T <: Data](
   val fillLineIdx = (mshrIndex * numWays.U) + mshrWay
   val finalLine   = Wire(Vec(wordsPerLine, gen))
   for (i <- 0 until wordsPerLine) {
-    val isResp           = currentRespOffset === i.U
-    val isCpu            = cpuWriteToMshrValid && (cpuWriteToMshrOffset === i.U)
-    val cpuAppliedToResp = applyStrb(lower.resp.bits.data.asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
-    val cpuAppliedToFill = applyStrb(fillData(i).asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
-    finalLine(i) := Mux(isCpu && isResp, cpuAppliedToResp, Mux(isCpu, cpuAppliedToFill, Mux(isResp, lower.resp.bits.data, fillData(i))))
+    val isResp = currentRespOffset === i.U
+    val isCpu  = cpuWriteToMshrValid && (cpuWriteToMshrOffset === i.U)
+
+    val memData = lower.resp.bits.data.asUInt
+    val cpuData = cpuWriteToMshrData.asUInt
+
+    val mergedIfBoth = applyStrb(memData, cpuData, cpuWriteToMshrStrb).asTypeOf(gen)
+    val mergedIfCpu  = applyStrb(fillData(i).asUInt, cpuData, cpuWriteToMshrStrb).asTypeOf(gen)
+    val memApplyStrb = (~fillDirtyStrb(i)).asUInt
+    val mergedIfResp = applyStrb(fillData(i).asUInt, memData, memApplyStrb).asTypeOf(gen)
+
+    finalLine(i) := Mux(isCpu && isResp, mergedIfBoth, Mux(isCpu, mergedIfCpu, Mux(isResp, mergedIfResp, fillData(i))))
   }
+
+  val arrivingMem         = lower.resp.bits.data
+  val memApplyStrbForRead = (~fillDirtyStrb(reqWordOffset)).asUInt
+  val mergedArrivingWord  = applyStrb(fillData(reqWordOffset).asUInt, arrivingMem.asUInt, memApplyStrbForRead).asTypeOf(gen)
 
   switch(state) {
     is(CacheFSMState.IDLE) {
@@ -176,8 +188,7 @@ class SetAssociativeCache[T <: Data](
         val useFillData      = isFillLast && (nextSelectedLine === fillLineIdx)
 
         currentLineData := Mux(useFillData, vecToLineData(finalLine), Mux(useForwardedData, lastWriteData, rawReadData))
-
-        state := CacheFSMState.COMPARE_TAG
+        state           := CacheFSMState.COMPARE_TAG
       }
     }
 
@@ -219,7 +230,7 @@ class SetAssociativeCache[T <: Data](
         when(cwReady) {
           when(reqOp === CacheOp.READ) {
             upper.resp.valid     := true.B
-            upper.resp.bits.data := Mux(fillValid(reqWordOffset), fillData(reqWordOffset), lower.resp.bits.data)
+            upper.resp.bits.data := Mux(fillValid(reqWordOffset), fillData(reqWordOffset), mergedArrivingWord)
             upper.resp.bits.hit  := true.B
             when(upper.resp.ready) {
               updateReplPolicy(reqIndex, mshrWay, true.B)
@@ -266,8 +277,9 @@ class SetAssociativeCache[T <: Data](
             mshrState := MSHR_FILL
             reqOffset := reqWordOffset
           }
-          fillValid := VecInit(Seq.fill(wordsPerLine)(false.B))
-          state     := CacheFSMState.WAIT_WORD
+          fillValid     := VecInit(Seq.fill(wordsPerLine)(false.B))
+          fillDirtyStrb := VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W)))
+          state         := CacheFSMState.WAIT_WORD
         }
       }
     }
@@ -276,16 +288,20 @@ class SetAssociativeCache[T <: Data](
       val cwReady = fillValid(reqWordOffset) || (mshrFillArriving && currentRespOffset === reqWordOffset)
 
       when(cwReady) {
-        val wordData = Mux(fillValid(reqWordOffset), fillData(reqWordOffset), lower.resp.bits.data)
+        val wordData = Mux(fillValid(reqWordOffset), fillData(reqWordOffset), mergedArrivingWord)
         when(reqOp === CacheOp.READ) {
           upper.resp.valid     := true.B
           upper.resp.bits.data := wordData
           upper.resp.bits.hit  := false.B
-          when(upper.resp.ready)(state := CacheFSMState.IDLE)
+          when(upper.resp.ready) {
+            updateReplPolicy(reqIndex, mshrWay, true.B)
+            state := CacheFSMState.IDLE
+          }
         }.otherwise {
           upper.resp.valid    := true.B
           upper.resp.bits.hit := false.B
           when(upper.resp.ready) {
+            updateReplPolicy(reqIndex, mshrWay, true.B)
             cpuWriteToMshrValid  := true.B
             cpuWriteToMshrOffset := reqWordOffset
             cpuWriteToMshrData   := reqData
@@ -304,12 +320,15 @@ class SetAssociativeCache[T <: Data](
     val isCpuTarget  = cpuWriteToMshrValid && (cpuWriteToMshrOffset === i.U)
 
     when(isCpuTarget && isRespTarget) {
-      fillData(i)  := applyStrb(lower.resp.bits.data.asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
-      fillValid(i) := true.B
+      fillData(i)      := applyStrb(lower.resp.bits.data.asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
+      fillValid(i)     := true.B
+      fillDirtyStrb(i) := fillDirtyStrb(i) | cpuWriteToMshrStrb
     }.elsewhen(isCpuTarget) {
-      fillData(i) := applyStrb(fillData(i).asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
+      fillData(i)      := applyStrb(fillData(i).asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
+      fillDirtyStrb(i) := fillDirtyStrb(i) | cpuWriteToMshrStrb
     }.elsewhen(isRespTarget) {
-      fillData(i)  := lower.resp.bits.data
+      val memApplyStrb = (~fillDirtyStrb(i)).asUInt
+      fillData(i)  := applyStrb(fillData(i).asUInt, lower.resp.bits.data.asUInt, memApplyStrb).asTypeOf(gen)
       fillValid(i) := true.B
     }
   }
