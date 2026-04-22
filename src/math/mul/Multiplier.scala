@@ -19,11 +19,11 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
   // IO
   val multiplicand = IO(Input(UInt(dw.W)))
   val multiplier   = IO(Input(UInt(dw.W)))
-  val start        = IO(Input(Bool()))  // start a request
-  val kill         = IO(Input(Bool()))  // cancel in-flight request on flush/mispredict
-  val a_signed     = IO(Input(Bool()))  // multiplicand signed flag
-  val b_signed     = IO(Input(Bool()))  // multiplier signed flag
-  val take_high    = IO(Input(Bool()))  // 1=high dw bits (MULH*), 0=low dw bits (MUL)
+  val start        = IO(Input(Bool())) // start a request
+  val kill         = IO(Input(Bool())) // cancel in-flight request on flush/mispredict
+  val a_signed     = IO(Input(Bool())) // multiplicand signed flag
+  val b_signed     = IO(Input(Bool())) // multiplier signed flag
+  val take_high    = IO(Input(Bool())) // 1=high dw bits (MULH*), 0=low dw bits (MUL)
   val result       = IO(Output(UInt(dw.W)))
   val busy         = IO(Output(Bool()))
   val done         = IO(Output(Bool()))
@@ -32,27 +32,27 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
   val in_fire = start && !kill
 
   // Stage 0: input latch; counts toward total delay so Wallace tree adds (pipeline_stages - 1) RegNext
-  val a_reg        = Reg(UInt(dw.W))
-  val b_reg        = Reg(UInt(dw.W))
-  val a_signed_reg = Reg(Bool())
-  val b_signed_reg = Reg(Bool())
+  val a_reg         = Reg(UInt(dw.W))
+  val b_reg         = Reg(UInt(dw.W))
+  val a_signed_reg  = Reg(Bool())
+  val b_signed_reg  = Reg(Bool())
   val take_high_reg = Reg(Bool())
   when(in_fire) {
-    a_reg        := multiplicand
-    b_reg        := multiplier
-    a_signed_reg := a_signed
-    b_signed_reg := b_signed
+    a_reg         := multiplicand
+    b_reg         := multiplier
+    a_signed_reg  := a_signed
+    b_signed_reg  := b_signed
     take_high_reg := take_high
   }
 
   // Stage 1: Booth-4 partial product generation
   val ext_dw = dw + 1
-  val a_ext = Cat(Mux(a_signed_reg, a_reg(dw - 1), 0.U), a_reg)
-  val b_ext = Cat(Mux(b_signed_reg, b_reg(dw - 1), 0.U), b_reg)
+  val a_ext  = Cat(Mux(a_signed_reg, a_reg(dw - 1), 0.U), a_reg)
+  val b_ext  = Cat(Mux(b_signed_reg, b_reg(dw - 1), 0.U), b_reg)
 
   val pp_gen = Module(new PartialProductGen(ext_dw))
-  pp_gen.multiplicand       := a_ext
-  pp_gen.multiplier         := b_ext
+  pp_gen.multiplicand        := a_ext
+  pp_gen.multiplier          := b_ext
   pp_gen.multiplicand_signed := a_signed_reg
   pp_gen.multiplier_signed   := b_signed_reg
 
@@ -81,7 +81,7 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
   when(reset.asBool) {
     vld.foreach(_ := false.B)
   }.otherwise {
-    vld(0) := in_fire
+    vld(0)                               := in_fire
     for (i <- 1 until vld.length) vld(i) := vld(i - 1)
   }
 
@@ -90,7 +90,7 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
     when(reset.asBool) {
       p.foreach(_ := false.B)
     }.otherwise {
-      p(0) := take_high_reg
+      p(0)                             := take_high_reg
       for (i <- 1 until p.length) p(i) := p(i - 1)
     }
     p.last
@@ -115,7 +115,7 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
     var current_layer = inputs
     while (current_layer.length > 2) {
       val next_layer = scala.collection.mutable.ArrayBuffer[UInt]()
-      var i = 0
+      var i          = 0
       while (i < current_layer.length)
         if (i + 2 < current_layer.length) {
           val (s, c) = fullAdder(current_layer(i), current_layer(i + 1), current_layer(i + 2), width)
@@ -128,20 +128,18 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
         }
       current_layer = next_layer.toSeq
     }
-    if (current_layer.length == 2)   (current_layer(0), current_layer(1))
+    if (current_layer.length == 2) (current_layer(0), current_layer(1))
     else if (current_layer.nonEmpty) (current_layer(0), 0.U(width.W))
-    else                             (0.U(width.W), 0.U(width.W))
+    else (0.U(width.W), 0.U(width.W))
   }
 
   /**
-   * Pipelined Wallace tree.
-   * Step 1: pure Scala simulation to count total layers (no hardware nodes).
-   * Step 2: single Chisel traversal, inserting RegNext at evenly spaced cut points.
+   * Pipelined Wallace tree. Step 1: pure Scala simulation to count total layers (no hardware nodes). Step 2: single Chisel traversal, inserting RegNext at evenly spaced cut points.
    */
   def wallace_tree_reduce_pipelined(
     inputs: Seq[UInt],
     stages: Int,
-    width:  Int
+    width: Int
   ): (UInt, UInt, Int) = {
 
     // Step 1: compile-time layer counting
@@ -150,7 +148,7 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
     while (mock_count > 2) {
       val fa   = mock_count / 3
       val ha   = (mock_count % 3) / 2
-      val pass = mock_count % 3 % 2
+      val pass = mock_count  % 3 % 2
       mock_count = fa * 2 + ha * 2 + pass
       total_layers += 1
     }
@@ -160,9 +158,9 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
     if (stages > total_layers)
       println(
         s"[WARN] Multiplier(dw=$dw): " +
-        s"pipeline_stages=${pipeline_stages} asks for $stages Wallace pipeline registers, " +
-        s"but total layers = $total_layers; actual latency will be ${actual_stages + 1} cycles. " +
-        s"Consider reducing pipeline_stages to ${total_layers + 1}."
+          s"pipeline_stages=$pipeline_stages asks for $stages Wallace pipeline registers, " +
+          s"but total layers = $total_layers; actual latency will be ${actual_stages + 1} cycles. " +
+          s"Consider reducing pipeline_stages to ${total_layers + 1}."
       )
 
     // Cut points: insert RegNext after selected layers, evenly distributed
@@ -176,7 +174,7 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
     var layer_idx     = 0
     while (current_layer.length > 2) {
       val next_layer = scala.collection.mutable.ArrayBuffer[UInt]()
-      var i = 0
+      var i          = 0
       while (i < current_layer.length)
         if (i + 2 < current_layer.length) {
           val (s, c) = fullAdder(current_layer(i), current_layer(i + 1), current_layer(i + 2), width)
@@ -191,20 +189,20 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
       layer_idx += 1
       current_layer =
         if (cut_points.contains(layer_idx)) next_layer.map(x => RegNext(x)).toSeq
-        else                                next_layer.toSeq
+        else next_layer.toSeq
     }
 
     // Add missing registers if cut points were fewer than requested
     val missing = actual_stages - cut_points.size
     if (missing > 0)
-      current_layer = (0 until missing).foldLeft(current_layer) {
-        (layer, _) => layer.map(x => RegNext(x))
+      current_layer = (0 until missing).foldLeft(current_layer) { (layer, _) =>
+        layer.map(x => RegNext(x))
       }
 
     val (out1, out2) =
-      if (current_layer.length == 2)   (current_layer(0), current_layer(1))
+      if (current_layer.length == 2) (current_layer(0), current_layer(1))
       else if (current_layer.nonEmpty) (current_layer(0), 0.U(width.W))
-      else                             (0.U(width.W), 0.U(width.W))
+      else (0.U(width.W), 0.U(width.W))
 
     (out1, out2, actual_stages)
   }
@@ -228,7 +226,7 @@ class Multiplier(dw: Int, pipeline_stages: Int = 1) extends Module {
 // Generation entry point
 object TestMultiplier extends App {
   VerilogEmitter.parse(
-    new Multiplier(32, 2), 
+    new Multiplier(32, 2),
     "booth_4_wallace_tree_mul.sv"
   )
 }

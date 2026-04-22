@@ -30,7 +30,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val dataArray = Mem(numWays * numSets, UInt(lineWidth.W))
   val metaArray = RegInit(VecInit(Seq.fill(numWays * numSets)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
 
-  val state      = RegInit(CacheFSMState.IDLE)
+  val state      = RegInit(CacheNonBlockingState.IDLE)
   val replStates = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
 
   val victimWayReg = RegInit(VecInit(Seq.fill(numSets)(0.U(log2Ceil(numWays).max(1).W))))
@@ -75,7 +75,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
   val proceedReq  = upper.req.fire || reqValid
   val currentAddr = Mux(reqValid, reqAddr, upper.req.bits.addr)
 
-  upper.req.ready      := (state === CacheFSMState.IDLE) && !reqValid
+  upper.req.ready      := (state === CacheNonBlockingState.IDLE) && !reqValid
   upper.resp.valid     := false.B
   upper.resp.bits.data := 0.U.asTypeOf(gen)
   upper.resp.bits.hit  := false.B
@@ -93,7 +93,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
   })
 
   switch(state) {
-    is(CacheFSMState.IDLE) {
+    is(CacheNonBlockingState.IDLE) {
       when(proceedReq) {
         val parsed = parseAddr(currentAddr)
         reqAddr       := currentAddr
@@ -116,11 +116,11 @@ class SetAssociativeCacheReadOnly[T <: Data](
         val rawReadData = dataArray.read(nextSelectedLine)
         currentLineData := Mux(isFillLast && (nextSelectedLine === fillLineIdx), vecToLineData(assembledLine), rawReadData)
 
-        state := CacheFSMState.COMPARE_TAG
+        state := CacheNonBlockingState.COMPARE_TAG
       }
     }
 
-    is(CacheFSMState.COMPARE_TAG) {
+    is(CacheNonBlockingState.COMPARE_TAG) {
       val meta      = metaArray(selectedLine)
       val cacheHit  = meta.alloc && (meta.tag === reqTag)
       val isMshrHit = filling && (fillTag === reqTag) && (fillIndex === reqIndex)
@@ -132,7 +132,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
         upper.resp.bits.hit  := true.B
         when(upper.resp.ready) {
           updateReplPolicy(reqIndex, way, true.B)
-          state := CacheFSMState.IDLE
+          state := CacheNonBlockingState.IDLE
         }
       }.elsewhen(isMshrHit) {
         val cwReady = fillValid(reqWordOffset) || (lower.resp.valid && currentFillOffset === reqWordOffset)
@@ -142,13 +142,13 @@ class SetAssociativeCacheReadOnly[T <: Data](
           upper.resp.bits.hit  := true.B
           when(upper.resp.ready) {
             updateReplPolicy(reqIndex, fillWay, true.B)
-            state := CacheFSMState.IDLE
+            state := CacheNonBlockingState.IDLE
           }
-        }.otherwise(state := CacheFSMState.WAIT_WORD)
+        }.otherwise(state := CacheNonBlockingState.WAIT_WORD)
       }.otherwise {
         when(filling) {
           reqValid := true.B
-          state    := CacheFSMState.IDLE
+          state    := CacheNonBlockingState.IDLE
         }.otherwise {
           updateReplPolicy(reqIndex, way, false.B)
           filling           := true.B
@@ -158,12 +158,12 @@ class SetAssociativeCacheReadOnly[T <: Data](
           fillWay           := way
           fillValid         := VecInit(Seq.fill(wordsPerLine)(false.B))
           currentFillOffset := reqWordOffset
-          state             := CacheFSMState.WAIT_WORD
+          state             := CacheNonBlockingState.WAIT_WORD
         }
       }
     }
 
-    is(CacheFSMState.WAIT_WORD) {
+    is(CacheNonBlockingState.WAIT_WORD) {
       val cwReady = fillValid(reqWordOffset) || (lower.resp.valid && currentFillOffset === reqWordOffset)
       when(cwReady) {
         upper.resp.valid     := true.B
@@ -171,7 +171,7 @@ class SetAssociativeCacheReadOnly[T <: Data](
         upper.resp.bits.hit  := false.B
         when(upper.resp.ready) {
           updateReplPolicy(reqIndex, fillWay, true.B)
-          state := CacheFSMState.IDLE
+          state := CacheNonBlockingState.IDLE
         }
       }
     }

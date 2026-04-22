@@ -30,7 +30,7 @@ class SetAssociativeCache[T <: Data](
   val dataArray = Mem(numWays * numSets, UInt(lineWidth.W))
   val metaArray = RegInit(VecInit(Seq.fill(numWays * numSets)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
 
-  val state      = RegInit(CacheFSMState.IDLE)
+  val state      = RegInit(CacheNonBlockingState.IDLE)
   val replStates = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
 
   val victimWayReg = RegInit(VecInit(Seq.fill(numSets)(0.U(log2Ceil(numWays).max(1).W))))
@@ -116,7 +116,7 @@ class SetAssociativeCache[T <: Data](
   val currentStrb = Mux(reqValid, reqStrb, upper.req.bits.strb)
   val currentOp   = Mux(reqValid, reqOp, upper.req.bits.op)
 
-  upper.req.ready      := (state === CacheFSMState.IDLE) && !reqValid
+  upper.req.ready      := (state === CacheNonBlockingState.IDLE) && !reqValid
   upper.resp.valid     := false.B
   upper.resp.bits.data := 0.U.asTypeOf(gen)
   upper.resp.bits.hit  := false.B
@@ -160,7 +160,7 @@ class SetAssociativeCache[T <: Data](
   val mergedArrivingWord  = applyStrb(fillData(reqWordOffset).asUInt, arrivingMem.asUInt, memApplyStrbForRead).asTypeOf(gen)
 
   switch(state) {
-    is(CacheFSMState.IDLE) {
+    is(CacheNonBlockingState.IDLE) {
       when(proceedReq) {
         val parsed = parseAddr(currentAddr)
         reqAddr       := currentAddr
@@ -188,11 +188,11 @@ class SetAssociativeCache[T <: Data](
         val useFillData      = isFillLast && (nextSelectedLine === fillLineIdx)
 
         currentLineData := Mux(useFillData, vecToLineData(finalLine), Mux(useForwardedData, lastWriteData, rawReadData))
-        state           := CacheFSMState.COMPARE_TAG
+        state           := CacheNonBlockingState.COMPARE_TAG
       }
     }
 
-    is(CacheFSMState.COMPARE_TAG) {
+    is(CacheNonBlockingState.COMPARE_TAG) {
       val meta      = metaArray(selectedLine)
       val cacheHit  = meta.alloc && (meta.tag === reqTag)
       val isMshrHit = (mshrState =/= MSHR_IDLE) && (mshrTag === reqTag) && (mshrIndex === reqIndex)
@@ -205,7 +205,7 @@ class SetAssociativeCache[T <: Data](
           upper.resp.bits.hit  := true.B
           when(upper.resp.ready) {
             updateReplPolicy(reqIndex, way, true.B)
-            state := CacheFSMState.IDLE
+            state := CacheNonBlockingState.IDLE
           }
         }.otherwise {
           val updatedLine = updateWord(currentLineData, reqWordOffset, reqData, reqStrb)
@@ -222,7 +222,7 @@ class SetAssociativeCache[T <: Data](
           upper.resp.bits.hit := true.B
           when(upper.resp.ready) {
             updateReplPolicy(reqIndex, way, true.B)
-            state := CacheFSMState.IDLE
+            state := CacheNonBlockingState.IDLE
           }
         }
       }.elsewhen(isMshrHit) {
@@ -234,7 +234,7 @@ class SetAssociativeCache[T <: Data](
             upper.resp.bits.hit  := true.B
             when(upper.resp.ready) {
               updateReplPolicy(reqIndex, mshrWay, true.B)
-              state := CacheFSMState.IDLE
+              state := CacheNonBlockingState.IDLE
             }
           }.otherwise {
             upper.resp.valid    := true.B
@@ -245,16 +245,16 @@ class SetAssociativeCache[T <: Data](
               cpuWriteToMshrOffset := reqWordOffset
               cpuWriteToMshrData   := reqData
               cpuWriteToMshrStrb   := reqStrb
-              state                := CacheFSMState.IDLE
+              state                := CacheNonBlockingState.IDLE
             }
           }
-        }.otherwise(state := CacheFSMState.WAIT_WORD)
+        }.otherwise(state := CacheNonBlockingState.WAIT_WORD)
       }.otherwise {
         when(lastWriteValid && (lastWriteIndex === reqIndex))(lastWriteValid := false.B)
 
         when(mshrState =/= MSHR_IDLE) {
           reqValid := true.B
-          state    := CacheFSMState.IDLE
+          state    := CacheNonBlockingState.IDLE
         }.otherwise {
           updateReplPolicy(reqIndex, way, false.B)
 
@@ -279,12 +279,12 @@ class SetAssociativeCache[T <: Data](
           }
           fillValid     := VecInit(Seq.fill(wordsPerLine)(false.B))
           fillDirtyStrb := VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W)))
-          state         := CacheFSMState.WAIT_WORD
+          state         := CacheNonBlockingState.WAIT_WORD
         }
       }
     }
 
-    is(CacheFSMState.WAIT_WORD) {
+    is(CacheNonBlockingState.WAIT_WORD) {
       val cwReady = fillValid(reqWordOffset) || (mshrFillArriving && currentRespOffset === reqWordOffset)
 
       when(cwReady) {
@@ -295,7 +295,7 @@ class SetAssociativeCache[T <: Data](
           upper.resp.bits.hit  := false.B
           when(upper.resp.ready) {
             updateReplPolicy(reqIndex, mshrWay, true.B)
-            state := CacheFSMState.IDLE
+            state := CacheNonBlockingState.IDLE
           }
         }.otherwise {
           upper.resp.valid    := true.B
@@ -306,7 +306,7 @@ class SetAssociativeCache[T <: Data](
             cpuWriteToMshrOffset := reqWordOffset
             cpuWriteToMshrData   := reqData
             cpuWriteToMshrStrb   := reqStrb
-            state                := CacheFSMState.IDLE
+            state                := CacheNonBlockingState.IDLE
           }
         }
       }

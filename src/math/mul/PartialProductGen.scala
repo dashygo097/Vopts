@@ -10,17 +10,17 @@ class PartialProductGen(dw: Int) extends Module {
 
   val multiplicand        = IO(Input(UInt(dw.W)))
   val multiplier          = IO(Input(UInt(dw.W)))
-  val multiplicand_signed  = IO(Input(Bool()))
-  val multiplier_signed    = IO(Input(Bool()))
+  val multiplicand_signed = IO(Input(Bool()))
+  val multiplier_signed   = IO(Input(Bool()))
   // Output width is 2 * dw for full alignment
-  val partial_products = IO(Output(Vec((dw + 1) / 2, UInt(total_width.W))))
+  val partial_products    = IO(Output(Vec((dw + 1) / 2, UInt(total_width.W))))
 
   val multiplier_sign = Mux(multiplier_signed, multiplier(dw - 1), 0.U(1.W))
   val multiplier_ext  = Cat(Fill(2, multiplier_sign), multiplier, 0.U(1.W))
   val booth_encoders  = Seq.fill((dw + 1) / 2)(Module(new BoothRadix4()))
 
-  val multiplicand_sign      = Mux(multiplicand_signed, multiplicand(dw - 1), 0.U(1.W))
-  val multiplicand_ext       = Cat(Fill(2, multiplicand_sign), multiplicand)
+  val multiplicand_sign       = Mux(multiplicand_signed, multiplicand(dw - 1), 0.U(1.W))
+  val multiplicand_ext        = Cat(Fill(2, multiplicand_sign), multiplicand)
   val multiplicand_ext_shift1 = Cat(Fill(1, multiplicand_sign), multiplicand, 0.U(1.W))
 
   for (i <- 0 until (dw + 1) / 2) {
@@ -29,7 +29,7 @@ class PartialProductGen(dw: Int) extends Module {
     booth_encoders(i).y := booth_bits
 
     val raw_width = dw + 2
-    val pp_raw   = Wire(UInt(raw_width.W))
+    val pp_raw    = Wire(UInt(raw_width.W))
 
     // Generate partial product from Booth encoding
     when(booth_encoders(i).zero) {
@@ -45,9 +45,9 @@ class PartialProductGen(dw: Int) extends Module {
     }
 
     // Sign extension to full width
-    val sign_bit        = pp_raw(raw_width - 1)
+    val sign_bit         = pp_raw(raw_width - 1)
     val pp_sign_extended = Wire(UInt(total_width.W))
-    val fill_len        = (total_width - raw_width).max(0)
+    val fill_len         = (total_width - raw_width).max(0)
     pp_sign_extended := Cat(Fill(fill_len, sign_bit), pp_raw)
 
     partial_products(i) := pp_sign_extended << (2 * i).U

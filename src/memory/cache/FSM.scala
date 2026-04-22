@@ -2,7 +2,7 @@ package vopts.mem.cache
 
 import chisel3._
 
-object CacheFSMState extends ChiselEnum {
+object CacheNonBlockingState extends ChiselEnum {
   val IDLE        = Value(0.U(2.W))
   val COMPARE_TAG = Value(1.U(2.W))
   val WAIT_WORD   = Value(2.U(2.W))
