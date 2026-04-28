@@ -41,17 +41,17 @@ class SetAssociativeStreamingCache[T <: Data](
   val replStates = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
 
   val victimWayReg = RegInit(VecInit(Seq.fill(numSets)(0.U(wayWidth.W))))
-  for (s <- 0 until numSets)
-    victimWayReg(s) := replStates(s).getVictim()
+  for (s <- 0 until numSets) victimWayReg(s) := replStates(s).getVictim()
 
-  val reqValid        = RegInit(false.B)
-  val reqAddr         = RegInit(0.U(addrWidth.W))
-  val reqData         = Reg(gen)
-  val reqStrb         = RegInit(0.U((dataWidth / 8).W))
-  val reqOp           = RegInit(CacheOp.READ)
-  val reqTag          = RegInit(0.U(tagWidth.W))
-  val reqIndex        = RegInit(0.U(indexWidth.W))
-  val reqWordOffset   = RegInit(0.U(wordOffsetWidth.W))
+  val reqValid      = RegInit(false.B)
+  val reqAddr       = RegInit(0.U(addrWidth.W))
+  val reqData       = Reg(gen)
+  val reqStrb       = RegInit(0.U((dataWidth / 8).W))
+  val reqOp         = RegInit(CacheOp.READ)
+  val reqTag        = RegInit(0.U(tagWidth.W))
+  val reqIndex      = RegInit(0.U(indexWidth.W))
+  val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
+
   val selectedLine    = RegInit(0.U(lineIndexWidth.W))
   val currentLineData = RegInit(0.U(lineWidth.W))
 
@@ -80,6 +80,8 @@ class SetAssociativeStreamingCache[T <: Data](
   val fillValid     = RegInit(VecInit(Seq.fill(wordsPerLine)(false.B)))
   val fillData      = Reg(Vec(wordsPerLine, gen))
   val fillDirtyStrb = RegInit(VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W))))
+
+  val fullStrb = Fill(dataWidth / 8, 1.U(1.W))
 
   def setBase(index: UInt): UInt = index * numWays.U
 
@@ -150,16 +152,14 @@ class SetAssociativeStreamingCache[T <: Data](
         replStates(s).update(way, isHit)
       }
 
-  def wrapInc(x: UInt): UInt =
-    Mux(x === (wordsPerLine - 1).U, 0.U, x + 1.U)
+  def wrapInc(x: UInt): UInt = Mux(x === (wordsPerLine - 1).U, 0.U, x + 1.U)
 
-  val proceedReq  = upper.req.fire || reqValid
-  val currentAddr = Mux(reqValid, reqAddr, upper.req.bits.addr)
-  val currentData = Mux(reqValid, reqData, upper.req.bits.data)
-  val currentStrb = Mux(reqValid, reqStrb, upper.req.bits.strb)
-  val currentOp   = Mux(reqValid, reqOp, upper.req.bits.op)
+  val lowerRespReady     = mshrState === MSHR_WB || mshrState === MSHR_FILL
+  val mshrFillArriving   = mshrState === MSHR_FILL && lower.resp.valid && lowerRespReady
+  val mshrFillCommitFire = mshrFillArriving && lower.resp.bits.last
+  val currentRespOffset  = reqOffset
 
-  upper.req.ready      := (state === CacheNonBlockingState.IDLE) && !reqValid
+  upper.req.ready      := state === CacheNonBlockingState.IDLE && !reqValid && !mshrFillCommitFire
   upper.resp.valid     := false.B
   upper.resp.bits.data := 0.U.asTypeOf(gen)
   upper.resp.bits.hit  := false.B
@@ -169,49 +169,45 @@ class SetAssociativeStreamingCache[T <: Data](
   lower.req.bits.addr := 0.U
   lower.req.bits.data := 0.U.asTypeOf(gen)
   lower.req.bits.op   := CacheOp.READ
-  lower.req.bits.strb := Fill(dataWidth / 8, 1.U)
-  lower.resp.ready    := true.B
+  lower.req.bits.strb := fullStrb
+  lower.resp.ready    := lowerRespReady
 
-  val mshrFillArriving  = (mshrState === MSHR_FILL) && lower.resp.valid
-  val currentRespOffset = reqOffset
+  val proceedReq  = (upper.req.fire || reqValid) && !mshrFillCommitFire
+  val currentAddr = Mux(reqValid, reqAddr, upper.req.bits.addr)
+  val currentData = Mux(reqValid, reqData, upper.req.bits.data)
+  val currentStrb = Mux(reqValid, reqStrb, upper.req.bits.strb)
+  val currentOp   = Mux(reqValid, reqOp, upper.req.bits.op)
 
   val cpuWriteToMshrValid  = WireInit(false.B)
   val cpuWriteToMshrOffset = WireInit(0.U(wordOffsetWidth.W))
   val cpuWriteToMshrData   = WireInit(0.U.asTypeOf(gen))
   val cpuWriteToMshrStrb   = WireInit(0.U((dataWidth / 8).W))
 
-  val isFillLast  = mshrFillArriving && lower.resp.bits.last
-  val fillLineIdx = (mshrIndex * numWays.U) + mshrWay
+  val fillLineIdx = mshrIndex * numWays.U + mshrWay
 
   val finalLine = Wire(Vec(wordsPerLine, gen))
   for (i <- 0 until wordsPerLine) {
-    val isResp = mshrFillArriving && (currentRespOffset === i.U)
-    val isCpu  = cpuWriteToMshrValid && (cpuWriteToMshrOffset === i.U)
-
-    val memData = lower.resp.bits.data.asUInt
-    val cpuData = cpuWriteToMshrData.asUInt
-
-    val oldWord = fillData(i).asUInt
-
+    val isResp   = mshrFillArriving && currentRespOffset === i.U
+    val isCpu    = cpuWriteToMshrValid && cpuWriteToMshrOffset === i.U
+    val memData  = lower.resp.bits.data.asUInt
+    val cpuData  = cpuWriteToMshrData.asUInt
+    val oldWord  = fillData(i).asUInt
     val withMem  = applyStrb(oldWord, memData, (~fillDirtyStrb(i)).asUInt)
     val withCpu  = applyStrb(oldWord, cpuData, cpuWriteToMshrStrb)
-    val withBoth = applyStrb(memData, cpuData, cpuWriteToMshrStrb)
+    val withBoth = applyStrb(withMem, cpuData, cpuWriteToMshrStrb)
 
     finalLine(i) := Mux(
       isResp && isCpu,
       withBoth.asTypeOf(gen),
-      Mux(
-        isResp,
-        withMem.asTypeOf(gen),
-        Mux(isCpu, withCpu.asTypeOf(gen), fillData(i))
-      )
+      Mux(isResp, withMem.asTypeOf(gen), Mux(isCpu, withCpu.asTypeOf(gen), fillData(i)))
     )
   }
 
-  val arrivingMem         = lower.resp.bits.data
-  val memApplyStrbForRead = (~fillDirtyStrb(reqWordOffset)).asUInt
-  val mergedArrivingWord  =
-    applyStrb(fillData(reqWordOffset).asUInt, arrivingMem.asUInt, memApplyStrbForRead).asTypeOf(gen)
+  val reqWordMemArriving = mshrFillArriving && currentRespOffset === reqWordOffset
+  val reqWordFullDirty   = fillDirtyStrb(reqWordOffset) === fullStrb
+  val reqWordReady       = fillValid(reqWordOffset) || reqWordFullDirty || reqWordMemArriving
+  val mergedArrivingWord = applyStrb(fillData(reqWordOffset).asUInt, lower.resp.bits.data.asUInt, (~fillDirtyStrb(reqWordOffset)).asUInt).asTypeOf(gen)
+  val mshrReadWord       = Mux(reqWordMemArriving, mergedArrivingWord, fillData(reqWordOffset))
 
   switch(state) {
     is(CacheNonBlockingState.IDLE) {
@@ -229,7 +225,7 @@ class SetAssociativeStreamingCache[T <: Data](
 
         val hitBits = (0 until numWays).map { way =>
           val m = metaArray(parsed.setBase + way.U)
-          m.alloc && (m.tag === parsed.tag)
+          m.alloc && m.tag === parsed.tag
         }
 
         val invalidBits = (0 until numWays).map { way =>
@@ -238,39 +234,34 @@ class SetAssociativeStreamingCache[T <: Data](
 
         val isHit      = CombTree.orTree(hitBits)
         val hasInvalid = CombTree.orTree(invalidBits)
-
         val hitWay     = PriorityEncoder(VecInit(hitBits))
         val invalidWay = PriorityEncoder(VecInit(invalidBits))
         val victimWay  = Mux(hasInvalid, invalidWay, victimWayReg(parsed.index))
 
         val nextSelectedLine = parsed.setBase + Mux(isHit, hitWay, victimWay)
-        selectedLine := nextSelectedLine
+        val rawReadData      = dataArray.read(nextSelectedLine)
+        val useForwardedData = lastWriteValid && lastSelectedLine === nextSelectedLine
 
-        val rawReadData = dataArray.read(nextSelectedLine)
-
-        val useForwardedData =
-          lastWriteValid && (lastSelectedLine === nextSelectedLine)
-
-        val useFillData =
-          isFillLast && (nextSelectedLine === fillLineIdx)
-
-        currentLineData := Mux(
-          useFillData,
-          vecToLineData(finalLine),
-          Mux(useForwardedData, lastWriteData, rawReadData)
-        )
-
-        state := CacheNonBlockingState.COMPARE_TAG
+        selectedLine    := nextSelectedLine
+        currentLineData := Mux(useForwardedData, lastWriteData, rawReadData)
+        state           := CacheNonBlockingState.COMPARE_TAG
       }
     }
 
     is(CacheNonBlockingState.COMPARE_TAG) {
-      val meta      = metaArray(selectedLine)
-      val cacheHit  = meta.alloc && (meta.tag === reqTag)
-      val isMshrHit = (mshrState =/= MSHR_IDLE) && (mshrTag === reqTag) && (mshrIndex === reqIndex)
-      val way       = selectedLine - (reqIndex * numWays.U)
+      val meta              = metaArray(selectedLine)
+      val cacheHit          = meta.alloc && meta.tag === reqTag
+      val isMshrHit         = mshrState =/= MSHR_IDLE && mshrTag === reqTag && mshrIndex === reqIndex
+      val way               = (selectedLine - reqIndex * numWays.U)(wayWidth - 1, 0)
+      val sameSetAsMshr     = mshrState =/= MSHR_IDLE && mshrIndex === reqIndex
+      val victimWayHazard   = sameSetAsMshr && way === mshrWay && !isMshrHit
+      val sameSetMissHazard = sameSetAsMshr && !cacheHit && !isMshrHit
+      val mshrConflict      = victimWayHazard || sameSetMissHazard
 
-      when(cacheHit) {
+      when(mshrConflict) {
+        reqValid := true.B
+        state    := CacheNonBlockingState.IDLE
+      }.elsewhen(cacheHit) {
         when(reqOp === CacheOp.READ) {
           upper.resp.valid     := true.B
           upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
@@ -306,20 +297,10 @@ class SetAssociativeStreamingCache[T <: Data](
           }
         }
       }.elsewhen(isMshrHit) {
-        val cwReady =
-          fillValid(reqWordOffset) ||
-            (mshrFillArriving && currentRespOffset === reqWordOffset)
-
-        when(cwReady) {
+        when(reqWordReady) {
           when(reqOp === CacheOp.READ) {
-            val readWord = Mux(
-              fillValid(reqWordOffset),
-              fillData(reqWordOffset),
-              mergedArrivingWord
-            )
-
             upper.resp.valid     := true.B
-            upper.resp.bits.data := readWord
+            upper.resp.bits.data := mshrReadWord
             upper.resp.bits.hit  := true.B
             upper.resp.bits.last := true.B
 
@@ -338,9 +319,8 @@ class SetAssociativeStreamingCache[T <: Data](
               cpuWriteToMshrOffset := reqWordOffset
               cpuWriteToMshrData   := reqData
               cpuWriteToMshrStrb   := reqStrb
-
               updateReplPolicy(reqIndex, mshrWay, true.B)
-              state := CacheNonBlockingState.IDLE
+              state                := CacheNonBlockingState.IDLE
             }
           }
         }.otherwise {
@@ -361,11 +341,7 @@ class SetAssociativeStreamingCache[T <: Data](
           mshrVictimTag := meta.tag
           mshrReqSent   := false.B
 
-          val useFwdForWb =
-            lastWriteValid &&
-              (lastSelectedLine === selectedLine) &&
-              (lastWriteTag === meta.tag)
-
+          val useFwdForWb    = lastWriteValid && lastSelectedLine === selectedLine && lastWriteTag === meta.tag
           val victimLineData = Mux(useFwdForWb, lastWriteData, currentLineData)
 
           when(meta.alloc && meta.dirty) {
@@ -380,7 +356,7 @@ class SetAssociativeStreamingCache[T <: Data](
           fillValid     := VecInit(Seq.fill(wordsPerLine)(false.B))
           fillDirtyStrb := VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W)))
 
-          when(lastWriteValid && (lastWriteIndex === reqIndex)) {
+          when(lastWriteValid && lastWriteIndex === reqIndex) {
             lastWriteValid := false.B
           }
 
@@ -390,20 +366,10 @@ class SetAssociativeStreamingCache[T <: Data](
     }
 
     is(CacheNonBlockingState.WAIT_WORD) {
-      val cwReady =
-        fillValid(reqWordOffset) ||
-          (mshrFillArriving && currentRespOffset === reqWordOffset)
-
-      when(cwReady) {
+      when(reqWordReady) {
         when(reqOp === CacheOp.READ) {
-          val wordData = Mux(
-            fillValid(reqWordOffset),
-            fillData(reqWordOffset),
-            mergedArrivingWord
-          )
-
           upper.resp.valid     := true.B
-          upper.resp.bits.data := wordData
+          upper.resp.bits.data := mshrReadWord
           upper.resp.bits.hit  := false.B
           upper.resp.bits.last := true.B
 
@@ -422,9 +388,8 @@ class SetAssociativeStreamingCache[T <: Data](
             cpuWriteToMshrOffset := reqWordOffset
             cpuWriteToMshrData   := reqData
             cpuWriteToMshrStrb   := reqStrb
-
             updateReplPolicy(reqIndex, mshrWay, true.B)
-            state := CacheNonBlockingState.IDLE
+            state                := CacheNonBlockingState.IDLE
           }
         }
       }
@@ -440,16 +405,15 @@ class SetAssociativeStreamingCache[T <: Data](
   }
 
   for (i <- 0 until wordsPerLine) {
-    val isRespTarget = mshrFillArriving && (currentRespOffset === i.U)
-    val isCpuTarget  = cpuWriteToMshrValid && (cpuWriteToMshrOffset === i.U)
+    val isRespTarget = mshrFillArriving && currentRespOffset === i.U
+    val isCpuTarget  = cpuWriteToMshrValid && cpuWriteToMshrOffset === i.U
 
     when(isCpuTarget && isRespTarget) {
-      fillData(i)      := applyStrb(lower.resp.bits.data.asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
+      fillData(i)      := applyStrb(applyStrb(fillData(i).asUInt, lower.resp.bits.data.asUInt, (~fillDirtyStrb(i)).asUInt), cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
       fillValid(i)     := true.B
       fillDirtyStrb(i) := fillDirtyStrb(i) | cpuWriteToMshrStrb
     }.elsewhen(isCpuTarget) {
       fillData(i)      := applyStrb(fillData(i).asUInt, cpuWriteToMshrData.asUInt, cpuWriteToMshrStrb).asTypeOf(gen)
-      fillValid(i)     := true.B
       fillDirtyStrb(i) := fillDirtyStrb(i) | cpuWriteToMshrStrb
     }.elsewhen(isRespTarget) {
       fillData(i)  := applyStrb(fillData(i).asUInt, lower.resp.bits.data.asUInt, (~fillDirtyStrb(i)).asUInt).asTypeOf(gen)
@@ -461,15 +425,15 @@ class SetAssociativeStreamingCache[T <: Data](
     is(MSHR_WB) {
       lower.req.valid     := true.B
       lower.req.bits.op   := CacheOp.WRITE
-      lower.req.bits.addr := makeAddr(mshrVictimTag, mshrIndex, 0.U(wordOffsetWidth.W))
+      lower.req.bits.addr := makeAddr(mshrVictimTag, mshrIndex, reqOffset)
       lower.req.bits.data := wbData(reqOffset)
-      lower.req.bits.strb := Fill(dataWidth / 8, 1.U)
+      lower.req.bits.strb := fullStrb
 
       when(lower.req.fire) {
         reqOffset := wrapInc(reqOffset)
       }
 
-      when(lower.resp.valid && lower.resp.bits.last) {
+      when(lower.resp.fire && lower.resp.bits.last) {
         mshrState   := MSHR_FILL
         reqOffset   := mshrCw
         mshrReqSent := false.B
@@ -477,18 +441,17 @@ class SetAssociativeStreamingCache[T <: Data](
     }
 
     is(MSHR_FILL) {
-      lower.req.valid   := !mshrReqSent
-      lower.req.bits.op := CacheOp.READ
-
+      lower.req.valid     := !mshrReqSent
+      lower.req.bits.op   := CacheOp.READ
       lower.req.bits.addr := makeAddr(mshrTag, mshrIndex, mshrCw)
       lower.req.bits.data := 0.U.asTypeOf(gen)
-      lower.req.bits.strb := Fill(dataWidth / 8, 1.U)
+      lower.req.bits.strb := fullStrb
 
       when(lower.req.fire) {
         mshrReqSent := true.B
       }
 
-      when(lower.resp.valid) {
+      when(mshrFillArriving) {
         reqOffset := wrapInc(reqOffset)
 
         when(lower.resp.bits.last) {
