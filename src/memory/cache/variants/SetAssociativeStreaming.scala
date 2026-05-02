@@ -37,6 +37,14 @@ class SetAssociativeStreamingCache[T <: Data](
   val dataArray = Mem(numWays * numSets, UInt(lineWidth.W))
   val metaArray = RegInit(VecInit(Seq.fill(numWays * numSets)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
 
+  val dataWriteValid = WireDefault(false.B)
+  val dataWriteAddr  = WireDefault(0.U(lineIndexWidth.W))
+  val dataWriteData  = WireDefault(0.U(lineWidth.W))
+
+  when(dataWriteValid) {
+    dataArray.write(dataWriteAddr, dataWriteData)
+  }
+
   val state      = RegInit(CacheNonBlockingState.IDLE)
   val replStates = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
 
@@ -275,25 +283,30 @@ class SetAssociativeStreamingCache[T <: Data](
         }.otherwise {
           val updatedLine = updateWord(currentLineData, reqWordOffset, reqData, reqStrb)
 
-          dataArray.write(selectedLine, updatedLine)
-          metaArray(selectedLine).alloc := true.B
-          metaArray(selectedLine).tag   := reqTag
-          metaArray(selectedLine).dirty := true.B
+          when(!mshrFillCommitFire) {
+            dataWriteValid := true.B
+            dataWriteAddr  := selectedLine
+            dataWriteData  := updatedLine
 
-          lastWriteValid   := true.B
-          lastWriteTag     := reqTag
-          lastWriteIndex   := reqIndex
-          lastWriteData    := updatedLine
-          lastSelectedLine := selectedLine
+            metaArray(selectedLine).alloc := true.B
+            metaArray(selectedLine).tag   := reqTag
+            metaArray(selectedLine).dirty := true.B
 
-          upper.resp.valid     := true.B
-          upper.resp.bits.data := 0.U.asTypeOf(gen)
-          upper.resp.bits.hit  := true.B
-          upper.resp.bits.last := true.B
+            lastWriteValid   := true.B
+            lastWriteTag     := reqTag
+            lastWriteIndex   := reqIndex
+            lastWriteData    := updatedLine
+            lastSelectedLine := selectedLine
 
-          when(upper.resp.ready) {
-            updateReplPolicy(reqIndex, way, true.B)
-            state := CacheNonBlockingState.IDLE
+            upper.resp.valid     := true.B
+            upper.resp.bits.data := 0.U.asTypeOf(gen)
+            upper.resp.bits.hit  := true.B
+            upper.resp.bits.last := true.B
+
+            when(upper.resp.ready) {
+              updateReplPolicy(reqIndex, way, true.B)
+              state := CacheNonBlockingState.IDLE
+            }
           }
         }
       }.elsewhen(isMshrHit) {
@@ -457,7 +470,9 @@ class SetAssociativeStreamingCache[T <: Data](
         when(lower.resp.bits.last) {
           val committedLine = vecToLineData(finalLine)
 
-          dataArray.write(fillLineIdx, committedLine)
+          dataWriteValid := true.B
+          dataWriteAddr  := fillLineIdx
+          dataWriteData  := committedLine
 
           val newMeta = Wire(new CacheEntry(tagWidth))
           newMeta.alloc := true.B
