@@ -16,8 +16,7 @@ class SetAssociativeStreamingCache[T <: Data](
   val numSets   = linesPerWay
   val dataWidth = gen.getWidth
 
-  override def desiredName: String =
-    s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${numSets}x$numWays"
+  override def desiredName: String = s"set_associative_cache_${addrWidth}x${dataWidth}x${wordsPerLine}x${numSets}x$numWays"
 
   val upper = IO(Flipped(new CacheIO(gen, addrWidth)))
   val lower = IO(new CacheIO(gen, addrWidth))
@@ -31,43 +30,55 @@ class SetAssociativeStreamingCache[T <: Data](
   val tagWidth        = addrWidth - rawIndexWidth - rawWordOffsetWidth - byteOffsetWidth
   val lineWidth       = dataWidth * wordsPerLine
 
-  val wayWidth       = log2Ceil(numWays).max(1)
-  val lineIndexWidth = log2Ceil(numWays * numSets).max(1)
+  val wayWidth = log2Ceil(numWays).max(1)
 
-  val dataArray = Mem(numWays * numSets, UInt(lineWidth.W))
-  val metaArray = RegInit(VecInit(Seq.fill(numWays * numSets)(0.U.asTypeOf(new CacheEntry(tagWidth)))))
+  val dataArray = Seq.fill(numWays)(Mem(numSets, UInt(lineWidth.W)))
+  val metaArray = RegInit(VecInit(Seq.fill(numWays)(VecInit(Seq.fill(numSets)(0.U.asTypeOf(new CacheEntry(tagWidth)))))))
 
   val dataWriteValid = WireDefault(false.B)
-  val dataWriteAddr  = WireDefault(0.U(lineIndexWidth.W))
+  val dataWriteWay   = WireDefault(0.U(wayWidth.W))
+  val dataWriteIndex = WireDefault(0.U(indexWidth.W))
   val dataWriteData  = WireDefault(0.U(lineWidth.W))
 
-  when(dataWriteValid) {
-    dataArray.write(dataWriteAddr, dataWriteData)
-  }
+  for (w <- 0 until numWays)
+    when(dataWriteValid && dataWriteWay === w.U) {
+      dataArray(w).write(dataWriteIndex, dataWriteData)
+    }
 
-  val state      = RegInit(CacheNonBlockingState.IDLE)
-  val replStates = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
-
+  val replStates   = Seq.fill(numSets)(ReplacementPolicyState(replPolicy, numWays))
   val victimWayReg = RegInit(VecInit(Seq.fill(numSets)(0.U(wayWidth.W))))
   for (s <- 0 until numSets) victimWayReg(s) := replStates(s).getVictim()
 
-  val reqValid      = RegInit(false.B)
-  val reqAddr       = RegInit(0.U(addrWidth.W))
-  val reqData       = Reg(gen)
-  val reqStrb       = RegInit(0.U((dataWidth / 8).W))
-  val reqOp         = RegInit(CacheOp.READ)
-  val reqTag        = RegInit(0.U(tagWidth.W))
-  val reqIndex      = RegInit(0.U(indexWidth.W))
-  val reqWordOffset = RegInit(0.U(wordOffsetWidth.W))
+  val reqValid = RegInit(false.B)
+  val reqAddr  = RegInit(0.U(addrWidth.W))
+  val reqData  = Reg(gen)
+  val reqStrb  = RegInit(0.U((dataWidth / 8).W))
+  val reqOp    = RegInit(CacheOp.READ)
 
-  val selectedLine    = RegInit(0.U(lineIndexWidth.W))
-  val currentLineData = RegInit(0.U(lineWidth.W))
+  val s1Valid      = RegInit(false.B)
+  val s1Addr       = RegInit(0.U(addrWidth.W))
+  val s1Data       = Reg(gen)
+  val s1Strb       = RegInit(0.U((dataWidth / 8).W))
+  val s1Op         = RegInit(CacheOp.READ)
+  val s1Tag        = RegInit(0.U(tagWidth.W))
+  val s1Index      = RegInit(0.U(indexWidth.W))
+  val s1WordOffset = RegInit(0.U(wordOffsetWidth.W))
+  val s1VictimWay  = RegInit(0.U(wayWidth.W))
+  val s1WayData    = Reg(Vec(numWays, UInt(lineWidth.W)))
+  val s1WayMeta    = Reg(Vec(numWays, new CacheEntry(tagWidth)))
 
-  val lastWriteValid   = RegInit(false.B)
-  val lastWriteTag     = RegInit(0.U(tagWidth.W))
-  val lastWriteIndex   = RegInit(0.U(indexWidth.W))
-  val lastWriteData    = RegInit(0.U(lineWidth.W))
-  val lastSelectedLine = RegInit(0.U(lineIndexWidth.W))
+  val waitValid      = RegInit(false.B)
+  val waitHit        = RegInit(false.B)
+  val waitData       = Reg(gen)
+  val waitStrb       = RegInit(0.U((dataWidth / 8).W))
+  val waitOp         = RegInit(CacheOp.READ)
+  val waitWordOffset = RegInit(0.U(wordOffsetWidth.W))
+  val waitWriteDone  = RegInit(false.B)
+
+  val lastWriteValid = RegInit(false.B)
+  val lastWriteIndex = RegInit(0.U(indexWidth.W))
+  val lastWriteWay   = RegInit(0.U(wayWidth.W))
+  val lastWriteData  = RegInit(0.U(lineWidth.W))
 
   val MSHR_IDLE = 0.U(2.W)
   val MSHR_WB   = 1.U(2.W)
@@ -91,7 +102,10 @@ class SetAssociativeStreamingCache[T <: Data](
 
   val fullStrb = Fill(dataWidth / 8, 1.U(1.W))
 
-  def setBase(index: UInt): UInt = index * numWays.U
+  def priorityWay(bits: Seq[Bool]): UInt = {
+    val raw = if (numWays == 1) 0.U(1.W) else PriorityEncoder(VecInit(bits))
+    raw.pad(wayWidth)
+  }
 
   def makeAddr(tag: UInt, index: UInt, offset: UInt): UInt =
     if (rawIndexWidth > 0 && rawWordOffsetWidth > 0) {
@@ -105,21 +119,9 @@ class SetAssociativeStreamingCache[T <: Data](
     }
 
   def parseAddr(addr: UInt) = new {
-    val tag = addr(addrWidth - 1, rawIndexWidth + rawWordOffsetWidth + byteOffsetWidth)
-
-    val index =
-      if (rawIndexWidth > 0)
-        addr(rawIndexWidth + rawWordOffsetWidth + byteOffsetWidth - 1, rawWordOffsetWidth + byteOffsetWidth)
-      else
-        0.U(indexWidth.W)
-
-    val wordOffset =
-      if (rawWordOffsetWidth > 0)
-        addr(rawWordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth)
-      else
-        0.U(wordOffsetWidth.W)
-
-    val setBase = index * numWays.U
+    val tag        = addr(addrWidth - 1, rawIndexWidth + rawWordOffsetWidth + byteOffsetWidth)
+    val index      = if (rawIndexWidth > 0) addr(rawIndexWidth + rawWordOffsetWidth + byteOffsetWidth - 1, rawWordOffsetWidth + byteOffsetWidth) else 0.U(indexWidth.W)
+    val wordOffset = if (rawWordOffsetWidth > 0) addr(rawWordOffsetWidth + byteOffsetWidth - 1, byteOffsetWidth) else 0.U(wordOffsetWidth.W)
   }
 
   def extractWord(lineData: UInt, wordOffset: UInt): T = {
@@ -162,15 +164,84 @@ class SetAssociativeStreamingCache[T <: Data](
 
   def wrapInc(x: UInt): UInt = Mux(x === (wordsPerLine - 1).U, 0.U, x + 1.U)
 
+  def wordReady(wordOffset: UInt): Bool = fillValid(wordOffset) || fillDirtyStrb(wordOffset) === fullStrb || (mshrState === MSHR_FILL && lower.resp.valid && lower.resp.ready && currentRespOffset === wordOffset)
+
+  def readMshrWord(wordOffset: UInt): T = {
+    val arriving = mshrState === MSHR_FILL && lower.resp.valid && lower.resp.ready && currentRespOffset === wordOffset
+    val merged   = applyStrb(fillData(wordOffset).asUInt, lower.resp.bits.data.asUInt, (~fillDirtyStrb(wordOffset)).asUInt).asTypeOf(gen)
+    Mux(arriving, merged, fillData(wordOffset))
+  }
+
+  val upperReqPipe = Module(new Queue(chiselTypeOf(upper.req.bits), 4, pipe = true, flow = true))
+
+  upperReqPipe.io.enq.valid := upper.req.valid
+  upperReqPipe.io.enq.bits  := upper.req.bits
+  upper.req.ready           := upperReqPipe.io.enq.ready
+  upperReqPipe.io.deq.ready := false.B
+
   val lowerRespReady     = mshrState === MSHR_WB || mshrState === MSHR_FILL
   val mshrFillArriving   = mshrState === MSHR_FILL && lower.resp.valid && lowerRespReady
   val mshrFillCommitFire = mshrFillArriving && lower.resp.bits.last
   val currentRespOffset  = reqOffset
 
-  upper.req.ready      := state === CacheNonBlockingState.IDLE && !reqValid && !mshrFillCommitFire
-  upper.resp.valid     := false.B
-  upper.resp.bits.data := 0.U.asTypeOf(gen)
-  upper.resp.bits.hit  := false.B
+  val cpuWriteToMshrValid  = WireInit(false.B)
+  val cpuWriteToMshrOffset = WireInit(0.U(wordOffsetWidth.W))
+  val cpuWriteToMshrData   = WireInit(0.U.asTypeOf(gen))
+  val cpuWriteToMshrStrb   = WireInit(0.U((dataWidth / 8).W))
+
+  val s1HitBits        = VecInit((0 until numWays).map { w =>
+    s1WayMeta(w).alloc && s1WayMeta(w).tag === s1Tag
+  })
+  val s1CacheHit       = CombTree.orTree((0 until numWays).map(w => s1HitBits(w)))
+  val s1HitWay         = priorityWay((0 until numWays).map(w => s1HitBits(w)))
+  val s1SelectedWay    = Mux(s1CacheHit, s1HitWay, s1VictimWay)
+  val s1HitLineData    = s1WayData(s1HitWay)
+  val s1VictimLineData = s1WayData(s1VictimWay)
+  val s1VictimMeta     = s1WayMeta(s1VictimWay)
+
+  val s1IsMshrHit         = mshrState =/= MSHR_IDLE && mshrTag === s1Tag && mshrIndex === s1Index
+  val s1SameSetAsMshr     = mshrState =/= MSHR_IDLE && mshrIndex === s1Index
+  val s1VictimWayHazard   = s1SameSetAsMshr && s1SelectedWay === mshrWay && !s1IsMshrHit
+  val s1SameSetMissHazard = s1SameSetAsMshr && !s1CacheHit && !s1IsMshrHit
+  val s1MshrConflict      = s1VictimWayHazard || s1SameSetMissHazard
+
+  val s1ReqWordReady     = wordReady(s1WordOffset)
+  val s1MshrReadWord     = readMshrWord(s1WordOffset)
+  val s1WriteUpdatedLine = updateWord(s1HitLineData, s1WordOffset, s1Data, s1Strb)
+
+  val s1CacheReadRespValid  = s1Valid && !s1MshrConflict && s1CacheHit && s1Op === CacheOp.READ
+  val s1CacheWriteRespValid = s1Valid && !s1MshrConflict && s1CacheHit && s1Op =/= CacheOp.READ && !mshrFillCommitFire
+  val s1MshrReadRespValid   = s1Valid && !s1MshrConflict && !s1CacheHit && s1IsMshrHit && s1ReqWordReady && s1Op === CacheOp.READ
+  val s1MshrWriteRespValid  = s1Valid && !s1MshrConflict && !s1CacheHit && s1IsMshrHit && s1ReqWordReady && s1Op =/= CacheOp.READ
+
+  val s1RespValid = s1CacheReadRespValid || s1CacheWriteRespValid || s1MshrReadRespValid || s1MshrWriteRespValid
+  val s1RespData  = Mux(s1Op === CacheOp.READ, Mux(s1CacheHit, extractWord(s1HitLineData, s1WordOffset), s1MshrReadWord), 0.U.asTypeOf(gen))
+  val s1RespHit   = s1CacheHit || s1IsMshrHit
+  val s1RespFire  = s1RespValid && upper.resp.ready
+
+  val s1CacheReadRespFire  = s1CacheReadRespValid && upper.resp.ready
+  val s1CacheWriteRespFire = s1CacheWriteRespValid && upper.resp.ready
+  val s1MshrReadRespFire   = s1MshrReadRespValid && upper.resp.ready
+  val s1MshrWriteRespFire  = s1MshrWriteRespValid && upper.resp.ready
+
+  val s1MissCandidate   = s1Valid && !s1MshrConflict && !s1CacheHit && !s1IsMshrHit
+  val s1Replay          = s1Valid && (s1MshrConflict || (s1MissCandidate && mshrState =/= MSHR_IDLE))
+  val s1AllocateMiss    = s1MissCandidate && mshrState === MSHR_IDLE
+  val s1MshrHitToWait   = s1Valid && !s1MshrConflict && !s1CacheHit && s1IsMshrHit && !s1ReqWordReady
+  val s1MshrWriteToWait = s1MshrWriteRespValid && !upper.resp.ready
+
+  val waitReqWordReady   = wordReady(waitWordOffset)
+  val waitMshrReadWord   = readMshrWord(waitWordOffset)
+  val waitWriteApply     = waitValid && waitOp =/= CacheOp.READ && waitReqWordReady && !waitWriteDone
+  val waitReadRespValid  = waitValid && waitOp === CacheOp.READ && waitReqWordReady
+  val waitWriteRespValid = waitValid && waitOp =/= CacheOp.READ && waitReqWordReady && (waitWriteDone || waitWriteApply)
+  val waitRespValid      = waitReadRespValid || waitWriteRespValid
+  val waitRespData       = Mux(waitOp === CacheOp.READ, waitMshrReadWord, 0.U.asTypeOf(gen))
+  val waitRespFire       = waitRespValid && upper.resp.ready
+
+  upper.resp.valid     := waitRespValid || (!waitValid && s1RespValid)
+  upper.resp.bits.data := Mux(waitRespValid, waitRespData, s1RespData)
+  upper.resp.bits.hit  := Mux(waitRespValid, waitHit, s1RespHit)
   upper.resp.bits.last := true.B
 
   lower.req.valid     := false.B
@@ -180,20 +251,198 @@ class SetAssociativeStreamingCache[T <: Data](
   lower.req.bits.strb := fullStrb
   lower.resp.ready    := lowerRespReady
 
-  val proceedReq  = (upper.req.fire || reqValid) && !mshrFillCommitFire
-  val currentAddr = Mux(reqValid, reqAddr, upper.req.bits.addr)
-  val currentData = Mux(reqValid, reqData, upper.req.bits.data)
-  val currentStrb = Mux(reqValid, reqStrb, upper.req.bits.strb)
-  val currentOp   = Mux(reqValid, reqOp, upper.req.bits.op)
+  val launchCurrentAddr = Mux(reqValid, reqAddr, upperReqPipe.io.deq.bits.addr)
+  val launchCurrentData = Mux(reqValid, reqData, upperReqPipe.io.deq.bits.data)
+  val launchCurrentStrb = Mux(reqValid, reqStrb, upperReqPipe.io.deq.bits.strb)
+  val launchCurrentOp   = Mux(reqValid, reqOp, upperReqPipe.io.deq.bits.op)
+  val launchParsed      = parseAddr(launchCurrentAddr)
 
-  val cpuWriteToMshrValid  = WireInit(false.B)
-  val cpuWriteToMshrOffset = WireInit(0.U(wordOffsetWidth.W))
-  val cpuWriteToMshrData   = WireInit(0.U.asTypeOf(gen))
-  val cpuWriteToMshrStrb   = WireInit(0.U((dataWidth / 8).W))
+  val s0WayMeta    = Wire(Vec(numWays, new CacheEntry(tagWidth)))
+  val s0RawWayData = Wire(Vec(numWays, UInt(lineWidth.W)))
+  val s0WayData    = Wire(Vec(numWays, UInt(lineWidth.W)))
 
-  val fillLineIdx = mshrIndex * numWays.U + mshrWay
+  for (w <- 0 until numWays) {
+    val rawMeta                 = metaArray(w)(launchParsed.index)
+    val currentWriteMetaForward = s1CacheWriteRespFire && s1Index === launchParsed.index && s1HitWay === w.U
+    s0WayMeta(w) := rawMeta
+    when(currentWriteMetaForward) {
+      s0WayMeta(w).alloc := true.B
+      s0WayMeta(w).tag   := s1Tag
+      s0WayMeta(w).dirty := true.B
+    }
+  }
+
+  for (w <- 0 until numWays)
+    s0RawWayData(w) := dataArray(w).read(launchParsed.index)
+
+  for (w <- 0 until numWays) {
+    val lastWriteForward    = lastWriteValid && lastWriteIndex === launchParsed.index && lastWriteWay === w.U
+    val currentWriteForward = s1CacheWriteRespFire && s1Index === launchParsed.index && s1HitWay === w.U
+    s0WayData(w) := Mux(currentWriteForward, s1WriteUpdatedLine, Mux(lastWriteForward, lastWriteData, s0RawWayData(w)))
+  }
+
+  val s0InvalidBits = VecInit((0 until numWays).map(w => !s0WayMeta(w).alloc))
+  val s0HasInvalid  = CombTree.orTree((0 until numWays).map(w => s0InvalidBits(w)))
+  val s0InvalidWay  = priorityWay((0 until numWays).map(w => s0InvalidBits(w)))
+  val s0VictimWay   = Mux(s0HasInvalid, s0InvalidWay, victimWayReg(launchParsed.index))
+
+  val launchReqValid = reqValid || upperReqPipe.io.deq.valid
+  val s1AllowsLaunch = !waitValid && !mshrFillCommitFire && (!s1Valid || s1RespFire)
+  val launchFire     = launchReqValid && s1AllowsLaunch
+
+  upperReqPipe.io.deq.ready := launchFire && !reqValid
+
+  when(launchFire && reqValid) {
+    reqValid := false.B
+  }
+
+  when(s1CacheReadRespFire) {
+    updateReplPolicy(s1Index, s1HitWay, true.B)
+  }
+
+  when(s1CacheWriteRespFire) {
+    dataWriteValid := true.B
+    dataWriteWay   := s1HitWay
+    dataWriteIndex := s1Index
+    dataWriteData  := s1WriteUpdatedLine
+
+    for (w <- 0 until numWays)
+      when(s1HitWay === w.U) {
+        metaArray(w)(s1Index).alloc := true.B
+        metaArray(w)(s1Index).tag   := s1Tag
+        metaArray(w)(s1Index).dirty := true.B
+      }
+
+    lastWriteValid := true.B
+    lastWriteIndex := s1Index
+    lastWriteWay   := s1HitWay
+    lastWriteData  := s1WriteUpdatedLine
+
+    updateReplPolicy(s1Index, s1HitWay, true.B)
+  }
+
+  when(s1MshrReadRespFire) {
+    updateReplPolicy(s1Index, mshrWay, true.B)
+  }
+
+  when(s1MshrWriteRespValid) {
+    cpuWriteToMshrValid  := true.B
+    cpuWriteToMshrOffset := s1WordOffset
+    cpuWriteToMshrData   := s1Data
+    cpuWriteToMshrStrb   := s1Strb
+  }
+
+  when(s1MshrWriteRespFire) {
+    updateReplPolicy(s1Index, mshrWay, true.B)
+  }
+
+  when(waitWriteApply) {
+    cpuWriteToMshrValid  := true.B
+    cpuWriteToMshrOffset := waitWordOffset
+    cpuWriteToMshrData   := waitData
+    cpuWriteToMshrStrb   := waitStrb
+    waitWriteDone        := true.B
+  }
+
+  when(waitRespFire) {
+    updateReplPolicy(mshrIndex, mshrWay, true.B)
+    waitValid     := false.B
+    waitWriteDone := false.B
+  }
+
+  when(s1Replay) {
+    reqValid := true.B
+    reqAddr  := s1Addr
+    reqData  := s1Data
+    reqStrb  := s1Strb
+    reqOp    := s1Op
+    s1Valid  := false.B
+  }
+
+  when(s1AllocateMiss) {
+    updateReplPolicy(s1Index, s1VictimWay, false.B)
+
+    mshrTag       := s1Tag
+    mshrIndex     := s1Index
+    mshrWay       := s1VictimWay
+    mshrCw        := s1WordOffset
+    mshrDirty     := false.B
+    mshrVictimTag := s1VictimMeta.tag
+    mshrReqSent   := false.B
+
+    when(s1VictimMeta.alloc && s1VictimMeta.dirty) {
+      mshrState := MSHR_WB
+      wbData    := lineDataToVec(s1VictimLineData)
+      reqOffset := 0.U
+    }.otherwise {
+      mshrState := MSHR_FILL
+      reqOffset := s1WordOffset
+    }
+
+    fillValid     := VecInit(Seq.fill(wordsPerLine)(false.B))
+    fillDirtyStrb := VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W)))
+
+    waitValid      := true.B
+    waitHit        := false.B
+    waitData       := s1Data
+    waitStrb       := s1Strb
+    waitOp         := s1Op
+    waitWordOffset := s1WordOffset
+    waitWriteDone  := false.B
+
+    when(lastWriteValid && lastWriteIndex === s1Index && lastWriteWay === s1VictimWay) {
+      lastWriteValid := false.B
+    }
+
+    s1Valid := false.B
+  }
+
+  when(s1MshrHitToWait) {
+    waitValid      := true.B
+    waitHit        := true.B
+    waitData       := s1Data
+    waitStrb       := s1Strb
+    waitOp         := s1Op
+    waitWordOffset := s1WordOffset
+    waitWriteDone  := false.B
+    s1Valid        := false.B
+  }
+
+  when(s1MshrWriteToWait) {
+    waitValid      := true.B
+    waitHit        := true.B
+    waitData       := s1Data
+    waitStrb       := s1Strb
+    waitOp         := s1Op
+    waitWordOffset := s1WordOffset
+    waitWriteDone  := true.B
+    s1Valid        := false.B
+  }
+
+  when(s1RespFire && !launchFire) {
+    s1Valid := false.B
+  }
+
+  when(launchFire) {
+    s1Valid      := true.B
+    s1Addr       := launchCurrentAddr
+    s1Data       := launchCurrentData
+    s1Strb       := launchCurrentStrb
+    s1Op         := launchCurrentOp
+    s1Tag        := launchParsed.tag
+    s1Index      := launchParsed.index
+    s1WordOffset := launchParsed.wordOffset
+    s1VictimWay  := s0VictimWay
+    s1WayData    := s0WayData
+    s1WayMeta    := s0WayMeta
+  }
+
+  when(cpuWriteToMshrValid) {
+    mshrDirty := true.B
+  }
 
   val finalLine = Wire(Vec(wordsPerLine, gen))
+
   for (i <- 0 until wordsPerLine) {
     val isResp   = mshrFillArriving && currentRespOffset === i.U
     val isCpu    = cpuWriteToMshrValid && cpuWriteToMshrOffset === i.U
@@ -203,218 +452,7 @@ class SetAssociativeStreamingCache[T <: Data](
     val withMem  = applyStrb(oldWord, memData, (~fillDirtyStrb(i)).asUInt)
     val withCpu  = applyStrb(oldWord, cpuData, cpuWriteToMshrStrb)
     val withBoth = applyStrb(withMem, cpuData, cpuWriteToMshrStrb)
-
-    finalLine(i) := Mux(
-      isResp && isCpu,
-      withBoth.asTypeOf(gen),
-      Mux(isResp, withMem.asTypeOf(gen), Mux(isCpu, withCpu.asTypeOf(gen), fillData(i)))
-    )
-  }
-
-  val reqWordMemArriving = mshrFillArriving && currentRespOffset === reqWordOffset
-  val reqWordFullDirty   = fillDirtyStrb(reqWordOffset) === fullStrb
-  val reqWordReady       = fillValid(reqWordOffset) || reqWordFullDirty || reqWordMemArriving
-  val mergedArrivingWord = applyStrb(fillData(reqWordOffset).asUInt, lower.resp.bits.data.asUInt, (~fillDirtyStrb(reqWordOffset)).asUInt).asTypeOf(gen)
-  val mshrReadWord       = Mux(reqWordMemArriving, mergedArrivingWord, fillData(reqWordOffset))
-
-  switch(state) {
-    is(CacheNonBlockingState.IDLE) {
-      when(proceedReq) {
-        val parsed = parseAddr(currentAddr)
-
-        reqAddr       := currentAddr
-        reqData       := currentData
-        reqStrb       := currentStrb
-        reqOp         := currentOp
-        reqTag        := parsed.tag
-        reqIndex      := parsed.index
-        reqWordOffset := parsed.wordOffset
-        reqValid      := false.B
-
-        val hitBits = (0 until numWays).map { way =>
-          val m = metaArray(parsed.setBase + way.U)
-          m.alloc && m.tag === parsed.tag
-        }
-
-        val invalidBits = (0 until numWays).map { way =>
-          !metaArray(parsed.setBase + way.U).alloc
-        }
-
-        val isHit      = CombTree.orTree(hitBits)
-        val hasInvalid = CombTree.orTree(invalidBits)
-        val hitWay     = PriorityEncoder(VecInit(hitBits))
-        val invalidWay = PriorityEncoder(VecInit(invalidBits))
-        val victimWay  = Mux(hasInvalid, invalidWay, victimWayReg(parsed.index))
-
-        val nextSelectedLine = parsed.setBase + Mux(isHit, hitWay, victimWay)
-        val rawReadData      = dataArray.read(nextSelectedLine)
-        val useForwardedData = lastWriteValid && lastSelectedLine === nextSelectedLine
-
-        selectedLine    := nextSelectedLine
-        currentLineData := Mux(useForwardedData, lastWriteData, rawReadData)
-        state           := CacheNonBlockingState.COMPARE_TAG
-      }
-    }
-
-    is(CacheNonBlockingState.COMPARE_TAG) {
-      val meta              = metaArray(selectedLine)
-      val cacheHit          = meta.alloc && meta.tag === reqTag
-      val isMshrHit         = mshrState =/= MSHR_IDLE && mshrTag === reqTag && mshrIndex === reqIndex
-      val way               = (selectedLine - reqIndex * numWays.U)(wayWidth - 1, 0)
-      val sameSetAsMshr     = mshrState =/= MSHR_IDLE && mshrIndex === reqIndex
-      val victimWayHazard   = sameSetAsMshr && way === mshrWay && !isMshrHit
-      val sameSetMissHazard = sameSetAsMshr && !cacheHit && !isMshrHit
-      val mshrConflict      = victimWayHazard || sameSetMissHazard
-
-      when(mshrConflict) {
-        reqValid := true.B
-        state    := CacheNonBlockingState.IDLE
-      }.elsewhen(cacheHit) {
-        when(reqOp === CacheOp.READ) {
-          upper.resp.valid     := true.B
-          upper.resp.bits.data := extractWord(currentLineData, reqWordOffset)
-          upper.resp.bits.hit  := true.B
-          upper.resp.bits.last := true.B
-
-          when(upper.resp.ready) {
-            updateReplPolicy(reqIndex, way, true.B)
-            state := CacheNonBlockingState.IDLE
-          }
-        }.otherwise {
-          val updatedLine = updateWord(currentLineData, reqWordOffset, reqData, reqStrb)
-
-          when(!mshrFillCommitFire) {
-            dataWriteValid := true.B
-            dataWriteAddr  := selectedLine
-            dataWriteData  := updatedLine
-
-            metaArray(selectedLine).alloc := true.B
-            metaArray(selectedLine).tag   := reqTag
-            metaArray(selectedLine).dirty := true.B
-
-            lastWriteValid   := true.B
-            lastWriteTag     := reqTag
-            lastWriteIndex   := reqIndex
-            lastWriteData    := updatedLine
-            lastSelectedLine := selectedLine
-
-            upper.resp.valid     := true.B
-            upper.resp.bits.data := 0.U.asTypeOf(gen)
-            upper.resp.bits.hit  := true.B
-            upper.resp.bits.last := true.B
-
-            when(upper.resp.ready) {
-              updateReplPolicy(reqIndex, way, true.B)
-              state := CacheNonBlockingState.IDLE
-            }
-          }
-        }
-      }.elsewhen(isMshrHit) {
-        when(reqWordReady) {
-          when(reqOp === CacheOp.READ) {
-            upper.resp.valid     := true.B
-            upper.resp.bits.data := mshrReadWord
-            upper.resp.bits.hit  := true.B
-            upper.resp.bits.last := true.B
-
-            when(upper.resp.ready) {
-              updateReplPolicy(reqIndex, mshrWay, true.B)
-              state := CacheNonBlockingState.IDLE
-            }
-          }.otherwise {
-            upper.resp.valid     := true.B
-            upper.resp.bits.data := 0.U.asTypeOf(gen)
-            upper.resp.bits.hit  := true.B
-            upper.resp.bits.last := true.B
-
-            when(upper.resp.ready) {
-              cpuWriteToMshrValid  := true.B
-              cpuWriteToMshrOffset := reqWordOffset
-              cpuWriteToMshrData   := reqData
-              cpuWriteToMshrStrb   := reqStrb
-              updateReplPolicy(reqIndex, mshrWay, true.B)
-              state                := CacheNonBlockingState.IDLE
-            }
-          }
-        }.otherwise {
-          state := CacheNonBlockingState.WAIT_WORD
-        }
-      }.otherwise {
-        when(mshrState =/= MSHR_IDLE) {
-          reqValid := true.B
-          state    := CacheNonBlockingState.IDLE
-        }.otherwise {
-          updateReplPolicy(reqIndex, way, false.B)
-
-          mshrTag       := reqTag
-          mshrIndex     := reqIndex
-          mshrWay       := way
-          mshrCw        := reqWordOffset
-          mshrDirty     := false.B
-          mshrVictimTag := meta.tag
-          mshrReqSent   := false.B
-
-          val useFwdForWb    = lastWriteValid && lastSelectedLine === selectedLine && lastWriteTag === meta.tag
-          val victimLineData = Mux(useFwdForWb, lastWriteData, currentLineData)
-
-          when(meta.alloc && meta.dirty) {
-            mshrState := MSHR_WB
-            wbData    := lineDataToVec(victimLineData)
-            reqOffset := 0.U
-          }.otherwise {
-            mshrState := MSHR_FILL
-            reqOffset := reqWordOffset
-          }
-
-          fillValid     := VecInit(Seq.fill(wordsPerLine)(false.B))
-          fillDirtyStrb := VecInit(Seq.fill(wordsPerLine)(0.U((dataWidth / 8).W)))
-
-          when(lastWriteValid && lastWriteIndex === reqIndex) {
-            lastWriteValid := false.B
-          }
-
-          state := CacheNonBlockingState.WAIT_WORD
-        }
-      }
-    }
-
-    is(CacheNonBlockingState.WAIT_WORD) {
-      when(reqWordReady) {
-        when(reqOp === CacheOp.READ) {
-          upper.resp.valid     := true.B
-          upper.resp.bits.data := mshrReadWord
-          upper.resp.bits.hit  := false.B
-          upper.resp.bits.last := true.B
-
-          when(upper.resp.ready) {
-            updateReplPolicy(reqIndex, mshrWay, true.B)
-            state := CacheNonBlockingState.IDLE
-          }
-        }.otherwise {
-          upper.resp.valid     := true.B
-          upper.resp.bits.data := 0.U.asTypeOf(gen)
-          upper.resp.bits.hit  := false.B
-          upper.resp.bits.last := true.B
-
-          when(upper.resp.ready) {
-            cpuWriteToMshrValid  := true.B
-            cpuWriteToMshrOffset := reqWordOffset
-            cpuWriteToMshrData   := reqData
-            cpuWriteToMshrStrb   := reqStrb
-            updateReplPolicy(reqIndex, mshrWay, true.B)
-            state                := CacheNonBlockingState.IDLE
-          }
-        }
-      }
-    }
-
-    is(CacheNonBlockingState.WAIT_MSHR) {
-      state := CacheNonBlockingState.IDLE
-    }
-  }
-
-  when(cpuWriteToMshrValid) {
-    mshrDirty := true.B
+    finalLine(i) := Mux(isResp && isCpu, withBoth.asTypeOf(gen), Mux(isResp, withMem.asTypeOf(gen), Mux(isCpu, withCpu.asTypeOf(gen), fillData(i))))
   }
 
   for (i <- 0 until wordsPerLine) {
@@ -469,23 +507,26 @@ class SetAssociativeStreamingCache[T <: Data](
 
         when(lower.resp.bits.last) {
           val committedLine = vecToLineData(finalLine)
+          val newMeta       = Wire(new CacheEntry(tagWidth))
 
-          dataWriteValid := true.B
-          dataWriteAddr  := fillLineIdx
-          dataWriteData  := committedLine
-
-          val newMeta = Wire(new CacheEntry(tagWidth))
           newMeta.alloc := true.B
           newMeta.tag   := mshrTag
           newMeta.dirty := mshrDirty || cpuWriteToMshrValid
 
-          metaArray(fillLineIdx) := newMeta
+          dataWriteValid := true.B
+          dataWriteWay   := mshrWay
+          dataWriteIndex := mshrIndex
+          dataWriteData  := committedLine
 
-          lastWriteValid   := true.B
-          lastWriteTag     := mshrTag
-          lastWriteIndex   := mshrIndex
-          lastWriteData    := committedLine
-          lastSelectedLine := fillLineIdx
+          for (w <- 0 until numWays)
+            when(mshrWay === w.U) {
+              metaArray(w)(mshrIndex) := newMeta
+            }
+
+          lastWriteValid := true.B
+          lastWriteIndex := mshrIndex
+          lastWriteWay   := mshrWay
+          lastWriteData  := committedLine
 
           mshrState   := MSHR_IDLE
           mshrReqSent := false.B
